@@ -1,4 +1,4 @@
-# MSc Dissertation: Image-Based 3D Reconstruction vs LiDAR
+# Image-Based 3D Reconstruction vs LiDAR
 
 The project evaluates whether image-based 3D reconstruction methods can reproduce LiDAR-derived object geometry for urban street-level assets.
 
