@@ -1,9 +1,9 @@
 experiments:
-  exp_001_colmap_bollard_hanover:
-    object_id: bollard_hanover
+  exp_001_colmap_bollard_001:
+    object_id: bollard_001
     method: colmap
     image_subset: all
-    output_dir: outputs/exp_001_colmap_bollard_hanover
+    output_dir: outputs/exp_001_colmap_bollard_001
     parameters:
       max_image_size: 2000
-      use_gpu: true
+      use_gpu: false

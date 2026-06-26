@@ -9,17 +9,18 @@ SUPPORTED_EXTENSIONS = {
 }
 
 def convert_images_to_jpg(input_dir: Path, quality: int = 95) -> None:
-    input_dir = input_dir.expanduser().resolve()
+    base_dir = input_dir.resolve()
 
-    output_dir = input_dir / "jpg"
+    input_heic_dir = base_dir / "heic"
+    output_dir = base_dir / "jpg"
     output_dir.mkdir(exist_ok=True)
 
     image_paths = [
-        path for path in input_dir.iterdir()
+        path for path in input_heic_dir.iterdir()
         if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
     ]
 
-    print(f"Input directory: {input_dir}")
+    print(f"Input directory: {input_heic_dir}")
     print(f"Output directory: {output_dir}")
     print(f"Found {len(image_paths)} image(s).")
 

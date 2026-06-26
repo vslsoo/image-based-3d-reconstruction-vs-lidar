@@ -1,7 +1,7 @@
 objects:
-  bollard_hanover:
+  bollard_001:
     class: bollard
     description: "Bollard selected for the first reconstruction pilot"
-    images_dir: data/raw/bollard_hanover/images
-    # lidar_path: data/raw/bollard_hanover/lidar/bollard_hanover.las
+    images_dir: data/raw/bollard_001/images
+    # lidar_path: data/raw/bollard_001/lidar/bollard_001.las
     notes: "Initial test object. Check image overlap, texture and visibility."
