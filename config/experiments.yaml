@@ -1,9 +1,69 @@
 experiments:
-  exp_001_colmap_bollard_001:
+  exp_001:
     object_id: bollard_001
     method: colmap
     image_subset: all
+    image_dir: data/raw/bollard_001/images/jpg
     output_dir: outputs/exp_001_colmap_bollard_001
+    command: >
+      colmap automatic_reconstructor
+      --workspace_path outputs/exp_001_colmap_bollard_001
+      --image_path data/raw/bollard_001/images/jpg
     parameters:
-      max_image_size: 2000
-      use_gpu: false
+      quality: default
+      data_type: default
+      single_camera: default
+      dense: default
+      camera_model: default
+      feature: default
+      mapper: default
+    notes:
+      - Only sparse reconstruction
+    log:
+      - Registered images: 39/39 = enough overlap
+      - Points in sparse reconstruction: 44620
+      - Observations: 267341 - how many time a feature point was observed in different images
+      - Mean track length: 5.991506 - how many images on average a feature point was observed in
+      - Mean observations per image: 6854.897436
+      - Mean reprojection error: 1.158444px - difference between the observed feature point and the projected 3D point in the image
+
+
+  exp_002:
+    object_id: bollard_001
+    method: colmap
+    image_subset: all
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_002_colmap_bollard_001
+    command: >
+      colmap automatic_reconstructor
+      --workspace_path outputs/exp_002_colmap_bollard_001
+      --image_path data/raw/bollard_001/images/jpg
+      --quality EXTREME
+      --data_type INDIVIDUAL
+      --single_camera 1
+      --dense 1
+      --camera_model SIMPLE_RADIAL
+      --feature SIFT
+      --mapper INCREMENTAL
+    parameters:
+      quality: EXTREME
+      data_type: INDIVIDUAL
+      single_camera: true
+      dense: true
+      camera_model: SIMPLE_RADIAL
+      feature: SIFT
+      mapper: INCREMENTAL
+    notes:
+      - Sparse reconstruction, dense is only available with CUDA
+      - Incremental mapper
+      - Extreme quality
+    log:
+     - 
+  
+# experiment log:
+### Reconstruction output
+# Registered images: 126 / 180  
+# Sparse reconstruction: successful  
+# Dense reconstruction: partial  
+# Main issue: bench seat reconstructed, but legs are incomplete. Background points remain around the object.  
+# Next step: try image subset with closer views and stronger object masking.
