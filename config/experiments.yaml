@@ -57,8 +57,35 @@ experiments:
       - Sparse reconstruction, dense is only available with CUDA
       - Incremental mapper
       - Extreme quality
-    log:
-     - 
+
+  exp_003:
+    object_id: bollard_001
+    method: colmap
+    image_subset: all
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_003_colmap_bollard_001
+    command: >
+      colmap automatic_reconstructor
+      --workspace_path outputs/exp_003_colmap_bollard_001
+      --image_path data/raw/bollard_001/images/jpg
+      --quality EXTREME
+      --data_type INDIVIDUAL
+      --single_camera 1
+      --dense 1
+      --camera_model SIMPLE_RADIAL
+      --feature SIFT
+      --mapper INCREMENTAL
+    parameters:
+      quality: EXTREME
+      data_type: INDIVIDUAL
+      single_camera: true
+      dense: true
+      camera_model: SIMPLE_RADIAL
+      feature: SIFT
+      mapper: INCREMENTAL
+    notes:
+      - Run with CUDA
+    
   
 # experiment log:
 ### Reconstruction output
