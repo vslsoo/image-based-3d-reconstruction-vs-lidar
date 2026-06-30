@@ -63,13 +63,48 @@ experiments:
     method: colmap
     image_subset: all (39)
     image_dir: /content/drive/MyDrive/diploma_data/raw/bollard_001/images/jpg
-    output_dir: /content/drive/MyDrive/diploma_outputs/exp_003_colmap_bollard_001
+    output_dir: /content/drive/MyDrive/diploma_outputs/exp_003_colmap_bollard_001 and outputs/exp_003_colmap_bollard_001
     notes:
       - Check parameters in python code - they are differenct for the stages
       - GPU is required for dense reconstruction
-      - Run very slowly (needs the improvements)
+      - Run very slowly (more than 5h, needs the improvements)
       - Dense maps required more 12Gb RAM (initially there were 39 photos up to 5Mb each)
       - As a result, bollard hasn't been reconstructed fully 
     next step:
     - Better geometry / less photos (up to 20 for each object) / more angles
     - Masks / bounding box for MVS (for RAM)
+
+  exp_004:
+    object_id: bollard_001
+    method: mast3r
+    image_subset: some (12 random)
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_004_mast3r_bollard_001
+    parameters:
+        model:
+          weights: "checkpoints/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth"
+          device: "cpu"
+          image_size: 512
+        alignment:
+          coarse_lr: 0.07
+          coarse_iterations: 300
+          fine_lr: 0.01
+          fine_iterations: 300
+          opt_level: "refine+depth"
+        matching:
+          matching_confidence_threshold: 0
+          shared_intrinsics: true
+          scenegraph: "complete"
+        export:
+          min_conf_threshold: 1.5
+          cam_size: 0.2
+          tsdf_threshold: 0
+          as_pointcloud: true
+          mask_sky: false
+          cleanup_depthmaps: true
+          transparent_cameras: false
+    notes:
+      - GPU is not required
+      - Run for 40 min 
+      - PC needs to be converted from glb to ply
+      - Dense reconstruction

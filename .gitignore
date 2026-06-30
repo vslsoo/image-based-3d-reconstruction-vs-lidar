@@ -11,6 +11,9 @@ results/*
 figures/
 exports/
 
+#
+external/
+
 # models and checkpoints
 models/
 checkpoints/
