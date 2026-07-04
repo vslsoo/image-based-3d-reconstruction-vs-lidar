@@ -154,3 +154,27 @@ experiments:
       - Mean track length: 4.237655
       - Mean reprojection error: 1.572925px
       - Point cloud: outputs/exp_006_mast3r_sfm_bollard_001/exp_006_mast3r_sfm_bollard_001.ply
+
+  exp_007:
+    date: 2026-07-04
+    object_id: bollard_001
+    method: mast3r_sfm
+    image_subset: 15 selected (even)
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_007_mast3r_sfm_bollard_001
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: complete
+      shared_intrinsics: true
+      dense_matching: false
+      subsample: 3
+      conf_thr: 1.001
+      mapper: incremental
+    log:
+      - Registered images: 15/15
+      - Points in reconstruction: 240072
+      - Observations: 901315
+      - Mean track length: 3.754353
+      - Mean reprojection error: 1.490529px
+      - Point cloud: outputs/exp_007_mast3r_sfm_bollard_001/exp_007_mast3r_sfm_bollard_001.ply
