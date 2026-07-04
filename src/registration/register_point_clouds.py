@@ -6,18 +6,35 @@ metric reference), so this estimates a similarity transform - scale +
 rotation + translation - not just a rigid one. Pass --rigid if both clouds
 are already in the same real-world units (e.g. two LiDAR scans).
 
-Pipeline: voxel downsample -> normal estimation -> FPFH features ->
-RANSAC global registration (coarse alignment + scale) -> point-to-plane ICP
-(fine alignment). Reports fitness/RMSE for both stages plus point-to-point
-distance statistics between the aligned clouds, which is the actual
-accuracy metric for comparing a photogrammetry reconstruction against a
-LiDAR reference.
+Two ways to get the initial (coarse) alignment before ICP refinement:
+  - automatic (default): voxel downsample -> normal estimation -> FPFH
+    features -> RANSAC global registration. Works well for objects with
+    distinctive, non-symmetric geometry.
+  - --manual: both clouds are shown together in one window, pushed apart
+    side by side and colored red (source) / blue (target), and you click
+    >=3 matching pairs by alternating: a point on the red cloud, then its
+    match on the blue cloud, and so on. The initial transform is computed
+    directly from those correspondences. Use this for rotationally
+    symmetric objects (cylinders, bollards, ...) where FPFH+RANSAC has no
+    geometric signal to pick the correct rotation - every point around the
+    circumference looks alike to it.
+
+Either way, the coarse transform is then refined with point-to-plane ICP.
+Reports fitness/RMSE for both stages plus point-to-point distance
+statistics between the aligned clouds, which is the actual accuracy metric
+for comparing a photogrammetry reconstruction against a LiDAR reference.
 
 Usage:
     python src/registration/register_point_clouds.py \\
         --source outputs/exp_004_mast3r_bollard_001/exp_004_mast3r_bollard_001.ply \\
         --target outputs/exp_003_colmap_bollard_001/exp_003_colmap_bollard_001.ply \\
         --output-dir outputs/reg_004_to_003_bollard_001
+
+    python src/registration/register_point_clouds.py \\
+        --source outputs/crops/exp_004_mast3r_bollard_001_cropped.ply \\
+        --target outputs/crops/exp_003_colmap_bollard_001_cropped.ply \\
+        --output-dir outputs/reg_004_to_003_bollard_001_cropped \\
+        --manual
 """
 
 from __future__ import annotations
@@ -83,6 +100,79 @@ def global_registration(source_down, target_down, source_fpfh, target_fpfh, voxe
 
 
 # ---------------------------------------------------------------------------
+# 2b. Manual seeding (coarse alignment from user-picked corresponding points)
+# ---------------------------------------------------------------------------
+
+def pick_paired_points(source: o3d.geometry.PointCloud, target: o3d.geometry.PointCloud) -> tuple[list[int], list[int]]:
+    """Show both clouds together in one window, pushed apart side by side so
+    they don't overlap on screen, keeping each cloud's own photographed
+    colors (easier to spot matching features than flat colors) - and let
+    the user pick corresponding points by alternating: one point on the
+    source side, then its match on the target side, and so on."""
+    source_display = copy.deepcopy(source)
+    target_display = copy.deepcopy(target)
+    # flat color is only a fallback for clouds without their own vertex colors
+    if not source_display.has_colors():
+        source_display.paint_uniform_color([0.85, 0.1, 0.1])
+    if not target_display.has_colors():
+        target_display.paint_uniform_color([0.1, 0.4, 0.9])
+
+    # push apart along the widest axis so the two clouds sit side by side, not overlaid
+    source_extent = source_display.get_axis_aligned_bounding_box().get_extent()
+    target_extent = target_display.get_axis_aligned_bounding_box().get_extent()
+    axis = int(np.argmax(np.maximum(source_extent, target_extent)))
+    axis_name = "XYZ"[axis]
+    gap = max(source_extent[axis], target_extent[axis]) * 1.2
+    shift = np.zeros(3)
+    shift[axis] = gap
+    target_display.translate(shift)
+
+    n_source = len(source_display.points)
+    combined = source_display + target_display
+
+    print(f"\nClouds keep their own colors. TARGET is shifted +{gap:.3f} along {axis_name} relative to SOURCE,")
+    print("so SOURCE is the one at the original (lower) position, TARGET is the one pushed away.")
+    print("Pick corresponding points by alternating: one point on SOURCE, then its match on TARGET,")
+    print("then repeat - same physical feature each time (a scratch, a bolt, the same base corner).")
+    print("shift+left-click: pick   shift+right-click: undo last pick   'Q': done, at least 3 pairs")
+    window_title = (
+        f"SOURCE=origin, TARGET=+{axis_name} shifted | alternate src/tgt | "
+        "shift+click=pick, shift+right-click=undo, Q=done (>=3 pairs)"
+    )
+    vis = o3d.visualization.VisualizerWithEditing()
+    vis.create_window(window_name=window_title)
+    vis.add_geometry(combined)
+    vis.get_render_option().point_size = 2.0
+    vis.run()
+    vis.destroy_window()
+
+    picked = vis.get_picked_points()
+    if len(picked) < 6 or len(picked) % 2 != 0:
+        raise RuntimeError(
+            f"Need an even number of picks (>=6), alternating source/target in pairs; got {len(picked)}."
+        )
+
+    source_idx, target_idx = [], []
+    for i, global_idx in enumerate(picked):
+        if i % 2 == 0:
+            if global_idx >= n_source:
+                raise RuntimeError(f"Pick #{i + 1} should be on SOURCE, but landed on TARGET.")
+            source_idx.append(global_idx)
+        else:
+            if global_idx < n_source:
+                raise RuntimeError(f"Pick #{i + 1} should be on TARGET, but landed on SOURCE.")
+            target_idx.append(global_idx - n_source)
+    return source_idx, target_idx
+
+
+def manual_initial_transform(source: o3d.geometry.PointCloud, target: o3d.geometry.PointCloud, allow_scaling: bool) -> np.ndarray:
+    source_idx, target_idx = pick_paired_points(source, target)
+    correspondences = o3d.utility.Vector2iVector(np.column_stack([source_idx, target_idx]))
+    estimator = o3d.pipelines.registration.TransformationEstimationPointToPoint(allow_scaling)
+    return estimator.compute_transformation(source, target, correspondences)
+
+
+# ---------------------------------------------------------------------------
 # 3. Local refinement (fine alignment, via point-to-plane ICP)
 # ---------------------------------------------------------------------------
 
@@ -134,6 +224,11 @@ def main() -> None:
         "--rigid", action="store_true",
         help="disable scale estimation (use when both clouds are already in the same real-world units)",
     )
+    parser.add_argument(
+        "--manual", action="store_true",
+        help="pick >=3 corresponding points by hand for the initial alignment instead of FPFH+RANSAC "
+        "(use for symmetric objects, e.g. bollards, where automatic matching can't tell rotations apart)",
+    )
     args = parser.parse_args()
 
     source_path = resolve_path(args.source)
@@ -150,25 +245,32 @@ def main() -> None:
     voxel_size = bbox_diagonal(target) * args.voxel_size_fraction
     print(f"Voxel size: {voxel_size:.4f} (target bbox diagonal x {args.voxel_size_fraction})")
 
-    source_down, source_fpfh = preprocess(source, voxel_size)
-    target_down, target_fpfh = preprocess(target, voxel_size)
-    print(f"Downsampled: source {len(source_down.points)}, target {len(target_down.points)}")
-
     allow_scaling = not args.rigid
-    print(f"Running global registration (RANSAC + FPFH, scaling={allow_scaling})...")
-    global_result = global_registration(source_down, target_down, source_fpfh, target_fpfh, voxel_size, allow_scaling)
-    print(
-        f"Global: fitness={global_result.fitness:.4f}, inlier_rmse={global_result.inlier_rmse:.4f}, "
-        f"scale~{extract_scale(global_result.transformation):.4f}"
-    )
-    if global_result.fitness == 0.0:
-        raise RuntimeError(
-            "Global registration found no correspondences - clouds may not overlap, "
-            "or try a different --voxel-size-fraction."
+    global_result = None
+    if args.manual:
+        print("Manual seeding: pick >=3 corresponding points on each cloud, in the same order.")
+        initial_transform = manual_initial_transform(source, target, allow_scaling)
+        print(f"Manual seed: scale~{extract_scale(initial_transform):.4f}")
+    else:
+        source_down, source_fpfh = preprocess(source, voxel_size)
+        target_down, target_fpfh = preprocess(target, voxel_size)
+        print(f"Downsampled: source {len(source_down.points)}, target {len(target_down.points)}")
+
+        print(f"Running global registration (RANSAC + FPFH, scaling={allow_scaling})...")
+        global_result = global_registration(source_down, target_down, source_fpfh, target_fpfh, voxel_size, allow_scaling)
+        print(
+            f"Global: fitness={global_result.fitness:.4f}, inlier_rmse={global_result.inlier_rmse:.4f}, "
+            f"scale~{extract_scale(global_result.transformation):.4f}"
         )
+        if global_result.fitness == 0.0:
+            raise RuntimeError(
+                "Global registration found no correspondences - clouds may not overlap, "
+                "try --manual, or a different --voxel-size-fraction."
+            )
+        initial_transform = global_result.transformation
 
     print("Refining with ICP (point-to-plane)...")
-    icp_result = refine_registration(source, target, voxel_size, global_result.transformation)
+    icp_result = refine_registration(source, target, voxel_size, initial_transform)
     print(f"ICP: fitness={icp_result.fitness:.4f}, inlier_rmse={icp_result.inlier_rmse:.4f}")
 
     transform = icp_result.transformation
@@ -192,11 +294,12 @@ def main() -> None:
         "target": display_path(target_path),
         "voxel_size": voxel_size,
         "scaling_allowed": allow_scaling,
+        "initial_alignment": "manual" if args.manual else "fpfh_ransac",
         "estimated_scale": extract_scale(transform),
-        "global_registration": {
-            "fitness": global_result.fitness,
-            "inlier_rmse": global_result.inlier_rmse,
-        },
+        "global_registration": (
+            {"fitness": global_result.fitness, "inlier_rmse": global_result.inlier_rmse}
+            if global_result is not None else None
+        ),
         "icp_registration": {
             "fitness": icp_result.fitness,
             "inlier_rmse": icp_result.inlier_rmse,

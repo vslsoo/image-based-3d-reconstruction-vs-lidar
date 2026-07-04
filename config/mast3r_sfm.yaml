@@ -20,18 +20,39 @@ matching:
   # "complete" matches every image pair - fine for ~15 images, gets slow past ~30-40
   # (O(n^2) pairs). Switch to e.g. "swin-3" for larger subsets.
   shared_intrinsics: true
-  dense_matching: true
-  # This is what makes the result "dense": MASt3R predicts a correspondence for
-  # every pixel, not just sparse keypoints. dense_matching: true keeps (almost)
-  # all of them instead of filtering down to sparse keypoints, so after SfM
-  # triangulation the point cloud is dense - no separate CUDA MVS stage needed
-  # (unlike the COLMAP pipeline in run_colmap_experiment.py).
+  dense_matching: false
+  # dense_matching: true keeps a correspondence for almost every pixel above
+  # conf_thr (no subsampling at all in that code path) - e.g. ~170k points from
+  # just 2 of 15 images here. That overloads pycolmap's incremental mapper,
+  # which does a full retriangulation + global bundle adjustment after every
+  # single newly-registered image: each round gets slower as more points pile
+  # up, and 15 images stopped being tractable in reasonable time (still only
+  # 6/15 registered after ~50 min). GLOMAP (global, non-incremental SfM) would
+  # handle that point volume fine but has no Linux prebuilt binary, only a
+  # from-source build - too slow/uncertain to set up under a time budget.
+  # dense_matching: false switches to MASt3R's own semi-dense mode instead
+  # (subsamples the pixel grid, subsample=8 by default -> ~64x fewer points
+  # per pair), which keeps SfM tractable. Still MASt3R-quality matching, just
+  # not full per-pixel density - no longer "dense" in the per-pixel sense the
+  # COLMAP pipeline's MVS stage achieves.
   pixel_tol: 0
   conf_thr: 1.001
   skip_geometric_verification: false
   min_len_track: 5
+  subsample: 3
+  # Grid stride used by the semi-dense matcher (points are taken roughly every
+  # `subsample` pixels in each direction), so point count scales with
+  # ~1/subsample^2. Upstream mast3r.colmap.mapping.run_mast3r_matching doesn't
+  # expose this at all (hardcoded to 8) - patched locally in
+  # external/mast3r/mast3r/colmap/mapping.py to accept and forward it.
+  # subsample=8 (the old default) gave 31,289 points across 15 images in 4m28s.
+  # subsample=3 is a first attempt at ~7x more points (roughly (8/3)^2) while
+  # staying well short of the fully-dense per-pixel mode that overloaded the
+  # incremental mapper - untested, watch the timing/point count and back off
+  # (raise this number) if the SfM stage starts blowing up again like before.
 
 mapper:
   type: incremental   # incremental (pycolmap's own SfM mapper, no extra binary needed)
-                       # | glomap (global SfM, needs the `glomap` binary on PATH)
+                       # | glomap (global SfM, needs the `glomap` binary on PATH - no Linux
+                       # prebuilt exists, would need building from source)
   glomap_bin: glomap

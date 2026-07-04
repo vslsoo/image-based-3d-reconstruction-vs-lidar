@@ -131,3 +131,26 @@ experiments:
       - Mean observations per image: 2789.533333
       - Mean reprojection error: 1.074251px
       - Dense fused point cloud: 696713 points
+
+  exp_006:
+    date: 2026-07-04
+    object_id: bollard_001
+    method: mast3r_sfm
+    image_subset: 15 selected (even)
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_006_mast3r_sfm_bollard_001
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: complete
+      shared_intrinsics: true
+      dense_matching: false
+      conf_thr: 1.001
+      mapper: incremental
+    log:
+      - Registered images: 15/15
+      - Points in reconstruction: 31289
+      - Observations: 132592
+      - Mean track length: 4.237655
+      - Mean reprojection error: 1.572925px
+      - Point cloud: outputs/exp_006_mast3r_sfm_bollard_001/exp_006_mast3r_sfm_bollard_001.ply

@@ -100,7 +100,7 @@ def build_colmap_database(model, device: str, image_dir: Path, image_names: list
         kdata, str(image_dir), image_pairs_kapture, colmap_db,
         config["matching"]["dense_matching"], config["matching"]["pixel_tol"],
         config["matching"]["conf_thr"], config["matching"]["skip_geometric_verification"],
-        config["matching"]["min_len_track"],
+        config["matching"]["min_len_track"], config["matching"]["subsample"],
     )
     colmap_db.close()
     if not colmap_image_pairs:
@@ -167,6 +167,11 @@ def main() -> None:
     parser.add_argument("--num-images", type=int, default=None, help="overrides image_selection.num_images")
     parser.add_argument("--selection-method", choices=["even", "random"], default=None)
     parser.add_argument("--device", default=None, help="overrides model.device (auto|cpu|cuda|mps)")
+    parser.add_argument(
+        "--weights", default=None,
+        help="overrides model.weights - a local .pth path or a HuggingFace hub id "
+        "(e.g. naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric)",
+    )
     args = parser.parse_args()
 
     config = yaml.safe_load(resolve_path(args.config).read_text())
@@ -203,7 +208,7 @@ def main() -> None:
     print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir} (device={device})")
 
     print(f"[{exp_id}] Loading MASt3R model...")
-    weights_setting = config["model"]["weights"]
+    weights_setting = args.weights or config["model"]["weights"]
     # a local .pth path is resolved relative to the repo; anything else (e.g.
     # "naver/MASt3R_...") is passed through as a HuggingFace hub id
     weights = str(resolve_path(weights_setting)) if weights_setting.endswith(".pth") else weights_setting
@@ -248,6 +253,7 @@ def main() -> None:
             "scenegraph": config["matching"]["scenegraph"],
             "shared_intrinsics": config["matching"]["shared_intrinsics"],
             "dense_matching": config["matching"]["dense_matching"],
+            "subsample": config["matching"]["subsample"],
             "conf_thr": config["matching"]["conf_thr"],
             "mapper": config["mapper"]["type"],
         },
