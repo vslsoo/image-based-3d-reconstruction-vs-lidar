@@ -1,0 +1,37 @@
+# Default parameters for src/reconstruction/run_mast3r_sfm_experiment.py
+# Every run can override these via CLI flags; whatever was actually used
+# gets written into config/experiments.yaml automatically.
+
+image_selection:
+  num_images: 15
+  method: even   # even | random - see config/reconstruction.yaml for the rationale
+  seed: 42
+
+model:
+  weights: external/mast3r/checkpoints/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth
+  device: auto   # auto | cpu | cuda | mps - auto picks cuda if available, else cpu
+  # In practice this pipeline needs cuda: MASt3R's own matching code hardcodes
+  # device='cuda' for nearest-neighbor matching regardless of this setting, so
+  # the script exits early if the resolved device isn't 'cuda'.
+  image_size: 512
+
+matching:
+  scenegraph: complete   # complete | swin-N | logwin-N | oneref-N
+  # "complete" matches every image pair - fine for ~15 images, gets slow past ~30-40
+  # (O(n^2) pairs). Switch to e.g. "swin-3" for larger subsets.
+  shared_intrinsics: true
+  dense_matching: true
+  # This is what makes the result "dense": MASt3R predicts a correspondence for
+  # every pixel, not just sparse keypoints. dense_matching: true keeps (almost)
+  # all of them instead of filtering down to sparse keypoints, so after SfM
+  # triangulation the point cloud is dense - no separate CUDA MVS stage needed
+  # (unlike the COLMAP pipeline in run_colmap_experiment.py).
+  pixel_tol: 0
+  conf_thr: 1.001
+  skip_geometric_verification: false
+  min_len_track: 5
+
+mapper:
+  type: incremental   # incremental (pycolmap's own SfM mapper, no extra binary needed)
+                       # | glomap (global SfM, needs the `glomap` binary on PATH)
+  glomap_bin: glomap

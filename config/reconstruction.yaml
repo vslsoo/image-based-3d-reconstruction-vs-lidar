@@ -1,0 +1,37 @@
+# Default parameters for src/reconstruction/run_colmap_experiment.py
+# Every run can override these via CLI flags; whatever was actually used
+# gets written into config/experiments.yaml automatically.
+
+image_selection:
+  num_images: 15
+  method: even   # even | random
+  # "even" sorts images by capture time (EXIF DateTimeOriginal, falls back to
+  # filename) and picks evenly spaced ones. Photos of one object are usually
+  # taken while walking around it, so this gives spread-out viewing angles
+  # without needing real pose/angle data.
+  seed: 42       # only used when method: random
+
+camera:
+  camera_model: SIMPLE_RADIAL
+  single_camera: true
+
+features:
+  type: SIFT
+
+matching:
+  method: sequential   # sequential | exhaustive
+  # "sequential" matches each image mainly against its neighbors in the
+  # selected order - a good fit with "even" selection, since neighbors in
+  # that order are also neighbors in viewing angle.
+
+mapper:
+  type: INCREMENTAL
+
+dense:
+  max_image_size: 3024
+  cache_size: 1.0
+  num_threads: 1
+  geom_consistency: true
+  # Dense reconstruction (patch match stereo) needs a CUDA-enabled COLMAP/
+  # pycolmap build. The script detects this automatically and skips the
+  # dense stage with a note in the log if CUDA isn't available.

@@ -108,3 +108,26 @@ experiments:
       - Run for 40 min 
       - PC needs to be converted from glb to ply
       - Dense reconstruction
+
+  exp_005:
+    date: 2026-07-04
+    object_id: bollard_001
+    method: colmap
+    image_subset: 15 selected (even), 15 registered
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_005_colmap_bollard_001
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 15/15
+      - Points in sparse reconstruction: 9798
+      - Observations: 41843
+      - Mean track length: 4.270565
+      - Mean observations per image: 2789.533333
+      - Mean reprojection error: 1.074251px
+      - Dense fused point cloud: 696713 points
