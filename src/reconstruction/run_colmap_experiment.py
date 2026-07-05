@@ -116,7 +116,7 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     )
 
     patch_options = pycolmap.PatchMatchOptions()
-    patch_options.gpu_index = "0"
+    patch_options.gpu_index = config["dense"].get("gpu_index", "0")
     patch_options.geom_consistency = config["dense"]["geom_consistency"]
     patch_options.cache_size = config["dense"]["cache_size"]
     patch_options.num_threads = config["dense"]["num_threads"]

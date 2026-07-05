@@ -30,7 +30,24 @@ mapper:
 dense:
   max_image_size: 3024
   cache_size: 1.0
-  num_threads: 1
+  num_threads: 16
+  # Patch match stereo itself is GPU-bound (this just governs CPU-side
+  # workspace/cache handling), but stereo fusion is genuinely multi-threaded
+  # across images - num_threads: 1 was leaving free speedup on the table
+  # (e.g. the rented pod has 256 CPU threads sitting idle). 16 is a cautious
+  # first bump, not maxed out, since cache_size may scale per-thread and
+  # untested at higher counts - raise further if it helps without memory
+  # issues.
+  gpu_index: "0,0,0,0"
+  # Repeating the same GPU index runs multiple PatchMatchStereo workers
+  # concurrently on that one physical GPU (pycolmap's own documented
+  # multi-GPU mechanism, "0,1,2,3" for actual separate GPUs - repeating "0"
+  # instead targets one GPU with spare capacity). Confirmed real headroom
+  # here: a single worker only used ~1.1GB of this pod's 24GB VRAM at 98%
+  # reported compute utilization, which just means some kernel was running,
+  # not that all parallel execution units were saturated. 4 workers is a
+  # first test, not verified to scale linearly - COLMAP's docs mention this
+  # trick but don't promise a specific speedup; watch fusion/VRAM afterward.
   geom_consistency: true
   # Dense reconstruction (patch match stereo) needs a CUDA-enabled COLMAP/
   # pycolmap build. The script detects this automatically and skips the

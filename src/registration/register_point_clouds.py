@@ -6,18 +6,27 @@ metric reference), so this estimates a similarity transform - scale +
 rotation + translation - not just a rigid one. Pass --rigid if both clouds
 are already in the same real-world units (e.g. two LiDAR scans).
 
-Two ways to get the initial (coarse) alignment before ICP refinement:
+Three ways to get the initial (coarse) alignment before ICP refinement:
   - automatic (default): voxel downsample -> normal estimation -> FPFH
     features -> RANSAC global registration. Works well for objects with
-    distinctive, non-symmetric geometry.
+    distinctive, non-symmetric geometry. If its fitness comes back low
+    (a symptom of rotational symmetry - see below), this automatically
+    retries with --axis-sweep instead.
+  - --axis-sweep: for elongated, axially-symmetric objects (bollards, posts,
+    pipes, ...) where FPFH+RANSAC has no geometric signal to pick the
+    correct rotation about the object's own axis - every point around the
+    circumference looks alike to it. PCA finds each cloud's own principal
+    axis (centroid + dominant direction of variance), which fixes
+    translation and 2 of 3 rotation DOF automatically and unambiguously
+    (no correspondence search needed); the one remaining DOF - rotation
+    about that axis, genuinely undetermined by a perfectly symmetric
+    shape's geometry - is resolved with a cheap brute-force angle sweep
+    scored by point-to-point distance.
   - --manual: both clouds are shown together in one window, pushed apart
     side by side and colored red (source) / blue (target), and you click
     >=3 matching pairs by alternating: a point on the red cloud, then its
     match on the blue cloud, and so on. The initial transform is computed
-    directly from those correspondences. Use this for rotationally
-    symmetric objects (cylinders, bollards, ...) where FPFH+RANSAC has no
-    geometric signal to pick the correct rotation - every point around the
-    circumference looks alike to it.
+    directly from those correspondences.
 
 Either way, the coarse transform is then refined with point-to-plane ICP.
 Reports fitness/RMSE for both stages plus point-to-point distance
@@ -173,15 +182,106 @@ def manual_initial_transform(source: o3d.geometry.PointCloud, target: o3d.geomet
 
 
 # ---------------------------------------------------------------------------
+# 2c. Axis-sweep seeding (for elongated, axially-symmetric objects)
+# ---------------------------------------------------------------------------
+
+def compute_principal_axis(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    """Centroid, unit principal axis (direction of greatest variance), and
+    the point spread along that axis (1st-99th percentile, robust to a few
+    outlier points) - purely a shape property, so it works the same
+    regardless of which pipeline (or LiDAR) produced the cloud."""
+    centroid = points.mean(axis=0)
+    centered = points - centroid
+    cov = np.cov(centered.T)
+    eigvals, eigvecs = np.linalg.eigh(cov)  # ascending order
+    axis = eigvecs[:, -1]
+    axis = axis / np.linalg.norm(axis)
+    projections = centered @ axis
+    extent = float(np.percentile(projections, 99) - np.percentile(projections, 1))
+    return centroid, axis, extent
+
+
+def rotation_between_vectors(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Shortest-arc rotation matrix mapping unit vector a onto unit vector b."""
+    a = a / np.linalg.norm(a)
+    b = b / np.linalg.norm(b)
+    cross = np.cross(a, b)
+    cos_angle = np.dot(a, b)
+    if np.linalg.norm(cross) < 1e-8:
+        if cos_angle > 0:
+            return np.eye(3)
+        # antiparallel: 180 degrees about any axis perpendicular to a
+        perp = np.array([1.0, 0.0, 0.0]) if abs(a[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+        perp = perp - a * np.dot(perp, a)
+        perp = perp / np.linalg.norm(perp)
+        return o3d.geometry.get_rotation_matrix_from_axis_angle(perp * np.pi)
+    axis = cross / np.linalg.norm(cross)
+    angle = np.arctan2(np.linalg.norm(cross), cos_angle)
+    return o3d.geometry.get_rotation_matrix_from_axis_angle(axis * angle)
+
+
+def axis_sweep_registration(
+    source: o3d.geometry.PointCloud, target: o3d.geometry.PointCloud,
+    voxel_size: float, allow_scaling: bool, angle_step_deg: float = 10.0,
+) -> tuple[np.ndarray, float]:
+    source_points = np.asarray(source.points)
+    target_points = np.asarray(target.points)
+    source_centroid, source_axis, source_extent = compute_principal_axis(source_points)
+    target_centroid, target_axis, target_extent = compute_principal_axis(target_points)
+    scale = (target_extent / source_extent) if allow_scaling else 1.0
+
+    source_down = source.voxel_down_sample(voxel_size)
+    target_down = target.voxel_down_sample(voxel_size)
+
+    def score(transform: np.ndarray) -> float:
+        candidate = copy.deepcopy(source_down)
+        candidate.transform(transform)
+        distances = np.asarray(candidate.compute_point_cloud_distance(target_down))
+        return float(np.median(distances))
+
+    best_transform, best_score = None, np.inf
+    angles = np.deg2rad(np.arange(0, 360, angle_step_deg))
+    for axis_sign in (1.0, -1.0):
+        r_align = rotation_between_vectors(source_axis * axis_sign, target_axis)
+        for angle in angles:
+            r_twist = o3d.geometry.get_rotation_matrix_from_axis_angle(target_axis * angle)
+            rotation = r_twist @ r_align
+            transform = np.eye(4)
+            transform[:3, :3] = scale * rotation
+            transform[:3, 3] = target_centroid - scale * rotation @ source_centroid
+            candidate_score = score(transform)
+            if candidate_score < best_score:
+                best_score, best_transform = candidate_score, transform
+
+    return best_transform, best_score
+
+
+# ---------------------------------------------------------------------------
 # 3. Local refinement (fine alignment, via point-to-plane ICP)
 # ---------------------------------------------------------------------------
 
-def refine_registration(source, target, voxel_size, initial_transform):
+def refine_registration(source, target, voxel_size, initial_transform, allow_scaling):
     distance_threshold = voxel_size * 0.4
     source.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
     target.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
+
+    transform = initial_transform
+    if allow_scaling:
+        # Point-to-plane ICP (below) doesn't support scale estimation in Open3D
+        # at all, so whatever scale the coarse stage guessed (axis-sweep's
+        # rough extent-ratio estimate, or FPFH/RANSAC's) would otherwise never
+        # get corrected. Refine scale (+ rotation/translation) first with a
+        # scale-enabled point-to-point pass; point-to-plane afterwards keeps
+        # that scale as-is (it only refines rotation/translation) while giving
+        # a more precise final fit.
+        scale_result = o3d.pipelines.registration.registration_icp(
+            source, target, distance_threshold, transform,
+            o3d.pipelines.registration.TransformationEstimationPointToPoint(True),
+        )
+        transform = scale_result.transformation
+
     return o3d.pipelines.registration.registration_icp(
-        source, target, distance_threshold, initial_transform,
+        source, target, distance_threshold, transform,
         o3d.pipelines.registration.TransformationEstimationPointToPlane(),
     )
 
@@ -229,6 +329,15 @@ def main() -> None:
         help="pick >=3 corresponding points by hand for the initial alignment instead of FPFH+RANSAC "
         "(use for symmetric objects, e.g. bollards, where automatic matching can't tell rotations apart)",
     )
+    parser.add_argument(
+        "--axis-sweep", action="store_true",
+        help="force PCA + rotational-sweep seeding (see module docstring) instead of FPFH+RANSAC; "
+        "normally only used as an automatic fallback when FPFH+RANSAC fitness is low",
+    )
+    parser.add_argument(
+        "--fallback-fitness-threshold", type=float, default=0.3,
+        help="if plain FPFH+RANSAC fitness is below this, automatically retry with axis-sweep (default: 0.3)",
+    )
     args = parser.parse_args()
 
     source_path = resolve_path(args.source)
@@ -247,10 +356,17 @@ def main() -> None:
 
     allow_scaling = not args.rigid
     global_result = None
+    initial_alignment = None
     if args.manual:
         print("Manual seeding: pick >=3 corresponding points on each cloud, in the same order.")
         initial_transform = manual_initial_transform(source, target, allow_scaling)
         print(f"Manual seed: scale~{extract_scale(initial_transform):.4f}")
+        initial_alignment = "manual"
+    elif args.axis_sweep:
+        print("Axis-sweep seeding: PCA principal axis + brute-force rotation sweep...")
+        initial_transform, sweep_score = axis_sweep_registration(source, target, voxel_size, allow_scaling)
+        print(f"Axis-sweep: median distance={sweep_score:.4f}, scale~{extract_scale(initial_transform):.4f}")
+        initial_alignment = "axis_sweep"
     else:
         source_down, source_fpfh = preprocess(source, voxel_size)
         target_down, target_fpfh = preprocess(target, voxel_size)
@@ -262,15 +378,21 @@ def main() -> None:
             f"Global: fitness={global_result.fitness:.4f}, inlier_rmse={global_result.inlier_rmse:.4f}, "
             f"scale~{extract_scale(global_result.transformation):.4f}"
         )
-        if global_result.fitness == 0.0:
-            raise RuntimeError(
-                "Global registration found no correspondences - clouds may not overlap, "
-                "try --manual, or a different --voxel-size-fraction."
+        if global_result.fitness < args.fallback_fitness_threshold:
+            print(
+                f"Fitness {global_result.fitness:.4f} < {args.fallback_fitness_threshold} - looks like the "
+                "symmetric-object failure mode (FPFH+RANSAC has no signal to pick the right rotation). "
+                "Falling back to axis-sweep seeding..."
             )
-        initial_transform = global_result.transformation
+            initial_transform, sweep_score = axis_sweep_registration(source, target, voxel_size, allow_scaling)
+            print(f"Axis-sweep: median distance={sweep_score:.4f}, scale~{extract_scale(initial_transform):.4f}")
+            initial_alignment = "fpfh_ransac_then_axis_sweep_fallback"
+        else:
+            initial_transform = global_result.transformation
+            initial_alignment = "fpfh_ransac"
 
     print("Refining with ICP (point-to-plane)...")
-    icp_result = refine_registration(source, target, voxel_size, initial_transform)
+    icp_result = refine_registration(source, target, voxel_size, initial_transform, allow_scaling)
     print(f"ICP: fitness={icp_result.fitness:.4f}, inlier_rmse={icp_result.inlier_rmse:.4f}")
 
     transform = icp_result.transformation
@@ -294,7 +416,7 @@ def main() -> None:
         "target": display_path(target_path),
         "voxel_size": voxel_size,
         "scaling_allowed": allow_scaling,
-        "initial_alignment": "manual" if args.manual else "fpfh_ransac",
+        "initial_alignment": initial_alignment,
         "estimated_scale": extract_scale(transform),
         "global_registration": (
             {"fitness": global_result.fitness, "inlier_rmse": global_result.inlier_rmse}
