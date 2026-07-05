@@ -4,4 +4,43 @@ objects:
     description: "Bollard selected for the first reconstruction pilot"
     images_dir: data/raw/bollard_001/images
     # lidar_path: data/raw/bollard_001/lidar/bollard_001.las
-    notes: "Initial test object. Check image overlap, texture and visibility."
+    notes: >
+      Initial test object. Highly reflective surface: SIFT (COLMAP) and
+      SuperPoint+LightGlue (hloc) both reconstruct it incompletely in the
+      same region regardless of image count/overlap; MASt3R+SfM handles it
+      far better (see docs/experiment_log.md). Prefer MASt3R-based methods
+      as the baseline for this object.
+
+  bollard_001_video:
+    class: bollard
+    description: >
+      Same physical bollard as bollard_001, captured via video instead of
+      individual photos (data/raw/bollard_001/video/IMG_5938.MOV) - for
+      comparing video vs photo capture on an object we already have results
+      for.
+    images_dir: data/raw/bollard_001_video/images
+    notes: >
+      Video-only capture. Compare reconstruction quality/completeness
+      directly against bollard_001's photo-based results.
+
+  chair_001:
+    class: chair
+    description: "Street/park chair, captured via video walk-around (data/raw/chair_001/video/IMG_5940.MOV)"
+    images_dir: data/raw/chair_001/images
+    # lidar_path: data/raw/chair_001/lidar/chair_001.las
+    notes: >
+      Video-only capture (see docs/experiment_log.md next steps re: video
+      frame extraction). Run src/data_preparation/extract_video_frames.py
+      on the video to populate images/jpg before reconstruction.
+
+  wayfinding_sign_001:
+    class: wayfinding_sign
+    description: "Directional/wayfinding street sign, captured via video walk-around (data/raw/wayfinding_sign_001/video/IMG_5939.MOV)"
+    images_dir: data/raw/wayfinding_sign_001/images
+    # lidar_path: data/raw/wayfinding_sign_001/lidar/wayfinding_sign_001.las
+    notes: >
+      Video-only capture. Mostly planar/flat geometry (sign face) plus a
+      post - worth checking whether reconstruction quality differs from the
+      bollard's curved-surface case. Run
+      src/data_preparation/extract_video_frames.py on the video to populate
+      images/jpg before reconstruction.

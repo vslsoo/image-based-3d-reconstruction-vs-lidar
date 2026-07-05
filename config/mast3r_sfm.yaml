@@ -3,7 +3,7 @@
 # gets written into config/experiments.yaml automatically.
 
 image_selection:
-  num_images: 15
+  num_images: 50
   method: even   # even | random - see config/reconstruction.yaml for the rationale
   seed: 42
 
@@ -16,9 +16,11 @@ model:
   image_size: 512
 
 matching:
-  scenegraph: complete   # complete | swin-N | logwin-N | oneref-N
-  # "complete" matches every image pair - fine for ~15 images, gets slow past ~30-40
-  # (O(n^2) pairs). Switch to e.g. "swin-3" for larger subsets.
+  scenegraph: swin-8   # complete | swin-N | logwin-N | oneref-N
+  # "complete" matches every image pair - O(n^2), fine for ~15 images but too
+  # slow past ~30-40. "swin-N" matches each image against its N nearest
+  # neighbors in capture order (cyclic, since a walk-around is a loop) - O(n)
+  # instead, needed once num_images got pushed up to ~50.
   shared_intrinsics: true
   dense_matching: false
   # dense_matching: true keeps a correspondence for almost every pixel above

@@ -178,3 +178,24 @@ experiments:
       - Mean track length: 3.754353
       - Mean reprojection error: 1.490529px
       - Point cloud: outputs/exp_007_mast3r_sfm_bollard_001/exp_007_mast3r_sfm_bollard_001.ply
+
+  exp_008:
+    date: 2026-07-05
+    object_id: bollard_001
+    method: hloc_colmap
+    image_subset: 15 selected (even)
+    image_dir: data/raw/bollard_001/images/jpg
+    output_dir: outputs/exp_008_hloc_colmap_bollard_001
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 15/15
+      - Points in sparse reconstruction: 573
+      - Observations: 1441
+      - Mean track length: 2.514834
+      - Mean reprojection error: 1.241466px
+      - Dense fused point cloud: 132520 points

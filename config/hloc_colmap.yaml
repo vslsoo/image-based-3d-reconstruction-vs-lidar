@@ -1,0 +1,39 @@
+# Default parameters for src/reconstruction/run_hloc_colmap_experiment.py
+# Every run can override these via CLI flags; whatever was actually used
+# gets written into config/experiments.yaml automatically.
+
+image_selection:
+  num_images: 50
+  method: even   # even | random - see config/reconstruction.yaml for the rationale
+
+camera:
+  camera_model: SIMPLE_RADIAL
+  single_camera: true
+
+features:
+  conf: superpoint_aachen
+  # key into hloc.extract_features.confs (external/hloc/hloc/extract_features.py) -
+  # SuperPoint keypoints, resized to max 1024px, up to 4096 keypoints/image
+
+matching:
+  conf: superpoint+lightglue
+  # key into hloc.match_features.confs (external/hloc/hloc/match_features.py) -
+  # LightGlue (Apache-2.0), the permissively-licensed, faster successor to
+  # SuperGlue that hloc itself now recommends. Swap to "superglue" for the
+  # original pairing if needed (non-commercial research license upstream).
+  pairing: window   # window | exhaustive
+  window_size: 8
+  # hloc ships pairs_from_exhaustive (all O(n^2) pairs) but no sliding-window
+  # generator, unlike mast3r's own scenegraph options - so "window" is a small
+  # custom pairing here: each image matched against its `window_size` nearest
+  # neighbors in capture order, cyclic (a walk-around is a loop). O(n) instead
+  # of O(n^2), needed once num_images got pushed up to ~50. "exhaustive" is
+  # the original all-pairs behavior, fine for small subsets (~15-20).
+
+dense:
+  max_image_size: 3024
+  cache_size: 1.0
+  num_threads: 1
+  geom_consistency: true
+  # Same COLMAP dense MVS stage as config/reconstruction.yaml - needs a
+  # CUDA-enabled COLMAP/pycolmap build, same as the COLMAP-only pipeline.
