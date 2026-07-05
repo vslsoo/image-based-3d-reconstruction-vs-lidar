@@ -199,3 +199,88 @@ experiments:
       - Mean track length: 2.514834
       - Mean reprojection error: 1.241466px
       - Dense fused point cloud: 132520 points
+
+  exp_009:
+    date: 2026-07-05
+    object_id: bollard_001_video
+    method: colmap
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_009_colmap_bollard_001_video_3090
+    parameters:
+      gpu: RTX 3090 (rented pod)
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+      num_threads: 16
+      gpu_index: "0,0,0,0"
+    log:
+      - Registered images: 53/53
+      - Points in sparse reconstruction: 39027
+      - Observations: 287592
+      - Mean track length: 7.369052
+      - Mean observations per image: 5426.264151
+      - Mean reprojection error: 0.446302px
+      - Dense fused point cloud: 955141 points
+      - Total wall time: 50m41s
+
+  exp_010:
+    date: 2026-07-05
+    object_id: bollard_001_video
+    method: colmap
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_010_colmap_bollard_001_video_l40s
+    parameters:
+      gpu: L40S (rented pod)
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+      num_threads: 16
+      gpu_index: "0,0,0,0"
+    log:
+      - Registered images: 53/53
+      - Points in sparse reconstruction: 39008
+      - Observations: 287527
+      - Mean track length: 7.370975
+      - Mean observations per image: 5425.037736
+      - Mean reprojection error: 0.446130px
+      - Dense fused point cloud: 1158332 points
+      - Total wall time: 45m35s
+      - Same image set/config as exp_009 (RTX 3090) - direct GPU comparison:
+        ~10% faster wall time, ~21% more dense points fused
+
+  exp_011:
+    date: 2026-07-05
+    object_id: bollard_001_video
+    method: mast3r_sfm
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_011_mast3r_sfm_bollard_001_video_l40s
+    parameters:
+      gpu: L40S (rented pod)
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      dense_matching: false
+      subsample: 3
+      conf_thr: 1.001
+      mapper: incremental
+    log:
+      - Registered images: 53/53
+      - Points in reconstruction: 395280
+      - Observations: 4641840
+      - Mean track length: 11.743169
+      - Mean reprojection error: 1.484490px
+      - Point cloud: outputs/exp_011_mast3r_sfm_bollard_001_video_l40s/exp_011_mast3r_sfm_bollard_001_video_l40s.ply
+      - Total wall time: ~2h33m (17:49-20:22 UTC) - slow incremental COLMAP bundle
+        adjustment on MASt3R's high-density matches (swin-8 windowed pairing kept
+        it tractable at all vs the old "complete" scenegraph, but still far
+        slower than MASt3R's own GA approach, e.g. exp_004's ~40min on 12 images)
