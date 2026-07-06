@@ -1,0 +1,34 @@
+# Default parameters for src/reconstruction/run_vggt_experiment.py
+# Every run can override these via CLI flags; whatever was actually used
+# gets written into config/experiments.yaml automatically.
+
+image_selection:
+  num_images: 15
+  method: even   # even | random - see config/reconstruction.yaml for the rationale
+  seed: 42
+
+model:
+  weights: facebook/VGGT-1B
+  device: auto   # auto | cpu | cuda | mps - VGGT is a single feed-forward pass
+  # (no optimization loop like MASt3R's global alignment), so it's usable on
+  # CPU too, just slower and without the bfloat16/float16 autocast speedup
+  # that's only applied on CUDA.
+  image_mode: crop
+  # crop | pad - passed to vggt.utils.load_fn.load_and_preprocess_images.
+  # "crop" (upstream default) sets width to 518px and center-crops height;
+  # "pad" preserves all pixels (letterboxed to a 518x518 square) at the cost
+  # of some wasted/empty area - see that function's docstring for details.
+
+export:
+  use_point_map: true
+  # true: use the point_head's own "world_points" output directly (the
+  # simplest, most "feed-forward" option - what this script is really about).
+  # false: instead unproject "depth" via the camera poses recovered from
+  # "pose_enc" (vggt.utils.geometry.unproject_depth_map_to_point_map) - an
+  # alternative path VGGT's own demo scripts also support, kept here for
+  # comparison since the two heads are trained somewhat independently and
+  # can disagree slightly.
+  conf_percentile: 25.0
+  # Percentile-based confidence filtering (matches VGGT's own demo_viser.py
+  # default): points below this percentile of confidence are dropped, i.e.
+  # 25.0 keeps the most-confident 75% of predicted points.

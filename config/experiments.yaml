@@ -351,3 +351,30 @@ experiments:
         SIFT's, but dense MVS still reuses COLMAP's own MVS stage on the
         registered poses regardless of sparse point count, giving a comparable
         dense point count (1.32M) to exp_009/010 (955k/1.16M) in similar wall time
+
+  exp_014:
+    date: 2026-07-06
+    object_id: bollard_001_video
+    method: vggt
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_014_vggt_bollard_001_video
+    parameters:
+      gpu: L40S (rented pod)
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 53/53
+      - Points in dense point cloud: 10665880
+      - Point cloud: outputs/exp_014_vggt_bollard_001_video/exp_014_vggt_bollard_001_video.ply
+      - Total wall time: well under 1 minute (single feed-forward pass, no
+        optimization loop and no COLMAP anywhere) - by far the fastest and
+        densest method tried on this 53-image set: vs exp_009/010 (colmap,
+        955k/1.16M pts, ~45-50min), exp_011 (mast3r_sfm, 395k pts, ~2h33m),
+        exp_012 (mast3r_ga, 2.4M pts, ~6min), exp_013 (hloc_colmap, 1.32M pts,
+        ~46min) - VGGT's point_head predicts a dense per-pixel world-space
+        point map directly for every image in one transformer forward pass,
+        with no per-image or iterative cost at all
