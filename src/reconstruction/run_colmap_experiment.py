@@ -48,24 +48,24 @@ def run_sparse_reconstruction(image_path: Path, workspace_path: Path, config: di
     )
 
     pycolmap.extract_features(
-        database_path=database_path,
-        image_path=image_path,
+        database_path=str(database_path),
+        image_path=str(image_path),
         camera_mode=camera_mode,
         reader_options=reader_options,
     )
 
     matching_method = config["matching"]["method"]
     if matching_method == "sequential":
-        pycolmap.match_sequential(database_path=database_path)
+        pycolmap.match_sequential(database_path=str(database_path))
     elif matching_method == "exhaustive":
-        pycolmap.match_exhaustive(database_path=database_path)
+        pycolmap.match_exhaustive(database_path=str(database_path))
     else:
         raise ValueError(f"Unknown matching method: {matching_method}")
 
     maps = pycolmap.incremental_mapping(
-        database_path=database_path,
-        image_path=image_path,
-        output_path=sparse_path,
+        database_path=str(database_path),
+        image_path=str(image_path),
+        output_path=str(sparse_path),
     )
     if not maps:
         raise RuntimeError("Incremental mapping registered no images - check image overlap/quality.")
@@ -109,9 +109,9 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     fused_path = dense_path / "fused.ply"
 
     pycolmap.undistort_images(
-        output_path=dense_path,
-        input_path=model_path,
-        image_path=image_path,
+        output_path=str(dense_path),
+        input_path=str(model_path),
+        image_path=str(image_path),
         output_type="COLMAP",
     )
 
@@ -122,7 +122,7 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     patch_options.num_threads = config["dense"]["num_threads"]
     patch_options.allow_missing_files = True
     pycolmap.patch_match_stereo(
-        workspace_path=dense_path,
+        workspace_path=str(dense_path),
         workspace_format="COLMAP",
         options=patch_options,
     )
@@ -132,8 +132,8 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     fusion_options.num_threads = config["dense"]["num_threads"]
     fusion_options.max_image_size = config["dense"]["max_image_size"]
     pycolmap.stereo_fusion(
-        output_path=fused_path,
-        workspace_path=dense_path,
+        output_path=str(fused_path),
+        workspace_path=str(dense_path),
         workspace_format="COLMAP",
         input_type="geometric",
         options=fusion_options,

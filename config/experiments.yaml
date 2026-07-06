@@ -318,3 +318,36 @@ experiments:
         confirms the joint global-alignment approach (this script) avoids both
         COLMAP's dense MVS runtime and mast3r_sfm's incremental-bundle-adjustment
         bottleneck entirely
+
+  exp_013:
+    date: 2026-07-06
+    object_id: bollard_001_video
+    method: hloc_colmap
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_013_hloc_colmap_bollard_001_video
+    parameters:
+      gpu: L40S (rented pod)
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: window
+      window_size: 8
+      dense_max_image_size: 3024
+      num_threads: 16
+      gpu_index: "0,0,0,0"
+    log:
+      - Registered images: 53/53
+      - Points in sparse reconstruction: 4037
+      - Observations: 19450
+      - Mean track length: 4.817934
+      - Mean reprojection error: 1.256501px
+      - Dense fused point cloud: 1321837 points
+      - Total wall time: ~46min (11:05-11:51 UTC)
+      - Same 53-image set as exp_009/010 (colmap/SIFT), exp_011 (mast3r_sfm) and
+        exp_012 (mast3r_ga) - sparse stage found far fewer points than SIFT
+        (4037 vs colmap's ~39k) since SuperPoint keypoints are much sparser than
+        SIFT's, but dense MVS still reuses COLMAP's own MVS stage on the
+        registered poses regardless of sparse point count, giving a comparable
+        dense point count (1.32M) to exp_009/010 (955k/1.16M) in similar wall time

@@ -131,9 +131,9 @@ def run_sfm(database_path: Path, image_dir: Path, recon_path: Path, config: dict
         glomap_run_mapper(glomap_bin, str(database_path), str(recon_path), str(image_dir))
     elif mapper == "incremental":
         pycolmap.incremental_mapping(
-            database_path=database_path,
-            image_path=image_dir,
-            output_path=recon_path,
+            database_path=str(database_path),
+            image_path=str(image_dir),
+            output_path=str(recon_path),
             options=pycolmap.IncrementalPipelineOptions({"multiple_models": False, "extract_colors": True}),
         )
     else:
@@ -143,7 +143,7 @@ def run_sfm(database_path: Path, image_dir: Path, recon_path: Path, config: dict
     if not model_path.exists():
         raise RuntimeError("SfM mapping produced no reconstruction - check matches/overlap.")
 
-    reconstruction = pycolmap.Reconstruction(model_path)
+    reconstruction = pycolmap.Reconstruction(str(model_path))
     stats = {
         "registered_images": reconstruction.num_reg_images(),
         "points3D": reconstruction.num_points3D(),
