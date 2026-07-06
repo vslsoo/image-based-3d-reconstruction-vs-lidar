@@ -46,13 +46,80 @@ def resolve_path(path_str: str) -> Path:
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
+def compute_principal_axis(points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Centroid and unit principal axis (direction of greatest variance) -
+    the object's own long axis, regardless of how the cloud happens to be
+    rotated (photogrammetry/VGGT poses have no notion of "up")."""
+    centroid = points.mean(axis=0)
+    centered = points - centroid
+    cov = np.cov(centered.T)
+    eigvals, eigvecs = np.linalg.eigh(cov)  # ascending order
+    axis = eigvecs[:, -1]
+    return centroid, axis / np.linalg.norm(axis)
+
+
+def axis_extreme_indices(points: np.ndarray, fraction: float, end: str) -> np.ndarray:
+    """Indices of the points lying in one extreme end of the cloud's own
+    principal axis (e.g. the bottom 25% by height)."""
+    centroid, axis = compute_principal_axis(points)
+    projections = (points - centroid) @ axis
+    percentile = fraction * 100
+    if end == "min":
+        threshold = np.percentile(projections, percentile)
+        mask = projections <= threshold
+    else:
+        threshold = np.percentile(projections, 100 - percentile)
+        mask = projections >= threshold
+    return np.where(mask)[0]
+
+
+def plane_inlier_mask(points: np.ndarray, plane_model: np.ndarray, distance_threshold: float) -> np.ndarray:
+    """Boolean mask of which points lie within distance_threshold of an
+    already-fitted plane."""
+    normal = plane_model[:3]
+    distances = np.abs(points @ normal + plane_model[3])
+    return distances <= distance_threshold
+
+
 def remove_ground_plane(
-    pcd: o3d.geometry.PointCloud, distance_threshold: float, ransac_n: int = 3, num_iterations: int = 2000
+    pcd: o3d.geometry.PointCloud, distance_threshold: float, ransac_n: int = 3, num_iterations: int = 2000,
+    restrict_fraction: float | None = None, restrict_end: str = "min", apply_fraction: float | None = None,
 ) -> tuple[o3d.geometry.PointCloud, o3d.geometry.PointCloud, np.ndarray]:
-    plane_model, inliers = pcd.segment_plane(distance_threshold, ransac_n, num_iterations)
+    points = np.asarray(pcd.points)
+
+    if restrict_fraction is None:
+        plane_model, inliers = pcd.segment_plane(distance_threshold, ransac_n, num_iterations)
+        plane_model = np.asarray(plane_model)
+    else:
+        # Fit only on candidates at one extreme of the object's own
+        # principal axis (e.g. the bottom 25% by height) - so a tall
+        # object's own (possibly reflective/near-planar) side surface,
+        # spanning most of its height, can't out-compete the real floor,
+        # which only occupies one end.
+        fit_indices = axis_extreme_indices(points, restrict_fraction, restrict_end)
+        plane_model, subset_inliers = pcd.select_by_index(fit_indices.tolist()).segment_plane(
+            distance_threshold, ransac_n, num_iterations
+        )
+        plane_model = np.asarray(plane_model)
+
+        # Apply that plane within a window around the same end - wider
+        # than the fit window, so the real floor's full extent is caught
+        # even outside it, but not so wide it reaches the object's far
+        # end. A reflective/near-planar patch there (e.g. a mirrored
+        # "ghost floor" on a glossy cap) can coincidentally satisfy the
+        # same plane equation despite being a completely different
+        # physical surface - restricting where we even *look* for
+        # inliers rules that out regardless of how well it fits.
+        apply_indices = (
+            np.arange(len(points)) if apply_fraction is None
+            else axis_extreme_indices(points, apply_fraction, restrict_end)
+        )
+        inlier_mask = plane_inlier_mask(points[apply_indices], plane_model, distance_threshold)
+        inliers = apply_indices[inlier_mask].tolist()
+
     plane_points = pcd.select_by_index(inliers)
     without_plane = pcd.select_by_index(inliers, invert=True)
-    return without_plane, plane_points, np.asarray(plane_model)
+    return without_plane, plane_points, plane_model
 
 
 def keep_largest_cluster(pcd: o3d.geometry.PointCloud, cluster_eps: float, min_points: int = 20) -> o3d.geometry.PointCloud:
@@ -71,6 +138,32 @@ def main() -> None:
     parser.add_argument(
         "--distance-threshold-fraction", type=float, default=0.01,
         help="RANSAC plane distance threshold as a fraction of the cloud's bbox diagonal (default: 0.01)",
+    )
+    parser.add_argument(
+        "--num-planes", type=int, default=1,
+        help="remove this many planes, re-fitting on the remainder each time (default: 1) - use >1 when "
+        "there's more than one large flat surface (e.g. a floor plus a raised curb/plinth, or a reflective "
+        "object's mirrored floor - check each removed_plane_N.ply)",
+    )
+    parser.add_argument(
+        "--restrict-search-fraction", type=float, default=None,
+        help="restrict plane-fitting candidates to this fraction of points at one extreme of the cloud's own "
+        "principal axis (e.g. 0.25 = bottom quarter by height) before fitting - prevents a tall object's own "
+        "flat/reflective side (spanning most of its height) from out-competing the real floor, which only "
+        "occupies one end. The fitted plane is still applied to the FULL cloud afterwards, so the floor's "
+        "true extent is fully removed even outside this restricted window. Default: off (fit on the whole cloud).",
+    )
+    parser.add_argument(
+        "--restrict-search-end", choices=["min", "max"], default="min",
+        help="which extreme of the principal axis to restrict to (default: min - flip to 'max' if the floor "
+        "turns out to be at the other end)",
+    )
+    parser.add_argument(
+        "--restrict-apply-fraction", type=float, default=None,
+        help="when using --restrict-search-fraction, also cap how far the fitted plane is applied when removing "
+        "points - a window around the same end, wider than the fit fraction (e.g. fit 0.25, apply 0.5) so the "
+        "floor's full extent is still removed but a coincidentally-coplanar patch at the object's far end isn't. "
+        "Default: unset, meaning apply to the whole cloud (only safe if nothing at the far end matches the plane).",
     )
     parser.add_argument(
         "--keep-largest-cluster", action="store_true",
@@ -93,22 +186,32 @@ def main() -> None:
     diagonal = float(np.linalg.norm(pcd.get_axis_aligned_bounding_box().get_extent()))
     distance_threshold = diagonal * args.distance_threshold_fraction
 
-    without_floor, plane_points, plane_model = remove_ground_plane(pcd, distance_threshold)
-    removed_fraction = len(plane_points.points) / total_points
-    print(
-        f"Removed {len(plane_points.points)} points ({removed_fraction:.1%} of the cloud), "
-        f"plane normal: {plane_model[:3].round(3)}, {len(without_floor.points)} remain"
-    )
-    if removed_fraction > 0.5:
-        print(
-            f"WARNING: removed more than half the cloud ({removed_fraction:.1%}). For a small object on a "
-            "large floor patch that's plausible, but if the object itself has a large flat surface (e.g. a "
-            "sign face), this may have deleted the object instead of the floor - check removed_plane.ply below."
+    without_floor = pcd
+    total_removed = 0
+    for plane_idx in range(1, args.num_planes + 1):
+        without_floor, plane_points, plane_model = remove_ground_plane(
+            without_floor, distance_threshold,
+            restrict_fraction=args.restrict_search_fraction, restrict_end=args.restrict_search_end,
+            apply_fraction=args.restrict_apply_fraction,
         )
+        removed_fraction = len(plane_points.points) / total_points
+        total_removed += len(plane_points.points)
+        print(
+            f"[plane {plane_idx}/{args.num_planes}] Removed {len(plane_points.points)} points "
+            f"({removed_fraction:.1%} of the original cloud), plane normal: {plane_model[:3].round(3)}, "
+            f"{len(without_floor.points)} remain"
+        )
+        removed_path = output_path.parent / f"{output_path.stem}_removed_plane_{plane_idx}.ply"
+        o3d.io.write_point_cloud(str(removed_path), plane_points)
+        print(f"  Saved removed points -> {removed_path} (inspect to confirm it's really floor, not the object)")
 
-    removed_path = output_path.parent / f"{output_path.stem}_removed_plane.ply"
-    o3d.io.write_point_cloud(str(removed_path), plane_points)
-    print(f"Saved removed points -> {removed_path} (inspect this to confirm it's really the floor, not the object)")
+    total_removed_fraction = total_removed / total_points
+    if total_removed_fraction > 0.5:
+        print(
+            f"WARNING: removed more than half the cloud ({total_removed_fraction:.1%}) in total. For a small "
+            "object on a large floor patch that's plausible, but if the object itself has a large flat surface "
+            "(e.g. a sign face), this may have deleted the object instead - check the removed_plane_N.ply files."
+        )
 
     if args.keep_largest_cluster:
         cluster_eps = diagonal * args.cluster_eps_fraction

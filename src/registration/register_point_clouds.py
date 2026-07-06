@@ -280,10 +280,26 @@ def refine_registration(source, target, voxel_size, initial_transform, allow_sca
         )
         transform = scale_result.transformation
 
-    return o3d.pipelines.registration.registration_icp(
-        source, target, distance_threshold, transform,
-        o3d.pipelines.registration.TransformationEstimationPointToPlane(),
-    )
+    # Coarse-to-fine point-to-plane passes instead of a single shot at
+    # distance_threshold: Open3D's default max_iteration (30) with one fixed
+    # threshold often stops short of a tight fit on elongated objects, since
+    # the dominant cylindrical body supplies most correspondences and a
+    # smaller distinctive feature at one end (e.g. a bollard's cap) gets
+    # under-weighted - visually confirmed as a poorly-seated cap despite a
+    # reasonable overall fitness. Each pass starts from the previous one's
+    # result and tightens the threshold, letting the fit progressively lock
+    # onto finer detail instead of settling for the first coarse optimum.
+    # (Tried adding a TukeyLoss robust kernel here too - made no measurable
+    # difference either way, so left out to keep this simple.)
+    result = None
+    for threshold_multiplier in (4.0, 2.0, 1.0, 0.4):
+        result = o3d.pipelines.registration.registration_icp(
+            source, target, voxel_size * threshold_multiplier, transform,
+            o3d.pipelines.registration.TransformationEstimationPointToPlane(),
+            o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=100),
+        )
+        transform = result.transformation
+    return result
 
 
 def extract_scale(transform: np.ndarray) -> float:
@@ -399,7 +415,7 @@ def main() -> None:
     aligned_source = copy.deepcopy(source)
     aligned_source.transform(transform)
 
-    aligned_path = output_dir / "aligned_source.ply"
+    aligned_path = output_dir / f"{source_path.stem}_aligned_to_{target_path.stem}.ply"
     o3d.io.write_point_cloud(str(aligned_path), aligned_source)
     transform_path = output_dir / "transform.txt"
     np.savetxt(transform_path, transform, fmt="%.8f")

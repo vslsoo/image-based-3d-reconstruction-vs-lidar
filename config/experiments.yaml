@@ -426,3 +426,51 @@ experiments:
       - Point cloud: outputs/exp_016_mast3r_ga_chair_001/exp_016_mast3r_ga_chair_001.ply
       - First mast3r_ga run on chair_001 - direct comparison point for exp_015
         (vggt) on the same 52-image set: VGGT gave ~4.8x more points here
+
+  exp_017:
+    date: 2026-07-06
+    object_id: chair_001
+    method: colmap
+    image_subset: 52 selected (even)
+    image_dir: data/raw/chair_001/images/jpg
+    output_dir: outputs/exp_017_colmap_chair_001
+    parameters:
+      gpu: L40S (rented pod)
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 52/52
+      - Points in sparse reconstruction: 46031
+      - Observations: 217159
+      - Mean track length: 4.717669
+      - Mean observations per image: 4176.134615
+      - Mean reprojection error: 0.368703px
+      - Dense fused point cloud: 1889946 points
+
+  exp_018:
+    date: 2026-07-06
+    object_id: chair_001
+    method: hloc_colmap
+    image_subset: 52 selected (even)
+    image_dir: data/raw/chair_001/images/jpg
+    output_dir: outputs/exp_018_hloc_colmap_chair_001
+    parameters:
+      gpu: L40S (rented pod)
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: window
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 52/52
+      - Points in sparse reconstruction: 3184
+      - Observations: 13320
+      - Mean track length: 4.183417
+      - Mean reprojection error: 1.325878px
+      - Dense fused point cloud: 1609674 points
