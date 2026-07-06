@@ -1,0 +1,51 @@
+# Default parameters for src/reconstruction/run_mast3r_ga_experiment.py
+# Every run can override these via CLI flags; whatever was actually used
+# gets written into config/experiments.yaml automatically.
+
+image_selection:
+  num_images: 15
+  method: even   # even | random - see config/reconstruction.yaml for the rationale
+  seed: 42
+
+model:
+  weights: naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric
+  device: auto   # auto | cpu | cuda | mps - unlike run_mast3r_sfm_experiment.py,
+  # sparse_global_alignment() properly respects this (no hardcoded 'cuda'
+  # anywhere), so CPU actually works here - exp_004 ran this same algorithm
+  # on CPU in ~40 min for 12 images.
+  image_size: 512
+
+matching:
+  scenegraph: complete   # complete | swin-N | logwin-N | oneref-N
+  # "complete" matches every image pair - fine for ~15-20 images. This
+  # pipeline doesn't have the incremental-bundle-adjustment scaling problem
+  # run_mast3r_sfm_experiment.py has (all poses/points optimized jointly via
+  # gradient descent, not incrementally), but pair count (and so matching
+  # time) still grows O(n^2) with "complete" - switch to "swin-N" for large
+  # image counts to keep matching itself fast.
+  shared_intrinsics: true
+  matching_conf_thr: 0.0
+  subsample: 8
+  # Grid stride for MASt3R's forward pass caching (mast3r.cloud_opt.sparse_ga's
+  # own subsample, separate from the one patched into
+  # mast3r.colmap.mapping for the other MASt3R pipeline).
+
+optimization:
+  lr1: 0.07
+  niter1: 300
+  # learning rate / iterations for coarse global alignment (3D matching)
+  lr2: 0.01
+  niter2: 300
+  # learning rate / iterations for refinement (2D reprojection error) - set
+  # niter2: 0 for a coarse-only run (faster, less precise)
+  opt_depth: true
+  # corresponds to exp_004's "opt_level: refine+depth" - also refines depth
+  # maps during optimization, not just poses
+
+export:
+  min_conf_thr: 1.5
+  clean_depth: true
+  tsdf_thresh: 0
+  # TSDF post-processing (fuses depth maps into a cleaner surface) - 0
+  # disables it, matching exp_004, which found plain per-pixel points
+  # sufficient

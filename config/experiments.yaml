@@ -284,3 +284,37 @@ experiments:
         adjustment on MASt3R's high-density matches (swin-8 windowed pairing kept
         it tractable at all vs the old "complete" scenegraph, but still far
         slower than MASt3R's own GA approach, e.g. exp_004's ~40min on 12 images)
+
+  exp_012:
+    date: 2026-07-06
+    object_id: bollard_001_video
+    method: mast3r_ga
+    image_subset: 53 selected (even)
+    image_dir: data/raw/bollard_001_video/images/jpg
+    output_dir: outputs/exp_012_mast3r_ga_bollard_001_video
+    parameters:
+      gpu: L40S (rented pod)
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 53/53
+      - Points in dense point cloud: 2403390
+      - Final loss: 0.41849
+      - Final shared focal length: 441.15
+      - Point cloud: outputs/exp_012_mast3r_ga_bollard_001_video/exp_012_mast3r_ga_bollard_001_video.ply
+      - Total wall time: ~6min (model load + matching ~2m47s + joint optimization ~1m15s)
+      - Same 53-image set as exp_009/010 (colmap) and exp_011 (mast3r_sfm) - far
+        faster than both (exp_009/010: ~45-50min, exp_011: ~2h33m) and with more
+        points than either (exp_009: 955k, exp_010: 1.16M, exp_011: 395k) -
+        confirms the joint global-alignment approach (this script) avoids both
+        COLMAP's dense MVS runtime and mast3r_sfm's incremental-bundle-adjustment
+        bottleneck entirely
