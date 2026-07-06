@@ -378,3 +378,51 @@ experiments:
         ~46min) - VGGT's point_head predicts a dense per-pixel world-space
         point map directly for every image in one transformer forward pass,
         with no per-image or iterative cost at all
+
+  exp_015:
+    date: 2026-07-06
+    object_id: chair_001
+    method: vggt
+    image_subset: 52 selected (even)
+    image_dir: data/raw/chair_001/images/jpg
+    output_dir: outputs/exp_015_vggt_chair_001
+    parameters:
+      gpu: L40S (rented pod)
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 52/52
+      - Points in dense point cloud: 10464638
+      - Point cloud: outputs/exp_015_vggt_chair_001/exp_015_vggt_chair_001.ply
+      - First reconstruction of chair_001 (video-extracted frames) - same
+        near-instant single-forward-pass behavior as exp_014 (bollard)
+
+  exp_016:
+    date: 2026-07-06
+    object_id: chair_001
+    method: mast3r_ga
+    image_subset: 52 selected (even)
+    image_dir: data/raw/chair_001/images/jpg
+    output_dir: outputs/exp_016_mast3r_ga_chair_001
+    parameters:
+      gpu: L40S (rented pod)
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 52/52
+      - Points in dense point cloud: 2176296
+      - Point cloud: outputs/exp_016_mast3r_ga_chair_001/exp_016_mast3r_ga_chair_001.ply
+      - First mast3r_ga run on chair_001 - direct comparison point for exp_015
+        (vggt) on the same 52-image set: VGGT gave ~4.8x more points here
