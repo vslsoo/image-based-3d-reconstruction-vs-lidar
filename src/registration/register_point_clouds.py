@@ -261,7 +261,6 @@ def axis_sweep_registration(
 # ---------------------------------------------------------------------------
 
 def refine_registration(source, target, voxel_size, initial_transform, allow_scaling):
-    distance_threshold = voxel_size * 0.4
     source.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
     target.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
 
@@ -274,11 +273,22 @@ def refine_registration(source, target, voxel_size, initial_transform, allow_sca
         # scale-enabled point-to-point pass; point-to-plane afterwards keeps
         # that scale as-is (it only refines rotation/translation) while giving
         # a more precise final fit.
-        scale_result = o3d.pipelines.registration.registration_icp(
-            source, target, distance_threshold, transform,
-            o3d.pipelines.registration.TransformationEstimationPointToPoint(True),
-        )
-        transform = scale_result.transformation
+        #
+        # Coarse-to-fine here too, same reasoning as the point-to-plane loop
+        # below: a single pass at the tight final threshold only finds
+        # correspondences for points already close to correct, which - if the
+        # coarse seed's scale is off by much - is mostly the dense central
+        # mass (e.g. a chair's seat/back), leaving far extremities (legs)
+        # with no correspondence at all and therefore no influence on the
+        # fitted scale (visually: center aligns, legs visibly diverge/double
+        # up as they extend away from the pivot - the residual scale error
+        # compounds with distance).
+        for threshold_multiplier in (4.0, 2.0, 1.0, 0.4):
+            scale_result = o3d.pipelines.registration.registration_icp(
+                source, target, voxel_size * threshold_multiplier, transform,
+                o3d.pipelines.registration.TransformationEstimationPointToPoint(True),
+            )
+            transform = scale_result.transformation
 
     # Coarse-to-fine point-to-plane passes instead of a single shot at
     # distance_threshold: Open3D's default max_iteration (30) with one fixed
