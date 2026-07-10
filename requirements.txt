@@ -87,6 +87,7 @@ pyzmq==27.1.0
 referencing==0.37.0
 requests==2.34.2
 retrying==1.4.2
+roma==1.5.6
 rpds-py==2026.5.1
 safetensors==0.8.0
 scikit-learn==1.9.0

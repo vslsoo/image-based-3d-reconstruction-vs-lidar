@@ -28,6 +28,22 @@ Usage:
         outputs/crops/exp_005_colmap_bollard_001_dense_cropped.ply \\
         outputs/crops/exp_005_colmap_bollard_001_dense_no_floor.ply \\
         --keep-largest-cluster
+
+    python src/registration/remove_ground_plane.py \\
+        outputs/crops/exp_019_vggt_chair_001_video2_denoised.ply \\
+        outputs/crops/exp_019_vggt_chair_001_video2_no_floor.ply \\
+        --keep-largest-cluster
+
+Recommended order for a noisy feed-forward reconstruction (VGGT, MASt3R):
+remove_noise.py (general sparse-noise cleanup) -> this script with
+--keep-largest-cluster (floor removal + drop anything disconnected from the
+main object). NOTE: distance-from-the-floor-plane is NOT a reliable noise
+signal by itself for objects with real structure spanning a wide range
+along the floor's normal (e.g. a chair's seat/armrests can sit as "far" from
+the floor, in that direction, as a genuine noise trail does) - connectivity
+(--keep-largest-cluster) is the safer test: is this point attached to the
+same coherent surface as the rest of the object, regardless of how far it
+sits from the floor.
 """
 
 from __future__ import annotations
@@ -122,13 +138,60 @@ def remove_ground_plane(
     return without_plane, plane_points, plane_model
 
 
-def keep_largest_cluster(pcd: o3d.geometry.PointCloud, cluster_eps: float, min_points: int = 20) -> o3d.geometry.PointCloud:
-    labels = np.array(pcd.cluster_dbscan(eps=cluster_eps, min_points=min_points))
+def keep_largest_cluster(
+    pcd: o3d.geometry.PointCloud, cluster_eps: float, min_points: int = 20, downsample_above: int = 300_000,
+    downsample_voxel_fraction: float = 0.2,
+) -> o3d.geometry.PointCloud:
+    """Keep only the largest connected (DBSCAN) component - drops debris/
+    noise that's spatially disconnected from the main object, regardless of
+    how far it sits from any fitted plane (unlike a floor-distance cutoff,
+    this doesn't risk deleting real object geometry that happens to be far
+    from the floor along the floor's own normal - e.g. a chair's seat/
+    armrests).
+
+    DBSCAN on the full cloud is O(n) memory that can OOM on very dense
+    clouds (VGGT can produce millions of points) on a laptop. Above
+    downsample_above points, cluster a voxel-downsampled copy instead (cheap
+    - typically thousands to tens of thousands of points), then propagate
+    that cluster membership back to the full-resolution cloud by nearest
+    downsampled point (scipy's cKDTree - vectorized, no O(n) DBSCAN graph).
+
+    The downsampling voxel MUST be noticeably smaller than cluster_eps
+    (downsample_voxel_fraction, default 1/5th) - voxelizing at the same
+    scale as eps pre-merges exactly the fine, sparse debris this is meant to
+    separate into the same voxels as the object, so DBSCAN never gets a
+    chance to see them as disconnected."""
+    n = len(pcd.points)
+    target = pcd if n <= downsample_above else pcd.voxel_down_sample(cluster_eps * downsample_voxel_fraction)
+
+    labels = np.array(target.cluster_dbscan(eps=cluster_eps, min_points=min_points))
     if labels.max() < 0:
         return pcd  # no clusters found (all noise) - return as-is rather than emptying the cloud
     largest_label = np.bincount(labels[labels >= 0]).argmax()
-    indices = np.where(labels == largest_label)[0]
-    return pcd.select_by_index(indices)
+    core_indices = np.where(labels == largest_label)[0]
+
+    if target is pcd:
+        return pcd.select_by_index(core_indices.tolist())
+
+    from scipy.spatial import cKDTree
+
+    # Propagation radius must be well UNDER cluster_eps, not a multiple of
+    # it - by construction, every point in a separate DBSCAN cluster is
+    # already more than cluster_eps away from every "core" point (that's
+    # what makes it a separate cluster), so any threshold >= cluster_eps
+    # would silently pull the debris back in. Bound it by the downsampling
+    # voxel size instead - the actual positional error downsampling can
+    # introduce - with a small safety factor for full-res points scattered
+    # around their voxel's representative point.
+    voxel_size = cluster_eps * downsample_voxel_fraction
+    propagation_radius = voxel_size * 1.5
+
+    core_points = np.asarray(target.points)[core_indices]
+    tree = cKDTree(core_points)
+    full_points = np.asarray(pcd.points)
+    nearest_dist, _ = tree.query(full_points, k=1, workers=-1)
+    keep_mask = nearest_dist <= propagation_radius
+    return pcd.select_by_index(np.where(keep_mask)[0].tolist())
 
 
 def main() -> None:
@@ -167,11 +230,19 @@ def main() -> None:
     )
     parser.add_argument(
         "--keep-largest-cluster", action="store_true",
-        help="after removing the floor, keep only the largest connected cluster (drops stray debris/other objects)",
+        help="after removing the floor, keep only the largest connected cluster (drops stray debris/noise "
+        "disconnected from the object). Auto-downsamples for the clustering step above "
+        "--cluster-downsample-above points, then propagates back to full resolution, so this stays memory-safe "
+        "on very dense clouds (e.g. VGGT's millions of points).",
     )
     parser.add_argument(
         "--cluster-eps-fraction", type=float, default=0.02,
         help="DBSCAN neighbor distance as a fraction of the cloud's bbox diagonal (default: 0.02)",
+    )
+    parser.add_argument(
+        "--cluster-downsample-above", type=int, default=300_000,
+        help="above this many points, cluster a voxel-downsampled copy instead of the full cloud (default: "
+        "300000) - see keep_largest_cluster's docstring",
     )
     args = parser.parse_args()
 
@@ -216,7 +287,7 @@ def main() -> None:
     if args.keep_largest_cluster:
         cluster_eps = diagonal * args.cluster_eps_fraction
         before = len(without_floor.points)
-        without_floor = keep_largest_cluster(without_floor, cluster_eps)
+        without_floor = keep_largest_cluster(without_floor, cluster_eps, downsample_above=args.cluster_downsample_above)
         print(f"Kept largest cluster: {len(without_floor.points)} / {before} points")
 
     o3d.io.write_point_cloud(str(output_path), without_floor)

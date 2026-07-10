@@ -33,6 +33,21 @@ objects:
       frame extraction). Run src/data_preparation/extract_video_frames.py
       on the video to populate images/jpg before reconstruction.
 
+  chair_001_video2:
+    class: chair
+    description: >
+      Same physical chair as chair_001, captured via a second video
+      walk-around (data/raw/chair_001_video2/video/IMG_6079.MOV) - a
+      different session, for comparing reconstruction quality/repeatability
+      across two independent captures of the same object.
+    images_dir: data/raw/chair_001_video2/images
+    # lidar_path: data/raw/chair_001_video2/lidar/chair_001_video2.las
+    notes: >
+      Video-only capture, second walk-around of chair_001 (see chair_001's
+      exp_015-018). 61 candidate frames extracted (0.5s sharpest-per-window,
+      matching chair_001's convention) into images/jpg; reconstruction
+      scripts pick a 50-100 image diverse subset from this pool.
+
   wayfinding_sign_001:
     class: wayfinding_sign
     description: "Directional/wayfinding street sign, captured via video walk-around (data/raw/wayfinding_sign_001/video/IMG_5939.MOV)"

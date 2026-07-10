@@ -474,3 +474,91 @@ experiments:
       - Mean track length: 4.183417
       - Mean reprojection error: 1.325878px
       - Dense fused point cloud: 1609674 points
+
+  exp_019:
+    date: 2026-07-09
+    object_id: chair_001_video2
+    method: vggt
+    image_subset: 61 selected (even)
+    image_dir: data/raw/chair_001_video2/images/jpg
+    output_dir: outputs/exp_019_vggt_chair_001_video2
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 61/61
+      - Points in dense point cloud: 12276048
+      - Point cloud: outputs/exp_019_vggt_chair_001_video2/exp_019_vggt_chair_001_video2.ply
+
+  exp_020:
+    date: 2026-07-09
+    object_id: chair_001_video2
+    method: mast3r_ga
+    image_subset: 61 selected (even)
+    image_dir: data/raw/chair_001_video2/images/jpg
+    output_dir: outputs/exp_020_mast3r_ga_chair_001_video2
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: complete
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 61/61
+      - Points in dense point cloud: 2618249
+      - Point cloud: outputs/exp_020_mast3r_ga_chair_001_video2/exp_020_mast3r_ga_chair_001_video2.ply
+
+  exp_021:
+    date: 2026-07-09
+    object_id: chair_001_video2
+    method: colmap
+    image_subset: 61 selected (even)
+    image_dir: data/raw/chair_001_video2/images/jpg
+    output_dir: outputs/exp_021_colmap_chair_001_video2
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 61/61
+      - Points in sparse reconstruction: 35514
+      - Observations: 153459
+      - Mean track length: 4.321085
+      - Mean observations per image: 2515.721311
+      - Mean reprojection error: 0.443849px
+      - Dense fused point cloud: 1726818 points
+
+  exp_022:
+    date: 2026-07-09
+    object_id: chair_001_video2
+    method: hloc_colmap
+    image_subset: 61 selected (even)
+    image_dir: data/raw/chair_001_video2/images/jpg
+    output_dir: outputs/exp_022_hloc_colmap_chair_001_video2
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: window
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 40/61
+      - Points in sparse reconstruction: 3567
+      - Observations: 14565
+      - Mean track length: 4.083263
+      - Mean reprojection error: 1.317810px
+      - Dense fused point cloud: 1395716 points
