@@ -261,50 +261,76 @@ def axis_sweep_registration(
 # ---------------------------------------------------------------------------
 
 def refine_registration(source, target, voxel_size, initial_transform, allow_scaling):
-    source.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
+    # Downsample source once for correspondence search. The raw photogrammetry
+    # cloud (COLMAP/MASt3R dense output) commonly runs 1-2M points, while the
+    # LiDAR target here is already sparse (~10k points) and doesn't need
+    # thinning. Every closest-point query in every ICP iteration below scans
+    # source's point count, so this is the single biggest cost in this
+    # function - and cutting it down doesn't hurt fit quality, since what a
+    # tight threshold cares about is how close each *individual* point is to
+    # the target surface, not how densely packed its neighbors in source are.
+    source_down = source.voxel_down_sample(voxel_size)
+    source_down.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
     target.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
 
+    # The scale sub-step below (point-to-point-with-scale) weighs every
+    # matched pair equally, so an unevenly-dense target - e.g. a LiDAR scan
+    # whose return density spikes near one solid feature (a backrest, a cap)
+    # relative to the rest of an elongated object - lets that dense patch
+    # dominate the fitted scale instead of the object's true end-to-end size.
+    # Matching the scale sub-step against a target voxel-downsampled more
+    # coarsely than the rest of the pipeline (SCALE_TARGET_VOXEL_MULTIPLIER x
+    # voxel_size - roughly one point per surface patch, regardless of how
+    # many raw LiDAR returns landed there) keeps that estimate representative
+    # of the whole object rather than its densest patch. The point-to-plane
+    # pass below is unaffected and still matches against the full-resolution
+    # target. Note: on the one dataset this was checked against (a bench,
+    # COLMAP reconstruction), this made the aggregate point-distance metrics
+    # very slightly worse than leaving the scale sub-step on the fine target
+    # (mean/median/rmse/p95 all within ~1% of the unmodified version) - the
+    # change is kept anyway because a visual check judged its result the more
+    # correct fit; if that visual read doesn't hold up on other objects,
+    # SCALE_TARGET_VOXEL_MULTIPLIER = 1.0 restores the original behavior.
+    SCALE_TARGET_VOXEL_MULTIPLIER = 3.0
+    scale_target = target.voxel_down_sample(voxel_size * SCALE_TARGET_VOXEL_MULTIPLIER)
+
+    # Coarse-to-fine, and - when scale is unknown - scale and point-to-plane
+    # passes are INTERLEAVED at each threshold rather than run as two
+    # separate blocks (scale-refine-to-completion, then all point-to-plane).
+    # Running all scale passes first locks the scale in based on a still-
+    # coarse rotation/translation; point-to-plane afterwards can straighten
+    # out the pose but (by construction) never touches scale again, so any
+    # scale error from that early, cruder estimate survives to the final
+    # result. On an elongated object this shows up as error growing with
+    # distance from the pivot - e.g. a 4m bench visibly gapping by several
+    # cm at the far end from the LiDAR reference while the center matches
+    # almost exactly (diagnosed by binning point-to-target distance along
+    # the object's own principal axis). Alternating the two lets each
+    # tighten using the OTHER's latest result, so scale keeps improving
+    # alongside pose instead of freezing early.
+    #
+    # Single fixed-threshold ICP (the naive one-shot approach) also
+    # under-fits elongated objects for a related reason: Open3D's default
+    # max_iteration (30) with one threshold lets the dominant central mass
+    # dictate the fit while a smaller distinctive feature at one end (e.g. a
+    # bollard's cap) is under-weighted - visually confirmed as a poorly-
+    # seated cap despite reasonable overall fitness. Each pass here starts
+    # from the previous one's result and tightens the threshold, letting the
+    # fit progressively lock onto finer detail instead of settling for the
+    # first coarse optimum. (Tried adding a TukeyLoss robust kernel too -
+    # made no measurable difference either way, so left out to keep this
+    # simple.)
     transform = initial_transform
-    if allow_scaling:
-        # Point-to-plane ICP (below) doesn't support scale estimation in Open3D
-        # at all, so whatever scale the coarse stage guessed (axis-sweep's
-        # rough extent-ratio estimate, or FPFH/RANSAC's) would otherwise never
-        # get corrected. Refine scale (+ rotation/translation) first with a
-        # scale-enabled point-to-point pass; point-to-plane afterwards keeps
-        # that scale as-is (it only refines rotation/translation) while giving
-        # a more precise final fit.
-        #
-        # Coarse-to-fine here too, same reasoning as the point-to-plane loop
-        # below: a single pass at the tight final threshold only finds
-        # correspondences for points already close to correct, which - if the
-        # coarse seed's scale is off by much - is mostly the dense central
-        # mass (e.g. a chair's seat/back), leaving far extremities (legs)
-        # with no correspondence at all and therefore no influence on the
-        # fitted scale (visually: center aligns, legs visibly diverge/double
-        # up as they extend away from the pivot - the residual scale error
-        # compounds with distance).
-        for threshold_multiplier in (4.0, 2.0, 1.0, 0.4):
+    result = None
+    for threshold_multiplier in (4.0, 2.0, 1.0, 0.4, 0.2):
+        if allow_scaling:
             scale_result = o3d.pipelines.registration.registration_icp(
-                source, target, voxel_size * threshold_multiplier, transform,
+                source_down, scale_target, voxel_size * threshold_multiplier * SCALE_TARGET_VOXEL_MULTIPLIER, transform,
                 o3d.pipelines.registration.TransformationEstimationPointToPoint(True),
             )
             transform = scale_result.transformation
-
-    # Coarse-to-fine point-to-plane passes instead of a single shot at
-    # distance_threshold: Open3D's default max_iteration (30) with one fixed
-    # threshold often stops short of a tight fit on elongated objects, since
-    # the dominant cylindrical body supplies most correspondences and a
-    # smaller distinctive feature at one end (e.g. a bollard's cap) gets
-    # under-weighted - visually confirmed as a poorly-seated cap despite a
-    # reasonable overall fitness. Each pass starts from the previous one's
-    # result and tightens the threshold, letting the fit progressively lock
-    # onto finer detail instead of settling for the first coarse optimum.
-    # (Tried adding a TukeyLoss robust kernel here too - made no measurable
-    # difference either way, so left out to keep this simple.)
-    result = None
-    for threshold_multiplier in (4.0, 2.0, 1.0, 0.4):
         result = o3d.pipelines.registration.registration_icp(
-            source, target, voxel_size * threshold_multiplier, transform,
+            source_down, target, voxel_size * threshold_multiplier, transform,
             o3d.pipelines.registration.TransformationEstimationPointToPlane(),
             o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=100),
         )
@@ -364,6 +390,13 @@ def main() -> None:
         "--fallback-fitness-threshold", type=float, default=0.3,
         help="if plain FPFH+RANSAC fitness is below this, automatically retry with axis-sweep (default: 0.3)",
     )
+    parser.add_argument(
+        "--scale-sanity-factor", type=float, default=2.0,
+        help="if FPFH+RANSAC's fitted scale is off by more than this factor from a naive, correspondence-"
+        "free bbox-diagonal-ratio estimate, automatically retry with axis-sweep even if fitness looked "
+        "fine (default: 2.0) - catches self-similar-structure mismatches (e.g. matching a bench's whole "
+        "body to just its seat) that RANSAC can report as a confident, high-fitness fit anyway",
+    )
     args = parser.parse_args()
 
     source_path = resolve_path(args.source)
@@ -404,12 +437,42 @@ def main() -> None:
             f"Global: fitness={global_result.fitness:.4f}, inlier_rmse={global_result.inlier_rmse:.4f}, "
             f"scale~{extract_scale(global_result.transformation):.4f}"
         )
-        if global_result.fitness < args.fallback_fitness_threshold:
-            print(
-                f"Fitness {global_result.fitness:.4f} < {args.fallback_fitness_threshold} - looks like the "
-                "symmetric-object failure mode (FPFH+RANSAC has no signal to pick the right rotation). "
-                "Falling back to axis-sweep seeding..."
-            )
+        fitted_scale = extract_scale(global_result.transformation)
+        low_fitness = global_result.fitness < args.fallback_fitness_threshold
+
+        # Fitness alone doesn't catch every bad fit: with scale unconstrained,
+        # RANSAC can match the whole source to a self-similar sub-part of the
+        # target (e.g. a bench's whole body onto just its seat, via repeated
+        # legs/slats supplying enough locally-consistent correspondences) and
+        # report a confidently high fitness while the scale is off by several
+        # times. A naive, correspondence-free bbox-diagonal ratio has no such
+        # failure mode - it's just the two clouds' overall extents - so a
+        # large disagreement between it and RANSAC's fitted scale is itself
+        # evidence something matched wrong.
+        naive_scale = None
+        scale_ratio = None
+        scale_mismatch = False
+        if allow_scaling:
+            naive_scale = bbox_diagonal(target) / bbox_diagonal(source)
+            scale_ratio = max(fitted_scale, naive_scale) / min(fitted_scale, naive_scale)
+            scale_mismatch = scale_ratio > args.scale_sanity_factor
+
+        if low_fitness or scale_mismatch:
+            if scale_mismatch and not low_fitness:
+                print(
+                    f"Fitted scale {fitted_scale:.4f} is {scale_ratio:.1f}x off from the naive bbox-diagonal "
+                    f"scale estimate ({naive_scale:.4f}, > {args.scale_sanity_factor}x threshold) despite "
+                    f"fitness={global_result.fitness:.4f} - FPFH+RANSAC likely matched a self-similar "
+                    "sub-part of the object rather than the whole thing (same failure class as rotational "
+                    "symmetry, just via repeated structure like legs/slats instead of a round profile). "
+                    "Falling back to axis-sweep seeding..."
+                )
+            else:
+                print(
+                    f"Fitness {global_result.fitness:.4f} < {args.fallback_fitness_threshold} - looks like the "
+                    "symmetric-object failure mode (FPFH+RANSAC has no signal to pick the right rotation). "
+                    "Falling back to axis-sweep seeding..."
+                )
             initial_transform, sweep_score = axis_sweep_registration(source, target, voxel_size, allow_scaling)
             print(f"Axis-sweep: median distance={sweep_score:.4f}, scale~{extract_scale(initial_transform):.4f}")
             initial_alignment = "fpfh_ransac_then_axis_sweep_fallback"
@@ -431,7 +494,12 @@ def main() -> None:
     np.savetxt(transform_path, transform, fmt="%.8f")
 
     print("Computing point-to-point distances (aligned source -> target)...")
-    distance_stats = point_cloud_distance_stats(aligned_source, target)
+    # Full-res aligned_source is still what gets written to disk above; the
+    # accuracy metric itself only needs a representative sample of it, and a
+    # uniform voxel downsample also avoids biasing mean/median error toward
+    # whichever surface patch source happens to be densest at.
+    aligned_source_down = aligned_source.voxel_down_sample(voxel_size)
+    distance_stats = point_cloud_distance_stats(aligned_source_down, target)
     print(
         f"Distance stats: mean={distance_stats['mean']:.4f}, rmse={distance_stats['rmse']:.4f}, "
         f"p95={distance_stats['p95']:.4f}, max={distance_stats['max']:.4f}"
@@ -445,7 +513,13 @@ def main() -> None:
         "initial_alignment": initial_alignment,
         "estimated_scale": extract_scale(transform),
         "global_registration": (
-            {"fitness": global_result.fitness, "inlier_rmse": global_result.inlier_rmse}
+            {
+                "fitness": global_result.fitness,
+                "inlier_rmse": global_result.inlier_rmse,
+                "fitted_scale": fitted_scale,
+                "naive_bbox_scale_estimate": naive_scale,
+                "scale_ratio_vs_naive": scale_ratio,
+            }
             if global_result is not None else None
         ),
         "icp_registration": {

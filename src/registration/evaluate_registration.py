@@ -91,6 +91,18 @@ def fraction_within(distances: np.ndarray, threshold: float) -> float:
     return float(np.mean(distances <= threshold))
 
 
+def rmse_within(distances: np.ndarray, threshold: float) -> float:
+    """RMSE restricted to inliers (distances <= threshold), rather than the
+    whole distribution - the plain RMSE in distance_stats() can be dominated
+    by a handful of far outliers that Accuracy@/Completeness@ already exclude,
+    so it doesn't say much about how precise the matches called "correct" at
+    a given threshold actually are."""
+    inliers = distances[distances <= threshold]
+    if inliers.size == 0:
+        return float("nan")
+    return float(np.sqrt(np.mean(inliers ** 2)))
+
+
 # ---------------------------------------------------------------------------
 # 2. CLI
 # ---------------------------------------------------------------------------
@@ -124,22 +136,24 @@ def main() -> None:
 
     accuracy_at = {t: fraction_within(source_to_target, t) for t in args.thresholds}
     completeness_at = {t: fraction_within(target_to_source, t) for t in args.thresholds}
+    accuracy_rmse_at = {t: rmse_within(source_to_target, t) for t in args.thresholds}
+    completeness_rmse_at = {t: rmse_within(target_to_source, t) for t in args.thresholds}
 
     print("\nAccuracy direction (source -> target):")
     print(
         f"  mean={accuracy_stats['mean']:.4f}  median={accuracy_stats['median']:.4f}  "
         f"rmse={accuracy_stats['rmse']:.4f}  p95={accuracy_stats['p95']:.4f}  max={accuracy_stats['max']:.4f}"
     )
-    for t, value in accuracy_at.items():
-        print(f"  Accuracy@{t * 100:.0f}cm = {value * 100:.2f}%")
+    for t in args.thresholds:
+        print(f"  Accuracy@{t * 100:.0f}cm = {accuracy_at[t] * 100:.2f}%   RMSE@{t * 100:.0f}cm (inliers) = {accuracy_rmse_at[t]:.4f}")
 
     print("\nCompleteness direction (target -> source):")
     print(
         f"  mean={completeness_stats['mean']:.4f}  median={completeness_stats['median']:.4f}  "
         f"rmse={completeness_stats['rmse']:.4f}  p95={completeness_stats['p95']:.4f}  max={completeness_stats['max']:.4f}"
     )
-    for t, value in completeness_at.items():
-        print(f"  Completeness@{t * 100:.0f}cm = {value * 100:.2f}%")
+    for t in args.thresholds:
+        print(f"  Completeness@{t * 100:.0f}cm = {completeness_at[t] * 100:.2f}%   RMSE@{t * 100:.0f}cm (inliers) = {completeness_rmse_at[t]:.4f}")
 
     report = {
         "source": display_path(source_path),
@@ -149,6 +163,8 @@ def main() -> None:
         "thresholds": args.thresholds,
         "accuracy_at_threshold": {f"{t * 100:.0f}cm": v for t, v in accuracy_at.items()},
         "completeness_at_threshold": {f"{t * 100:.0f}cm": v for t, v in completeness_at.items()},
+        "accuracy_rmse_at_threshold": {f"{t * 100:.0f}cm": v for t, v in accuracy_rmse_at.items()},
+        "completeness_rmse_at_threshold": {f"{t * 100:.0f}cm": v for t, v in completeness_rmse_at.items()},
         "accuracy_direction_stats": accuracy_stats,
         "completeness_direction_stats": completeness_stats,
     }
