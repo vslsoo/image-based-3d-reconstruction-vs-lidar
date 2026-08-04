@@ -26,15 +26,15 @@ Metrics (all in the reference cloud's real-world units, e.g. meters):
 
 Usage:
     python src/registration/evaluate_registration.py \\
-        --source outputs/regs/reg_010_to_013_bollard_video/exp_010_colmap_aligned_to_exp_013.ply \\
+        --source outputs/registrations/reg_010_to_013_bollard_video/exp_010_colmap_aligned_to_exp_013.ply \\
         --target outputs/crops/exp_013_hloc_colmap_bollard_001_video_no_floor.ply \\
-        --output outputs/regs/reg_010_to_013_bollard_video/evaluation.json
+        --output outputs/metrics/reg_010_to_013_bollard_video/evaluation.json
 
     python src/registration/evaluate_registration.py \\
-        --source outputs/regs/reg_010_to_013_bollard_video/exp_010_colmap_aligned_to_exp_013.ply \\
+        --source outputs/registrations/reg_010_to_013_bollard_video/exp_010_colmap_aligned_to_exp_013.ply \\
         --target outputs/crops/exp_013_hloc_colmap_bollard_001_video_no_floor.ply \\
-        --output outputs/regs/reg_010_to_013_bollard_video/evaluation.json \\
-        --thresholds 0.02 0.05 0.1
+        --output outputs/metrics/reg_010_to_013_bollard_video/evaluation.json \\
+        --thresholds 0.03 0.05 0.1
 """
 
 from __future__ import annotations
@@ -103,6 +103,17 @@ def rmse_within(distances: np.ndarray, threshold: float) -> float:
     return float(np.sqrt(np.mean(inliers ** 2)))
 
 
+def f_score(precision: float, recall: float) -> float:
+    """Harmonic mean of Accuracy@ (precision: how much of what was
+    reconstructed is correct) and Completeness@ (recall: how much of the
+    real object was reconstructed) at a shared threshold - the standard
+    single-number reconstruction quality metric (e.g. Tanks and Temples),
+    trading the two off instead of reading them separately."""
+    if precision + recall == 0:
+        return 0.0
+    return float(2 * precision * recall / (precision + recall))
+
+
 # ---------------------------------------------------------------------------
 # 2. CLI
 # ---------------------------------------------------------------------------
@@ -113,8 +124,8 @@ def main() -> None:
     parser.add_argument("--target", required=True, help="reference point cloud (LiDAR, or a stand-in reference method)")
     parser.add_argument("--output", required=True, help="path to write the JSON report to")
     parser.add_argument(
-        "--thresholds", type=float, nargs="+", default=[0.05],
-        help="distance thresholds (meters) to report Accuracy@/Completeness@ for (default: 0.05)",
+        "--thresholds", type=float, nargs="+", default=[0.03, 0.05, 0.1],
+        help="distance thresholds (meters) to report Accuracy@/Completeness@ for (default: 0.03 0.05 0.1)",
     )
     args = parser.parse_args()
 
@@ -138,6 +149,7 @@ def main() -> None:
     completeness_at = {t: fraction_within(target_to_source, t) for t in args.thresholds}
     accuracy_rmse_at = {t: rmse_within(source_to_target, t) for t in args.thresholds}
     completeness_rmse_at = {t: rmse_within(target_to_source, t) for t in args.thresholds}
+    f_score_at = {t: f_score(accuracy_at[t], completeness_at[t]) for t in args.thresholds}
 
     print("\nAccuracy direction (source -> target):")
     print(
@@ -155,6 +167,10 @@ def main() -> None:
     for t in args.thresholds:
         print(f"  Completeness@{t * 100:.0f}cm = {completeness_at[t] * 100:.2f}%   RMSE@{t * 100:.0f}cm (inliers) = {completeness_rmse_at[t]:.4f}")
 
+    print("\nF-score (harmonic mean of Accuracy@ and Completeness@):")
+    for t in args.thresholds:
+        print(f"  F-score@{t * 100:.0f}cm = {f_score_at[t] * 100:.2f}%")
+
     report = {
         "source": display_path(source_path),
         "target": display_path(target_path),
@@ -165,6 +181,7 @@ def main() -> None:
         "completeness_at_threshold": {f"{t * 100:.0f}cm": v for t, v in completeness_at.items()},
         "accuracy_rmse_at_threshold": {f"{t * 100:.0f}cm": v for t, v in accuracy_rmse_at.items()},
         "completeness_rmse_at_threshold": {f"{t * 100:.0f}cm": v for t, v in completeness_rmse_at.items()},
+        "f_score_at_threshold": {f"{t * 100:.0f}cm": v for t, v in f_score_at.items()},
         "accuracy_direction_stats": accuracy_stats,
         "completeness_direction_stats": completeness_stats,
     }
