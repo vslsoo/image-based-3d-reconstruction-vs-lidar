@@ -3,7 +3,7 @@
 # gets written into config/experiments.yaml automatically.
 
 image_selection:
-  num_images: 15
+  num_images: 50
   method: even   # even | random
   # "even" sorts images by capture time (EXIF DateTimeOriginal, falls back to
   # filename) and picks evenly spaced ones. Photos of one object are usually

@@ -37,6 +37,19 @@ Usage:
         outputs/crops/exp_019_vggt_chair_001_video2_cropped.ply \\
         outputs/crops/exp_019_vggt_chair_001_video2_denoised.ply \\
         --method radius --radius-fraction 0.003 --nb-points 8
+
+Defaults (nb_neighbors=20, std_ratio=2.0) can be too lenient for a rounded
+cap/dome: flying-pixel noise trailing off a curved silhouette (exp_034
+bollard_002/vggt was the first case found) can be locally dense enough
+among itself to survive the default threshold, leaving a visible streak
+after remove_ground_plane.py that renders as a coherent "wing" rather than
+scattered dots. If render_point_cloud.py --focus-top-fraction (zoomed in on
+just the top slice, where these streaks tend to sit) still shows one,
+tighten std_ratio first (e.g. 1.0) before reaching for --method radius:
+    python src/registration/remove_noise.py \\
+        outputs/crops/exp_034_vggt_bollard_002_cropped.ply \\
+        outputs/crops/exp_034_vggt_bollard_002_denoised.ply \\
+        --std-ratio 1.0 --nb-neighbors 30
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@
 # gets written into config/experiments.yaml automatically.
 
 image_selection:
-  num_images: 15
+  num_images: 50
   method: even   # even | random - see config/reconstruction.yaml for the rationale
   seed: 42
 

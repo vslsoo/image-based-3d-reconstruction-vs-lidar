@@ -152,7 +152,7 @@ def main() -> None:
 
     experiments_path = resolve_path(args.experiments_config)
     exp_id = next_experiment_id(experiments_path)
-    output_dir_rel = f"outputs/{exp_id}_hloc_colmap_{args.object_id}"
+    output_dir_rel = f"outputs/experiments/{exp_id}_hloc_colmap_{args.object_id}"
     output_dir = resolve_path(output_dir_rel)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -184,8 +184,12 @@ def main() -> None:
     else:
         print(f"[{exp_id}] Running dense reconstruction...")
         fused_path, dense_stats = run_dense_reconstruction(model_path, subset_dir, output_dir, config)
+        renamed_path = fused_path.with_name(f"{exp_id}_hloc_colmap_{args.object_id}.ply")
+        fused_path.rename(renamed_path)
+        fused_path = renamed_path
         print(f"[{exp_id}] Dense done: {dense_stats['fused_points']} points -> {fused_path}")
         log_lines.append(f"Dense fused point cloud: {dense_stats['fused_points']} points")
+        log_lines.append(f"Point cloud: {fused_path.relative_to(resolve_path('.'))}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,

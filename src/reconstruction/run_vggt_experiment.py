@@ -158,7 +158,7 @@ def main() -> None:
 
     experiments_path = resolve_path(args.experiments_config)
     exp_id = next_experiment_id(experiments_path)
-    output_dir_rel = f"outputs/{exp_id}_vggt_{args.object_id}"
+    output_dir_rel = f"outputs/experiments/{exp_id}_vggt_{args.object_id}"
     output_dir = resolve_path(output_dir_rel)
     output_dir.mkdir(parents=True, exist_ok=True)
 

@@ -23,7 +23,7 @@ Usage:
         --aligned outputs/registrations/reg_024_to_lidar_bench_001/exp_024_mast3r_ga_bench_001_no_floor_aligned_to_bench_001_lidar.ply mast3r_ga \\
         --aligned outputs/registrations/reg_025_to_lidar_bench_001/exp_025_colmap_bench_001_no_floor_aligned_to_bench_001_lidar.ply colmap \\
         --aligned outputs/registrations/reg_026_to_lidar_bench_001/exp_026_hloc_colmap_bench_001_no_floor_aligned_to_bench_001_lidar.ply hloc_colmap \\
-        --target data/raw/bench_001/lidar/bench_001_lidar.ply \\
+        --target data/video/bench_001/lidar/bench_001_lidar.ply \\
         --output outputs/metrics/bench_001_density_matched_comparison.json
 """
 

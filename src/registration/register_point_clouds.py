@@ -223,7 +223,14 @@ def rotation_between_vectors(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 def axis_sweep_registration(
     source: o3d.geometry.PointCloud, target: o3d.geometry.PointCloud,
     voxel_size: float, allow_scaling: bool, angle_step_deg: float = 10.0,
+    force_axis_sign: float | None = None,
 ) -> tuple[np.ndarray, float]:
+    # force_axis_sign: skip the automatic top/bottom choice and only try this
+    # sign (1.0 or -1.0) - for elongated objects with a subtly different cap
+    # vs base (e.g. a bollard) against a sparse LiDAR target, the median-
+    # distance score sometimes can't tell the two ends apart and silently
+    # picks the upside-down orientation; use this to force the other one
+    # once you've visually confirmed the automatic pick was flipped.
     source_points = np.asarray(source.points)
     target_points = np.asarray(target.points)
     source_centroid, source_axis, source_extent = compute_principal_axis(source_points)
@@ -241,7 +248,8 @@ def axis_sweep_registration(
 
     best_transform, best_score = None, np.inf
     angles = np.deg2rad(np.arange(0, 360, angle_step_deg))
-    for axis_sign in (1.0, -1.0):
+    axis_signs = (force_axis_sign,) if force_axis_sign is not None else (1.0, -1.0)
+    for axis_sign in axis_signs:
         r_align = rotation_between_vectors(source_axis * axis_sign, target_axis)
         for angle in angles:
             r_twist = o3d.geometry.get_rotation_matrix_from_axis_angle(target_axis * angle)
@@ -397,6 +405,12 @@ def main() -> None:
         "fine (default: 2.0) - catches self-similar-structure mismatches (e.g. matching a bench's whole "
         "body to just its seat) that RANSAC can report as a confident, high-fitness fit anyway",
     )
+    parser.add_argument(
+        "--force-axis-sign", type=float, choices=[1.0, -1.0], default=None,
+        help="with --axis-sweep, skip the automatic top/bottom choice and force this sign instead - use "
+        "when a visual check shows the automatic pick came out upside-down (the median-distance score "
+        "can't always tell a bollard's cap from its base against a sparse LiDAR target)",
+    )
     args = parser.parse_args()
 
     source_path = resolve_path(args.source)
@@ -423,7 +437,9 @@ def main() -> None:
         initial_alignment = "manual"
     elif args.axis_sweep:
         print("Axis-sweep seeding: PCA principal axis + brute-force rotation sweep...")
-        initial_transform, sweep_score = axis_sweep_registration(source, target, voxel_size, allow_scaling)
+        initial_transform, sweep_score = axis_sweep_registration(
+            source, target, voxel_size, allow_scaling, force_axis_sign=args.force_axis_sign
+        )
         print(f"Axis-sweep: median distance={sweep_score:.4f}, scale~{extract_scale(initial_transform):.4f}")
         initial_alignment = "axis_sweep"
     else:

@@ -1,61 +1,98 @@
 objects:
-  bollard_001:
+  bench_001:
+    class: bench
+    description: "Street/park bench, captured via video walk-around (data/video/bench_001/video/IMG_6178.MOV) - first real (non-test) object for the diploma."
+    images_dir: data/video/bench_001/images
+    lidar_path: data/video/bench_001/lidar/bench_001_lidar.ply
+    notes: >
+      Video-only capture. 57 candidate frames extracted (1.0s sharpest-per-
+      window, over a 56s video) into images/jpg; reconstruction scripts pick
+      a 50-100 image diverse subset from this pool.
+
+      LiDAR reference (bench_001/lidar/bench_001.ply): cropped from the
+      Sensat-Euston-Track2 street scan, X/Y bbox [291581.51, 291585.45] x
+      [287825.53, 287831.61], Z capped to [27.0, 29.0] to exclude an
+      unrelated tall structure (building/tree, up to Z=38) sharing the same
+      X/Y footprint. Coordinates stored LOCALLY, shifted by -[291581, 287825,
+      27] relative to the source file - see the precision pitfall below,
+      this shift is required, not cosmetic.
+
+      Three things went wrong on the way here, in case they recur for a
+      future object (see also docs/methodology_notes.md's "LiDAR processing
+      pitfalls" section, consolidated from later objects):
+      1. An interactively-cropped bench.laz (made in CloudCompare from the
+         big street crop) silently lost ~27% of its points versus cropping
+         the same bbox directly from the original file - almost certainly
+         CloudCompare's viewport LOD thinning points during the interactive
+         polygon-crop. Always re-crop the final bbox directly from the
+         original file with pdal rather than trusting an interactively-
+         exported subset.
+      2. BIG ONE - PLY silently truncates large absolute coordinates to
+         whole meters. Sensat-Euston-Track2's X/Y are ~291000/287000-scale
+         UTM-like values. Both pdal's writers.ply AND Open3D's
+         write_point_cloud store x/y/z as 32-bit float; at that magnitude
+         float32's ULP is only ~0.03m in principle, but in practice the
+         round-trip collapsed EVERY point onto an exact 1.0m grid (confirmed
+         by dumping the .ply back out and measuring nearest-neighbor XY
+         distance = exactly 1.000 with zero variance) - initially misread
+         as "the source file is only sampled on a 1m grid here", which was
+         wrong and sent the whole floor-removal analysis down a false path.
+         Re-dumping the same points to CSV via `pdal translate ... .txt`
+         (arbitrary-precision text, no schema truncation) and cross-checking
+         showed the true underlying data is dense (~0.02m spacing, matching
+         what the source visually looks like in CloudCompare). Fix: always
+         recenter LiDAR points to a small local origin (subtract something
+         like the crop's own bbox min corner) BEFORE writing/reading any
+         .ply for this project's Open3D-based scripts - never feed
+         UTM-scale absolute coordinates through a .ply round-trip.
+      3. remove_ground_plane.py's RANSAC largest-plane, run on the
+         (wrongly) grid-collapsed data, picked a vertical scan-line artifact
+         instead of the ground. Once the precision bug above was fixed and
+         the real dense data was used, a direct height cutoff (Z <= 27.65,
+         i.e. local Z <= 0.65 - the sharp low-elevation density peak in a Z
+         histogram) worked fine and gave a recognizably bench-shaped result
+         (elongated top-view footprint, seat-height plane + raised backrest
+         in the side view).
+
+      Bottom line: if a LiDAR crop for a future object looks like sparse
+      disconnected vertical lines/dots in CloudCompare after any Open3D
+      processing, suspect this PLY truncation bug FIRST (check whether the
+      file was ever round-tripped through .ply with large absolute
+      coordinates) before concluding the source data itself is sparse.
+
+  bollard_002:
     class: bollard
-    description: "Bollard selected for the first reconstruction pilot"
-    images_dir: data/raw/bollard_001/images
-    # lidar_path: data/raw/bollard_001/lidar/bollard_001.las
-    notes: >
-      Initial test object. Highly reflective surface: SIFT (COLMAP) and
-      SuperPoint+LightGlue (hloc) both reconstruct it incompletely in the
-      same region regardless of image count/overlap; MASt3R+SfM handles it
-      far better (see docs/experiment_log.md). Prefer MASt3R-based methods
-      as the baseline for this object.
+    description: "Bollard, second capture (video walk-around, data/video/bollard_002/IMG_7049.mov, 32s). Earlier experiments (exp_031-050 batch) were removed with their raw captures/outputs to save space (see docs/methodology_notes.md); redone here with a fresh video (97 candidate frames, 0.32s window) and the same LiDAR crop as before."
+    images_dir: data/video/bollard_002/images
+    lidar_path: data/lidar/bollard_002/bollard_002_no_floor.ply
 
-  bollard_001_video:
-    class: bollard
-    description: >
-      Same physical bollard as bollard_001, captured via video instead of
-      individual photos (data/raw/bollard_001/video/IMG_5938.MOV) - for
-      comparing video vs photo capture on an object we already have results
-      for.
-    images_dir: data/raw/bollard_001_video/images
-    notes: >
-      Video-only capture. Compare reconstruction quality/completeness
-      directly against bollard_001's photo-based results.
+  flashlight_001:
+    class: flashlight
+    description: "Street flashlight/lamp post, video walk-around (data/video/flashlight_001/IMG_7051.MOV, 61s). Earlier experiments removed with raw captures/outputs to save space; redone here with a fresh video (97 candidate frames, 0.61s window) and the same LiDAR crop as before."
+    images_dir: data/video/flashlight_001/images
+    lidar_path: data/lidar/flashlight_001/flashlight_001_no_floor.ply
 
-  chair_001:
-    class: chair
-    description: "Street/park chair, captured via video walk-around (data/raw/chair_001/video/IMG_5940.MOV)"
-    images_dir: data/raw/chair_001/images
-    # lidar_path: data/raw/chair_001/lidar/chair_001.las
-    notes: >
-      Video-only capture (see docs/experiment_log.md next steps re: video
-      frame extraction). Run src/data_preparation/extract_video_frames.py
-      on the video to populate images/jpg before reconstruction.
+  information_sign_001:
+    class: information_sign
+    description: "Information sign, video walk-around (data/video/information_sign_001/IMG_7053.MOV, 57s). Earlier experiments removed with raw captures/outputs to save space; redone here with a fresh video (95 candidate frames, 0.57s window) and the same LiDAR crop as before."
+    images_dir: data/video/information_sign_001/images
+    lidar_path: data/lidar/information_sign_001/information_sign_001_no_floor.ply
 
-  chair_001_video2:
-    class: chair
-    description: >
-      Same physical chair as chair_001, captured via a second video
-      walk-around (data/raw/chair_001_video2/video/IMG_6079.MOV) - a
-      different session, for comparing reconstruction quality/repeatability
-      across two independent captures of the same object.
-    images_dir: data/raw/chair_001_video2/images
-    # lidar_path: data/raw/chair_001_video2/lidar/chair_001_video2.las
-    notes: >
-      Video-only capture, second walk-around of chair_001 (see chair_001's
-      exp_015-018). 61 candidate frames extracted (0.5s sharpest-per-window,
-      matching chair_001's convention) into images/jpg; reconstruction
-      scripts pick a 50-100 image diverse subset from this pool.
+  traffic_sign_001:
+    class: traffic_sign
+    description: "Traffic sign, video walk-around (data/video/traffic_sign_001/IMG_7052.MOV, 42s). Earlier experiments removed with raw captures/outputs to save space; redone here with a fresh video (98 candidate frames, 0.42s window) and the same LiDAR crop as before."
+    images_dir: data/video/traffic_sign_001/images
+    lidar_path: data/lidar/traffic_sign_001/traffic_sign_001_no_floor.ply
 
   wayfinding_sign_001:
     class: wayfinding_sign
-    description: "Directional/wayfinding street sign, captured via video walk-around (data/raw/wayfinding_sign_001/video/IMG_5939.MOV)"
-    images_dir: data/raw/wayfinding_sign_001/images
-    # lidar_path: data/raw/wayfinding_sign_001/lidar/wayfinding_sign_001.las
+    description: "Directional/wayfinding street sign, captured via video walk-around (data/video/wayfinding_sign_001/video/IMG_5939.MOV)"
+    images_dir: data/video/wayfinding_sign_001/images
+    # lidar_path: data/lidar/wayfinding_sign_001/wayfinding_sign_001.las
     notes: >
       Video-only capture. Mostly planar/flat geometry (sign face) plus a
       post - worth checking whether reconstruction quality differs from the
       bollard's curved-surface case. Run
       src/data_preparation/extract_video_frames.py on the video to populate
-      images/jpg before reconstruction.
+      images/jpg before reconstruction. Not yet run: no experiments exist for
+      this object.

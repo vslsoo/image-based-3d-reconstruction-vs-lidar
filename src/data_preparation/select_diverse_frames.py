@@ -10,7 +10,7 @@ reconstruction.
 
 Usage:
     python src/data_preparation/select_diverse_frames.py \\
-        data/raw/chair_001/images/jpg data/raw/chair_001/images/selected --num-images 15
+        data/video/bollard_002/images/jpg data/video/bollard_002/images/selected --num-images 15
 """
 
 from __future__ import annotations

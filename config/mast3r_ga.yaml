@@ -3,7 +3,7 @@
 # gets written into config/experiments.yaml automatically.
 
 image_selection:
-  num_images: 15
+  num_images: 50
   method: even   # even | random - see config/reconstruction.yaml for the rationale
   seed: 42
 
@@ -16,7 +16,14 @@ model:
   image_size: 512
 
 matching:
-  scenegraph: complete   # complete | swin-N | logwin-N | oneref-N
+  scenegraph: swin-8   # complete | swin-N | logwin-N | oneref-N
+  # "complete" (all O(n^2) pairs) is fine up to ~15-20 images but blew the
+  # pod's actual container memory limit (cgroup memory.max ~116GB, NOT the
+  # ~1TB `free -h` reports - that's host-wide, not this container's real
+  # ceiling) at 50 images/2450 directed pairs: a silent OOM-kill of the
+  # whole process tree with no traceback. swin-8 (each image matched
+  # against its 8 nearest neighbors in capture order, cyclic) is what
+  # mast3r_sfm.yaml already uses safely at num_images: 50.
   # "complete" matches every image pair - fine for ~15-20 images. This
   # pipeline doesn't have the incremental-bundle-adjustment scaling problem
   # run_mast3r_sfm_experiment.py has (all poses/points optimized jointly via

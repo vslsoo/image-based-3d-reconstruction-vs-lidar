@@ -136,6 +136,15 @@ def main() -> None:
         help="overrides model.weights - a local .pth path or a HuggingFace hub id "
         "(e.g. naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric)",
     )
+    parser.add_argument(
+        "--cache-dir", default=None,
+        help="where sparse_global_alignment() writes its per-pair correspondence cache (thousands of small "
+        "torch.save files). Defaults to outputs/<exp_id>_.../cache, but that can fail outright on a "
+        "network-backed filesystem (e.g. a RunPod Network Volume mounted at /workspace) - "
+        "'basic_ios::clear: iostream error' / 'unexpected pos' from torch.save mid-write is that failure mode. "
+        "Point this at local/ephemeral disk instead (e.g. /root/mast3r_cache) if so; only the final .ply needs "
+        "to live on persistent storage.",
+    )
     args = parser.parse_args()
 
     config = yaml.safe_load(resolve_path(args.config).read_text())
@@ -152,7 +161,7 @@ def main() -> None:
 
     experiments_path = resolve_path(args.experiments_config)
     exp_id = next_experiment_id(experiments_path)
-    output_dir_rel = f"outputs/{exp_id}_mast3r_ga_{args.object_id}"
+    output_dir_rel = f"outputs/experiments/{exp_id}_mast3r_ga_{args.object_id}"
     output_dir = resolve_path(output_dir_rel)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -169,7 +178,7 @@ def main() -> None:
     model = AsymmetricMASt3R.from_pretrained(weights).to(device)
 
     print(f"[{exp_id}] Running MASt3R matching + sparse global alignment...")
-    cache_dir = output_dir / "cache"
+    cache_dir = resolve_path(args.cache_dir) if args.cache_dir else output_dir / "cache"
     scene = run_sparse_global_alignment(model, device, image_paths, cache_dir, config)
 
     ply_path = output_dir / f"{exp_id}_mast3r_ga_{args.object_id}.ply"

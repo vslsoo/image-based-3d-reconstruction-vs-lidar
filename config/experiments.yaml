@@ -1,487 +1,17 @@
 experiments:
-  exp_001:
-    object_id: bollard_001
-    method: colmap
-    image_subset: all (39)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_001_colmap_bollard_001
-    command: >
-      colmap automatic_reconstructor
-      --workspace_path outputs/exp_001_colmap_bollard_001
-      --image_path data/raw/bollard_001/images/jpg
-    parameters:
-      quality: default
-      data_type: default
-      single_camera: default
-      dense: default
-      camera_model: default
-      feature: default
-      mapper: default
-    notes:
-      - Only sparse reconstruction
-    log:
-      - Registered images: 39/39 = enough overlap
-      - Points in sparse reconstruction: 44620
-      - Observations: 267341 - how many time a feature point was observed in different images
-      - Mean track length: 5.991506 - how many images on average a feature point was observed in
-      - Mean observations per image: 6854.897436
-      - Mean reprojection error: 1.158444px - difference between the observed feature point and the projected 3D point in the image
+  # Experiments for objects other than bench_001 (exp_001-022, exp_027-050 -
+  # bollard_001, bollard_001_video, chair_001, chair_001_video2, bus_stop_001,
+  # bollard_002, flashlight_001/002, information_sign_001, traffic_sign_001)
+  # were removed along with their raw captures and outputs to save space.
+  # Qualitative findings from them are preserved in docs/methodology_notes.md.
 
-
-  exp_002:
-    object_id: bollard_001
-    method: colmap
-    image_subset: all (39)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_002_colmap_bollard_001
-    command: >
-      colmap automatic_reconstructor
-      --workspace_path outputs/exp_002_colmap_bollard_001
-      --image_path data/raw/bollard_001/images/jpg
-      --quality EXTREME
-      --data_type INDIVIDUAL
-      --single_camera 1
-      --dense 1
-      --camera_model SIMPLE_RADIAL
-      --feature SIFT
-      --mapper INCREMENTAL
-    parameters:
-      quality: EXTREME
-      data_type: INDIVIDUAL
-      single_camera: true
-      dense: true
-      camera_model: SIMPLE_RADIAL
-      feature: SIFT
-      mapper: INCREMENTAL
-    notes:
-      - Sparse reconstruction, dense is only available with CUDA
-      - Incremental mapper
-      - Extreme quality
-
-  exp_003:
-    object_id: bollard_001
-    method: colmap
-    image_subset: all (39)
-    image_dir: /content/drive/MyDrive/diploma_data/raw/bollard_001/images/jpg
-    output_dir: /content/drive/MyDrive/diploma_outputs/exp_003_colmap_bollard_001 and outputs/exp_003_colmap_bollard_001
-    notes:
-      - Check parameters in python code - they are differenct for the stages
-      - GPU is required for dense reconstruction
-      - Run very slowly (more than 5h, needs the improvements)
-      - Dense maps required more 12Gb RAM (initially there were 39 photos up to 5Mb each)
-      - As a result, bollard hasn't been reconstructed fully 
-    next step:
-    - Better geometry / less photos (up to 20 for each object) / more angles
-    - Masks / bounding box for MVS (for RAM)
-
-  exp_004:
-    object_id: bollard_001
-    method: mast3r
-    image_subset: some (12 random)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_004_mast3r_bollard_001
-    parameters:
-        model:
-          weights: "checkpoints/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth"
-          device: "cpu"
-          image_size: 512
-        alignment:
-          coarse_lr: 0.07
-          coarse_iterations: 300
-          fine_lr: 0.01
-          fine_iterations: 300
-          opt_level: "refine+depth"
-        matching:
-          matching_confidence_threshold: 0
-          shared_intrinsics: true
-          scenegraph: "complete"
-        export:
-          min_conf_threshold: 1.5
-          cam_size: 0.2
-          tsdf_threshold: 0
-          as_pointcloud: true
-          mask_sky: false
-          cleanup_depthmaps: true
-          transparent_cameras: false
-    notes:
-      - GPU is not required
-      - Run for 40 min 
-      - PC needs to be converted from glb to ply
-      - Dense reconstruction
-
-  exp_005:
-    date: 2026-07-04
-    object_id: bollard_001
-    method: colmap
-    image_subset: 15 selected (even), 15 registered
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_005_colmap_bollard_001
-    parameters:
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      feature: SIFT
-      matching: sequential
-      mapper: INCREMENTAL
-      dense_max_image_size: 3024
-    log:
-      - Registered images: 15/15
-      - Points in sparse reconstruction: 9798
-      - Observations: 41843
-      - Mean track length: 4.270565
-      - Mean observations per image: 2789.533333
-      - Mean reprojection error: 1.074251px
-      - Dense fused point cloud: 696713 points
-
-  exp_006:
-    date: 2026-07-04
-    object_id: bollard_001
-    method: mast3r_sfm
-    image_subset: 15 selected (even)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_006_mast3r_sfm_bollard_001
-    parameters:
-      device: cuda
-      image_size: 512
-      scenegraph: complete
-      shared_intrinsics: true
-      dense_matching: false
-      conf_thr: 1.001
-      mapper: incremental
-    log:
-      - Registered images: 15/15
-      - Points in reconstruction: 31289
-      - Observations: 132592
-      - Mean track length: 4.237655
-      - Mean reprojection error: 1.572925px
-      - Point cloud: outputs/exp_006_mast3r_sfm_bollard_001/exp_006_mast3r_sfm_bollard_001.ply
-
-  exp_007:
-    date: 2026-07-04
-    object_id: bollard_001
-    method: mast3r_sfm
-    image_subset: 15 selected (even)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_007_mast3r_sfm_bollard_001
-    parameters:
-      device: cuda
-      image_size: 512
-      scenegraph: complete
-      shared_intrinsics: true
-      dense_matching: false
-      subsample: 3
-      conf_thr: 1.001
-      mapper: incremental
-    log:
-      - Registered images: 15/15
-      - Points in reconstruction: 240072
-      - Observations: 901315
-      - Mean track length: 3.754353
-      - Mean reprojection error: 1.490529px
-      - Point cloud: outputs/exp_007_mast3r_sfm_bollard_001/exp_007_mast3r_sfm_bollard_001.ply
-
-  exp_008:
-    date: 2026-07-05
-    object_id: bollard_001
-    method: hloc_colmap
-    image_subset: 15 selected (even)
-    image_dir: data/raw/bollard_001/images/jpg
-    output_dir: outputs/exp_008_hloc_colmap_bollard_001
-    parameters:
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      features: superpoint_aachen
-      matching: superpoint+lightglue
-      dense_max_image_size: 3024
-    log:
-      - Registered images: 15/15
-      - Points in sparse reconstruction: 573
-      - Observations: 1441
-      - Mean track length: 2.514834
-      - Mean reprojection error: 1.241466px
-      - Dense fused point cloud: 132520 points
-
-  exp_009:
-    date: 2026-07-05
-    object_id: bollard_001_video
-    method: colmap
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_009_colmap_bollard_001_video_3090
-    parameters:
-      gpu: RTX 3090 (rented pod)
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      feature: SIFT
-      matching: sequential
-      mapper: INCREMENTAL
-      dense_max_image_size: 3024
-      num_threads: 16
-      gpu_index: "0,0,0,0"
-    log:
-      - Registered images: 53/53
-      - Points in sparse reconstruction: 39027
-      - Observations: 287592
-      - Mean track length: 7.369052
-      - Mean observations per image: 5426.264151
-      - Mean reprojection error: 0.446302px
-      - Dense fused point cloud: 955141 points
-      - Total wall time: 50m41s
-
-  exp_010:
-    date: 2026-07-05
-    object_id: bollard_001_video
-    method: colmap
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_010_colmap_bollard_001_video_l40s
-    parameters:
-      gpu: L40S (rented pod)
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      feature: SIFT
-      matching: sequential
-      mapper: INCREMENTAL
-      dense_max_image_size: 3024
-      num_threads: 16
-      gpu_index: "0,0,0,0"
-    log:
-      - Registered images: 53/53
-      - Points in sparse reconstruction: 39008
-      - Observations: 287527
-      - Mean track length: 7.370975
-      - Mean observations per image: 5425.037736
-      - Mean reprojection error: 0.446130px
-      - Dense fused point cloud: 1158332 points
-      - Total wall time: 45m35s
-      - Same image set/config as exp_009 (RTX 3090) - direct GPU comparison:
-        ~10% faster wall time, ~21% more dense points fused
-
-  exp_011:
-    date: 2026-07-05
-    object_id: bollard_001_video
-    method: mast3r_sfm
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_011_mast3r_sfm_bollard_001_video_l40s
-    parameters:
-      gpu: L40S (rented pod)
-      device: cuda
-      image_size: 512
-      scenegraph: swin-8
-      shared_intrinsics: true
-      dense_matching: false
-      subsample: 3
-      conf_thr: 1.001
-      mapper: incremental
-    log:
-      - Registered images: 53/53
-      - Points in reconstruction: 395280
-      - Observations: 4641840
-      - Mean track length: 11.743169
-      - Mean reprojection error: 1.484490px
-      - Point cloud: outputs/exp_011_mast3r_sfm_bollard_001_video_l40s/exp_011_mast3r_sfm_bollard_001_video_l40s.ply
-      - Total wall time: ~2h33m (17:49-20:22 UTC) - slow incremental COLMAP bundle
-        adjustment on MASt3R's high-density matches (swin-8 windowed pairing kept
-        it tractable at all vs the old "complete" scenegraph, but still far
-        slower than MASt3R's own GA approach, e.g. exp_004's ~40min on 12 images)
-
-  exp_012:
-    date: 2026-07-06
-    object_id: bollard_001_video
-    method: mast3r_ga
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_012_mast3r_ga_bollard_001_video
-    parameters:
-      gpu: L40S (rented pod)
-      device: cuda
-      image_size: 512
-      scenegraph: swin-8
-      shared_intrinsics: true
-      matching_conf_thr: 0.0
-      lr1: 0.07
-      niter1: 300
-      lr2: 0.01
-      niter2: 300
-      opt_depth: true
-      min_conf_thr: 1.5
-    log:
-      - Registered images: 53/53
-      - Points in dense point cloud: 2403390
-      - Final loss: 0.41849
-      - Final shared focal length: 441.15
-      - Point cloud: outputs/exp_012_mast3r_ga_bollard_001_video/exp_012_mast3r_ga_bollard_001_video.ply
-      - Total wall time: ~6min (model load + matching ~2m47s + joint optimization ~1m15s)
-      - Same 53-image set as exp_009/010 (colmap) and exp_011 (mast3r_sfm) - far
-        faster than both (exp_009/010: ~45-50min, exp_011: ~2h33m) and with more
-        points than either (exp_009: 955k, exp_010: 1.16M, exp_011: 395k) -
-        confirms the joint global-alignment approach (this script) avoids both
-        COLMAP's dense MVS runtime and mast3r_sfm's incremental-bundle-adjustment
-        bottleneck entirely
-
-  exp_013:
-    date: 2026-07-06
-    object_id: bollard_001_video
-    method: hloc_colmap
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_013_hloc_colmap_bollard_001_video
-    parameters:
-      gpu: L40S (rented pod)
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      features: superpoint_aachen
-      matching: superpoint+lightglue
-      pairing: window
-      window_size: 8
-      dense_max_image_size: 3024
-      num_threads: 16
-      gpu_index: "0,0,0,0"
-    log:
-      - Registered images: 53/53
-      - Points in sparse reconstruction: 4037
-      - Observations: 19450
-      - Mean track length: 4.817934
-      - Mean reprojection error: 1.256501px
-      - Dense fused point cloud: 1321837 points
-      - Total wall time: ~46min (11:05-11:51 UTC)
-      - Same 53-image set as exp_009/010 (colmap/SIFT), exp_011 (mast3r_sfm) and
-        exp_012 (mast3r_ga) - sparse stage found far fewer points than SIFT
-        (4037 vs colmap's ~39k) since SuperPoint keypoints are much sparser than
-        SIFT's, but dense MVS still reuses COLMAP's own MVS stage on the
-        registered poses regardless of sparse point count, giving a comparable
-        dense point count (1.32M) to exp_009/010 (955k/1.16M) in similar wall time
-
-  exp_014:
-    date: 2026-07-06
-    object_id: bollard_001_video
+  exp_023:
+    date: 2026-07-13
+    object_id: bench_001
     method: vggt
-    image_subset: 53 selected (even)
-    image_dir: data/raw/bollard_001_video/images/jpg
-    output_dir: outputs/exp_014_vggt_bollard_001_video
-    parameters:
-      gpu: L40S (rented pod)
-      device: cuda
-      dtype: bfloat16
-      image_mode: crop
-      use_point_map: true
-      conf_percentile: 25.0
-    log:
-      - Registered images: 53/53
-      - Points in dense point cloud: 10665880
-      - Point cloud: outputs/exp_014_vggt_bollard_001_video/exp_014_vggt_bollard_001_video.ply
-      - Total wall time: well under 1 minute (single feed-forward pass, no
-        optimization loop and no COLMAP anywhere) - by far the fastest and
-        densest method tried on this 53-image set: vs exp_009/010 (colmap,
-        955k/1.16M pts, ~45-50min), exp_011 (mast3r_sfm, 395k pts, ~2h33m),
-        exp_012 (mast3r_ga, 2.4M pts, ~6min), exp_013 (hloc_colmap, 1.32M pts,
-        ~46min) - VGGT's point_head predicts a dense per-pixel world-space
-        point map directly for every image in one transformer forward pass,
-        with no per-image or iterative cost at all
-
-  exp_015:
-    date: 2026-07-06
-    object_id: chair_001
-    method: vggt
-    image_subset: 52 selected (even)
-    image_dir: data/raw/chair_001/images/jpg
-    output_dir: outputs/exp_015_vggt_chair_001
-    parameters:
-      gpu: L40S (rented pod)
-      device: cuda
-      dtype: bfloat16
-      image_mode: crop
-      use_point_map: true
-      conf_percentile: 25.0
-    log:
-      - Registered images: 52/52
-      - Points in dense point cloud: 10464638
-      - Point cloud: outputs/exp_015_vggt_chair_001/exp_015_vggt_chair_001.ply
-      - First reconstruction of chair_001 (video-extracted frames) - same
-        near-instant single-forward-pass behavior as exp_014 (bollard)
-
-  exp_016:
-    date: 2026-07-06
-    object_id: chair_001
-    method: mast3r_ga
-    image_subset: 52 selected (even)
-    image_dir: data/raw/chair_001/images/jpg
-    output_dir: outputs/exp_016_mast3r_ga_chair_001
-    parameters:
-      gpu: L40S (rented pod)
-      device: cuda
-      image_size: 512
-      scenegraph: swin-8
-      shared_intrinsics: true
-      matching_conf_thr: 0.0
-      lr1: 0.07
-      niter1: 300
-      lr2: 0.01
-      niter2: 300
-      opt_depth: true
-      min_conf_thr: 1.5
-    log:
-      - Registered images: 52/52
-      - Points in dense point cloud: 2176296
-      - Point cloud: outputs/exp_016_mast3r_ga_chair_001/exp_016_mast3r_ga_chair_001.ply
-      - First mast3r_ga run on chair_001 - direct comparison point for exp_015
-        (vggt) on the same 52-image set: VGGT gave ~4.8x more points here
-
-  exp_017:
-    date: 2026-07-06
-    object_id: chair_001
-    method: colmap
-    image_subset: 52 selected (even)
-    image_dir: data/raw/chair_001/images/jpg
-    output_dir: outputs/exp_017_colmap_chair_001
-    parameters:
-      gpu: L40S (rented pod)
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      feature: SIFT
-      matching: sequential
-      mapper: INCREMENTAL
-      dense_max_image_size: 3024
-    log:
-      - Registered images: 52/52
-      - Points in sparse reconstruction: 46031
-      - Observations: 217159
-      - Mean track length: 4.717669
-      - Mean observations per image: 4176.134615
-      - Mean reprojection error: 0.368703px
-      - Dense fused point cloud: 1889946 points
-
-  exp_018:
-    date: 2026-07-06
-    object_id: chair_001
-    method: hloc_colmap
-    image_subset: 52 selected (even)
-    image_dir: data/raw/chair_001/images/jpg
-    output_dir: outputs/exp_018_hloc_colmap_chair_001
-    parameters:
-      gpu: L40S (rented pod)
-      camera_model: SIMPLE_RADIAL
-      single_camera: true
-      features: superpoint_aachen
-      matching: superpoint+lightglue
-      pairing: window
-      window_size: 8
-      dense_max_image_size: 3024
-    log:
-      - Registered images: 52/52
-      - Points in sparse reconstruction: 3184
-      - Observations: 13320
-      - Mean track length: 4.183417
-      - Mean reprojection error: 1.325878px
-      - Dense fused point cloud: 1609674 points
-
-  exp_019:
-    date: 2026-07-09
-    object_id: chair_001_video2
-    method: vggt
-    image_subset: 61 selected (even)
-    image_dir: data/raw/chair_001_video2/images/jpg
-    output_dir: outputs/exp_019_vggt_chair_001_video2
+    image_subset: 57 selected (even)
+    image_dir: data/video/bench_001/images/jpg
+    output_dir: outputs/experiments/exp_023_vggt_bench_001
     parameters:
       device: cuda
       dtype: bfloat16
@@ -489,17 +19,17 @@ experiments:
       use_point_map: true
       conf_percentile: 25.0
     log:
-      - Registered images: 61/61
-      - Points in dense point cloud: 12276048
-      - Point cloud: outputs/exp_019_vggt_chair_001_video2/exp_019_vggt_chair_001_video2.ply
+      - Registered images: 57/57
+      - Points in dense point cloud: 11471214
+      - Point cloud: outputs/experiments/exp_023_vggt_bench_001/exp_023_vggt_bench_001.ply
 
-  exp_020:
-    date: 2026-07-09
-    object_id: chair_001_video2
+  exp_024:
+    date: 2026-07-13
+    object_id: bench_001
     method: mast3r_ga
-    image_subset: 61 selected (even)
-    image_dir: data/raw/chair_001_video2/images/jpg
-    output_dir: outputs/exp_020_mast3r_ga_chair_001_video2
+    image_subset: 57 selected (even)
+    image_dir: data/video/bench_001/images/jpg
+    output_dir: outputs/experiments/exp_024_mast3r_ga_bench_001
     parameters:
       device: cuda
       image_size: 512
@@ -513,17 +43,17 @@ experiments:
       opt_depth: true
       min_conf_thr: 1.5
     log:
-      - Registered images: 61/61
-      - Points in dense point cloud: 2618249
-      - Point cloud: outputs/exp_020_mast3r_ga_chair_001_video2/exp_020_mast3r_ga_chair_001_video2.ply
+      - Registered images: 57/57
+      - Points in dense point cloud: 2343455
+      - Point cloud: outputs/experiments/exp_024_mast3r_ga_bench_001/exp_024_mast3r_ga_bench_001.ply
 
-  exp_021:
-    date: 2026-07-09
-    object_id: chair_001_video2
+  exp_025:
+    date: 2026-07-13
+    object_id: bench_001
     method: colmap
-    image_subset: 61 selected (even)
-    image_dir: data/raw/chair_001_video2/images/jpg
-    output_dir: outputs/exp_021_colmap_chair_001_video2
+    image_subset: 57 selected (even)
+    image_dir: data/video/bench_001/images/jpg
+    output_dir: outputs/experiments/exp_025_colmap_bench_001
     parameters:
       camera_model: SIMPLE_RADIAL
       single_camera: true
@@ -532,21 +62,21 @@ experiments:
       mapper: INCREMENTAL
       dense_max_image_size: 3024
     log:
-      - Registered images: 61/61
-      - Points in sparse reconstruction: 35514
-      - Observations: 153459
-      - Mean track length: 4.321085
-      - Mean observations per image: 2515.721311
-      - Mean reprojection error: 0.443849px
-      - Dense fused point cloud: 1726818 points
+      - Registered images: 53/57
+      - Points in sparse reconstruction: 14504
+      - Observations: 56926
+      - Mean track length: 3.924848
+      - Mean observations per image: 1074.075472
+      - Mean reprojection error: 0.571349px
+      - Dense fused point cloud: 1049324 points
 
-  exp_022:
-    date: 2026-07-09
-    object_id: chair_001_video2
+  exp_026:
+    date: 2026-07-13
+    object_id: bench_001
     method: hloc_colmap
-    image_subset: 61 selected (even)
-    image_dir: data/raw/chair_001_video2/images/jpg
-    output_dir: outputs/exp_022_hloc_colmap_chair_001_video2
+    image_subset: 57 selected (even)
+    image_dir: data/video/bench_001/images/jpg
+    output_dir: outputs/experiments/exp_026_hloc_colmap_bench_001
     parameters:
       camera_model: SIMPLE_RADIAL
       single_camera: true
@@ -556,9 +86,176 @@ experiments:
       window_size: 8
       dense_max_image_size: 3024
     log:
-      - Registered images: 40/61
-      - Points in sparse reconstruction: 3567
-      - Observations: 14565
-      - Mean track length: 4.083263
-      - Mean reprojection error: 1.317810px
-      - Dense fused point cloud: 1395716 points
+      - Registered images: 57/57
+      - Points in sparse reconstruction: 11267
+      - Observations: 44084
+      - Mean track length: 3.912665
+      - Mean reprojection error: 1.291439px
+      - Dense fused point cloud: 1525623 points
+
+  exp_027:
+    date: 2026-08-11
+    object_id: bollard_002
+    method: vggt
+    image_subset: 50 selected (even)
+    image_dir: data/video/bollard_002/images/jpg
+    output_dir: outputs/experiments/exp_027_vggt_bollard_002
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 10062150
+      - Point cloud: outputs/experiments/exp_027_vggt_bollard_002/exp_027_vggt_bollard_002.ply
+
+  exp_029:
+    date: 2026-08-11
+    object_id: bollard_002
+    method: mast3r_ga
+    image_subset: 50 selected (even)
+    image_dir: data/video/bollard_002/images/jpg
+    output_dir: outputs/experiments/exp_029_mast3r_ga_bollard_002
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 2105912
+      - Point cloud: outputs/experiments/exp_029_mast3r_ga_bollard_002/exp_029_mast3r_ga_bollard_002.ply
+
+  exp_030:
+    date: 2026-08-11
+    object_id: bollard_002
+    method: colmap
+    image_subset: 50 selected (even)
+    image_dir: data/video/bollard_002/images/jpg
+    output_dir: outputs/experiments/exp_030_colmap_bollard_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: sequential
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 33651
+      - Observations: 173238
+      - Mean track length: 5.148079
+      - Mean observations per image: 3464.760000
+      - Mean reprojection error: 0.540954px
+      - Dense fused point cloud: 898426 points
+
+  exp_031:
+    date: 2026-08-11
+    object_id: flashlight_001
+    method: vggt
+    image_subset: 50 selected (even)
+    image_dir: data/video/flashlight_001/images/jpg
+    output_dir: outputs/experiments/exp_031_vggt_flashlight_001
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 13416200
+      - Point cloud: outputs/experiments/exp_031_vggt_flashlight_001/exp_031_vggt_flashlight_001.ply
+
+  exp_032:
+    date: 2026-08-11
+    object_id: bollard_002
+    method: hloc_colmap
+    image_subset: 50 selected (even)
+    image_dir: data/video/bollard_002/images/jpg
+    output_dir: outputs/experiments/exp_032_hloc_colmap_bollard_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: window
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 6419
+      - Observations: 35101
+      - Mean track length: 5.468297
+      - Mean reprojection error: 1.292090px
+      - Dense fused point cloud: 1615538 points
+      - Point cloud: outputs/experiments/exp_032_hloc_colmap_bollard_002/dense/exp_032_hloc_colmap_bollard_002.ply
+
+  exp_033:
+    date: 2026-08-11
+    object_id: information_sign_001
+    method: vggt
+    image_subset: 50 selected (even)
+    image_dir: data/video/information_sign_001/images/jpg
+    output_dir: outputs/experiments/exp_033_vggt_information_sign_001
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 13416200
+      - Point cloud: outputs/experiments/exp_033_vggt_information_sign_001/exp_033_vggt_information_sign_001.ply
+
+  exp_034:
+    date: 2026-08-11
+    object_id: information_sign_001
+    method: mast3r_ga
+    image_subset: 50 selected (even)
+    image_dir: data/video/information_sign_001/images/jpg
+    output_dir: outputs/experiments/exp_034_mast3r_ga_information_sign_001
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 1597309
+      - Point cloud: outputs/experiments/exp_034_mast3r_ga_information_sign_001/exp_034_mast3r_ga_information_sign_001.ply
+
+  exp_035:
+    date: 2026-08-11
+    object_id: traffic_sign_001
+    method: vggt
+    image_subset: 50 selected (even)
+    image_dir: data/video/traffic_sign_001/images/jpg
+    output_dir: outputs/experiments/exp_035_vggt_traffic_sign_001
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 13416200
+      - Point cloud: outputs/experiments/exp_035_vggt_traffic_sign_001/exp_035_vggt_traffic_sign_001.ply

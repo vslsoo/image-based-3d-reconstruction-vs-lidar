@@ -7,9 +7,9 @@ Why this matters: register_point_clouds.py's --axis-sweep mode needs a
 clean, floor-free point cloud. PCA finds the direction of greatest
 variance, and a flat floor patch large enough relative to the object
 dominates that computation, producing a completely wrong "principal axis"
-(diagnosed in docs/experiment_log.md - both bollard_001 crops still had the
-floor in them, evidenced by the 2nd PCA eigenvalue being ~70-75% of the 1st,
-the signature of a plane rather than a cylinder).
+(both bollard_001 crops still had the floor in them, evidenced by the 2nd
+PCA eigenvalue being ~70-75% of the 1st, the signature of a plane rather
+than a cylinder).
 
 IMPORTANT CAVEAT: this removes the SINGLE LARGEST flat surface, whatever it
 is - it has no notion of "floor" specifically. That's safe for objects with
@@ -244,6 +244,23 @@ def main() -> None:
         help="above this many points, cluster a voxel-downsampled copy instead of the full cloud (default: "
         "300000) - see keep_largest_cluster's docstring",
     )
+    parser.add_argument(
+        "--z-cutoff", type=float, default=None,
+        help="skip RANSAC entirely and remove points by a direct Z threshold instead (raw Z coordinate in "
+        "the cloud's own frame, e.g. read off a floor point picked in CloudCompare). Safer than RANSAC for "
+        "objects that are themselves largely flat, where the single largest plane can be the object instead "
+        "of the floor (see docs/methodology_notes.md's 'LiDAR processing pitfalls' #3).",
+    )
+    parser.add_argument(
+        "--z-margin", type=float, default=0.0,
+        help="extra margin added past --z-cutoff before keeping points, to absorb floor point noise/relief "
+        "(default: 0.0)",
+    )
+    parser.add_argument(
+        "--keep-side", choices=["above", "below"], default="above",
+        help="with --z-cutoff, which side of the threshold is the object (default: above - flip to 'below' "
+        "if the floor turns out to be at the top of the cloud's Z range)",
+    )
     args = parser.parse_args()
 
     input_path = resolve_path(args.input)
@@ -255,26 +272,47 @@ def main() -> None:
     print(f"Loaded {total_points} points from {input_path}")
 
     diagonal = float(np.linalg.norm(pcd.get_axis_aligned_bounding_box().get_extent()))
-    distance_threshold = diagonal * args.distance_threshold_fraction
 
-    without_floor = pcd
-    total_removed = 0
-    for plane_idx in range(1, args.num_planes + 1):
-        without_floor, plane_points, plane_model = remove_ground_plane(
-            without_floor, distance_threshold,
-            restrict_fraction=args.restrict_search_fraction, restrict_end=args.restrict_search_end,
-            apply_fraction=args.restrict_apply_fraction,
-        )
-        removed_fraction = len(plane_points.points) / total_points
-        total_removed += len(plane_points.points)
+    if args.z_cutoff is not None:
+        z = np.asarray(pcd.points)[:, 2]
+        if args.keep_side == "above":
+            threshold = args.z_cutoff + args.z_margin
+            keep_mask = z > threshold
+        else:
+            threshold = args.z_cutoff - args.z_margin
+            keep_mask = z < threshold
+        keep_idx = np.where(keep_mask)[0]
+        drop_idx = np.where(~keep_mask)[0]
+        without_floor = pcd.select_by_index(keep_idx)
+        plane_points = pcd.select_by_index(drop_idx)
+        total_removed = len(plane_points.points)
         print(
-            f"[plane {plane_idx}/{args.num_planes}] Removed {len(plane_points.points)} points "
-            f"({removed_fraction:.1%} of the original cloud), plane normal: {plane_model[:3].round(3)}, "
-            f"{len(without_floor.points)} remain"
+            f"Z-cutoff: kept {len(without_floor.points)}/{total_points} points "
+            f"({args.keep_side} z={threshold:.6f})"
         )
-        removed_path = output_path.parent / f"{output_path.stem}_removed_plane_{plane_idx}.ply"
+        removed_path = output_path.parent / f"{output_path.stem}_removed_plane_1.ply"
         o3d.io.write_point_cloud(str(removed_path), plane_points)
         print(f"  Saved removed points -> {removed_path} (inspect to confirm it's really floor, not the object)")
+    else:
+        distance_threshold = diagonal * args.distance_threshold_fraction
+        without_floor = pcd
+        total_removed = 0
+        for plane_idx in range(1, args.num_planes + 1):
+            without_floor, plane_points, plane_model = remove_ground_plane(
+                without_floor, distance_threshold,
+                restrict_fraction=args.restrict_search_fraction, restrict_end=args.restrict_search_end,
+                apply_fraction=args.restrict_apply_fraction,
+            )
+            removed_fraction = len(plane_points.points) / total_points
+            total_removed += len(plane_points.points)
+            print(
+                f"[plane {plane_idx}/{args.num_planes}] Removed {len(plane_points.points)} points "
+                f"({removed_fraction:.1%} of the original cloud), plane normal: {plane_model[:3].round(3)}, "
+                f"{len(without_floor.points)} remain"
+            )
+            removed_path = output_path.parent / f"{output_path.stem}_removed_plane_{plane_idx}.ply"
+            o3d.io.write_point_cloud(str(removed_path), plane_points)
+            print(f"  Saved removed points -> {removed_path} (inspect to confirm it's really floor, not the object)")
 
     total_removed_fraction = total_removed / total_points
     if total_removed_fraction > 0.5:

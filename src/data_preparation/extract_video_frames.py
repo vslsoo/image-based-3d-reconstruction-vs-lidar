@@ -17,8 +17,8 @@ diverse subset from whatever pool of images they're given, the same way they
 do for individually-taken photos.
 
 Usage:
-    python src/data_preparation/extract_video_frames.py video.mov data/raw/bollard_002/images/jpg
-    python src/data_preparation/extract_video_frames.py video.mov data/raw/bollard_002/images/jpg --window-seconds 0.5
+    python src/data_preparation/extract_video_frames.py video.mov data/video/bollard_002/images/jpg
+    python src/data_preparation/extract_video_frames.py video.mov data/video/bollard_002/images/jpg --window-seconds 0.5
 """
 
 from __future__ import annotations
