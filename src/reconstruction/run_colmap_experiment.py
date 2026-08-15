@@ -135,7 +135,7 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
         output_path=str(fused_path),
         workspace_path=str(dense_path),
         workspace_format="COLMAP",
-        input_type="geometric",
+        input_type="geometric" if config["dense"]["geom_consistency"] else "photometric",
         options=fusion_options,
         output_type="PLY",
     )

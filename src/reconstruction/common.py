@@ -81,7 +81,7 @@ def copy_image_subset(images: list[Path], destination: Path) -> Path:
 
 def next_experiment_id(experiments_path: Path) -> str:
     text = experiments_path.read_text() if experiments_path.exists() else ""
-    ids = [int(m) for m in re.findall(r"exp_(\d+):", text)]
+    ids = [int(m) for m in re.findall(r"exp_(\d+)", text)]
     return f"exp_{max(ids, default=0) + 1:03d}"
 
 

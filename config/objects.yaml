@@ -1,4 +1,53 @@
 objects:
+  bus_stop_sign_001:
+    class: bus_stop_sign
+    description: "Bus stop sign, 35 individually-shot HEIC photos (converted to JPG), same pattern as other _00N objects this session. compute_image_overlap.py exhaustive check (all 595 pairs) showed weak overlap: median 0.6%, 583/595 pairs <20%. Running all 4 methods (MASt3R-GA default, VGGT, COLMAP, hloc+COLMAP - latter two with exhaustive matching/pairing and geom_consistency disabled, per config/reconstruction_busstop.yaml and config/hloc_colmap_busstop.yaml). No LiDAR reference crop yet."
+    images_dir: data/images/bus_stop_sign_001/images
+    # lidar_path: not yet cropped
+
+  flashlight_003:
+    class: flashlight
+    description: "Third flashlight capture, 53 individually-shot HEIC photos (converted to JPG), same pattern as other _00N objects this session. compute_image_overlap.py exhaustive check (all 1378 pairs) showed weak overlap: median 1.1%, 1318/1378 pairs <20%. Running all 4 methods (MASt3R-GA default, VGGT, COLMAP, hloc+COLMAP - latter two with exhaustive matching/pairing and geom_consistency disabled, per config/reconstruction_busstop.yaml and config/hloc_colmap_busstop.yaml). No LiDAR reference crop yet."
+    images_dir: data/images/flashlight_003/images
+    # lidar_path: not yet cropped
+
+  bollard_003:
+    class: bollard
+    description: "Third bollard capture, 30 individually-shot HEIC photos (converted to JPG), same pattern as other _00N objects this session. compute_image_overlap.py exhaustive check (all 435 pairs) showed weak overlap: median 3.0%, 424/435 pairs <20%. Running all 4 methods (MASt3R-GA default, VGGT, COLMAP, hloc+COLMAP - latter two with exhaustive matching/pairing and geom_consistency disabled, per config/reconstruction_busstop.yaml and config/hloc_colmap_busstop.yaml). No LiDAR reference crop yet."
+    images_dir: data/images/bollard_003/images
+    # lidar_path: not yet cropped
+
+  bench_003:
+    class: bench
+    description: "Third bench capture, 54 individually-shot HEIC photos (converted to JPG), same pattern as bus_stop_001/information_sign_002. compute_image_overlap.py exhaustive check (all 1431 pairs) showed weak overlap: median 0.3%, 1424/1431 pairs <20%. Ran all 4 methods (MASt3R-GA default, VGGT, COLMAP, hloc+COLMAP - the latter two with exhaustive matching/pairing and geom_consistency disabled, per config/reconstruction_busstop.yaml and config/hloc_colmap_busstop.yaml). LiDAR reference cropped from the same Sensat-Euston-Track2 street scan as bench_001 (data/lidar/bench_003/bench_003.ply, CloudCompare crop, double-precision XYZ, UTM-scale absolute coords - not recentered, but confirmed this Open3D version round-trips .ply as double so no precision loss). Floor removed via remove_ground_plane.py --z-cutoff 28.02 --keep-side above --keep-largest-cluster --cluster-eps-fraction 0.0126 (clear valley in the Z histogram between a wide flat floor band at Z~27.9-28.0 and a raised block at Z 28.02-28.4; DBSCAN then dropped a small separate low debris cluster) -> bench_003_no_floor.ply, 2954 points. The kept object is a thin, partial-surface slab (~1.6x1.7x0.4m bbox) rather than a full solid bench volume - consistent with a mobile/street LiDAR only catching one grazing-angle face of the bench, not a bad crop."
+    images_dir: data/images/bench_003/images
+    lidar_path: data/lidar/bench_003/bench_003_no_floor.ply
+    # lidar_path: not yet cropped
+
+  information_sign_002:
+    class: information_sign
+    description: "Second information sign capture, 32 individually-shot HEIC photos (converted to JPG), same pattern as bus_stop_001. compute_image_overlap.py exhaustive check (all 496 pairs) showed similarly weak overlap: median 0.7%, 494/496 pairs <20%. Running MASt3R-GA at default settings (config/mast3r_ga.yaml). No LiDAR reference crop yet."
+    images_dir: data/images/information_sign_002/images
+    # lidar_path: not yet cropped
+
+  bus_stop_001:
+    class: bus_stop
+    description: "Bus stop, captured as 48 individually-shot HEIC photos (converted to JPG) rather than video, trying to keep the whole object visible in every frame. compute_image_overlap.py showed very weak overlap even exhaustively checking all 1128 pairs (not just capture-order-adjacent ones, since individually-shot photos aren't necessarily taken in walk-around order): median 0.3%, 1127/1128 pairs <20%, max only 25.1%. Likely cause: shooting from varying distances/angles to fit the whole object in frame reduces pixel-level surface overlap even though the object itself is visible in every shot. Running MASt3R-GA (more overlap-tolerant than COLMAP/hloc) at both default settings (config/mast3r_ga.yaml, swin-8) and exp_052's bench_002-tuned settings (swin-16, matching_conf_thr 1.0, min_conf_thr 2.0, niter1/niter2 500) to compare. No LiDAR reference crop yet."
+    images_dir: data/video/bus_stop_001/images
+    # lidar_path: not yet cropped
+
+  flashlight_002:
+    class: flashlight
+    description: "Second flashlight capture (two candidate videos shot, IMG_7068 76s / IMG_7069 124s). compute_image_overlap.py favored IMG_7069 (median 29.5%, 15% of pairs <20%, 0 severe(<5%) pairs, longest bad run 4) over IMG_7068 (28.6%, 18%, 1, 5) - both were solid, IMG_7069 picked for the slightly better/longer capture. 249 candidate frames extracted at 0.5s window; using num_images=150 (best overlap within the user's 100-150 cap: median 22.8%, 38% of pairs <20%, vs 61% at num_images=100)."
+    images_dir: data/video/flashlight_002/images
+    lidar_path: data/lidar/flashlight_001/flashlight_001_no_floor.ply
+
+  bench_002:
+    class: bench
+    description: "Second bench capture (video walk-around, data/video/bench_002/IMG_7073.MOV, 139.8s). 280 candidate frames extracted at 0.5s window - overlap is notably weaker than information_sign_001's final IMG_7063 capture (median 26.5%, 29% of neighbor pairs <20% even using the full 280-frame pool, vs 3.75% for IMG_7063). Ran VGGT/COLMAP/hloc+COLMAP/MASt3R-GA all at num_images=150 per the user's 100-150 cap - all 4 completed with usable results despite the weak overlap (COLMAP 149/150, hloc+COLMAP 121/150 partial, MASt3R-GA and VGGT both 150/150). No LiDAR reference crop yet."
+    images_dir: data/video/bench_002/images
+    # lidar_path: not yet cropped
+
   bench_001:
     class: bench
     description: "Street/park bench, captured via video walk-around (data/video/bench_001/video/IMG_6178.MOV) - first real (non-test) object for the diploma."
@@ -66,6 +115,12 @@ objects:
     images_dir: data/video/bollard_002/images
     lidar_path: data/lidar/bollard_002/bollard_002_no_floor.ply
 
+  information_sign_001_7067:
+    class: information_sign
+    description: "Same information sign as information_sign_001, but using candidate video IMG_7067 instead of IMG_7063 for comparison. IMG_7067 scored worse in compute_image_overlap.py (median 19.4%, 51% of pairs <20%, 12 severe(<5%) pairs, longest bad-overlap run 6) than IMG_7063 (median 28.6%, 19% <20%, 0 severe, longest run 3) - kept as its own object_id (rather than overwriting information_sign_001's images/jpg) to compare results side by side without losing the IMG_7063 frame pool. 151 candidate frames extracted at 0.5s window over a 75.3s video."
+    images_dir: data/video/information_sign_001_7067/images
+    lidar_path: data/lidar/information_sign_001/information_sign_001_no_floor.ply
+
   flashlight_001:
     class: flashlight
     description: "Street flashlight/lamp post, video walk-around (data/video/flashlight_001/IMG_7051.MOV, 61s). Earlier experiments removed with raw captures/outputs to save space; redone here with a fresh video (97 candidate frames, 0.61s window) and the same LiDAR crop as before."
@@ -74,7 +129,7 @@ objects:
 
   information_sign_001:
     class: information_sign
-    description: "Information sign, video walk-around (data/video/information_sign_001/IMG_7053.MOV, 57s). Earlier experiments removed with raw captures/outputs to save space; redone here with a fresh video (95 candidate frames, 0.57s window) and the same LiDAR crop as before."
+    description: "Information sign, video walk-around. IMG_7053 (exp_033/034) failed: median 26.8% neighbor overlap, 33% of pairs below 20%, plus a pedestrian ghosting streak. Re-shot 5 candidate videos (IMG_7063-7067); compute_image_overlap.py picked IMG_7063 as best (no severe/near-zero overlap pairs, no long bad-overlap runs, unlike 7065-7067 which showed pedestrian/fast-pan-like drops). Re-extracted at 0.5s window (161 candidate frames, vs 1.0s's 81) since overlap at 1.0s spacing was still worse than the failed capture (41% of pairs <20% after even-selecting 50) - denser 0.5s sampling brings it down to 3.75% (median 36.6%). Use num_images ~100 (12% pairs <20%) rather than the config default of 50 for this object."
     images_dir: data/video/information_sign_001/images
     lidar_path: data/lidar/information_sign_001/information_sign_001_no_floor.ply
 

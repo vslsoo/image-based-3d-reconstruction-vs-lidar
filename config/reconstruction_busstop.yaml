@@ -1,0 +1,44 @@
+# Variant of reconstruction.yaml for bus_stop_001: 48 individually-shot
+# photos, not a video walk-around, so filename/EXIF capture order doesn't
+# necessarily correspond to viewing-angle order the way it does for video
+# frames. "sequential" matching only compares near-neighbors in that order,
+# which likely caused exp_057's incremental mapper to split into two
+# disconnected sparse models (24/48 + 16/48 registered) - genuinely
+# overlapping pairs that are far apart in capture order never got compared.
+# "exhaustive" (all 1128 pairs at 48 images) is easily feasible at this
+# image count, unlike the 150-280 image video cases.
+
+image_selection:
+  num_images: 50
+  method: even
+  seed: 42
+
+camera:
+  camera_model: SIMPLE_RADIAL
+  single_camera: true
+
+features:
+  type: SIFT
+
+matching:
+  method: exhaustive
+
+mapper:
+  type: INCREMENTAL
+
+dense:
+  max_image_size: 3024
+  cache_size: 1.0
+  num_threads: 16
+  gpu_index: "0"
+  # single worker, not "0,0,0,0" - the 4-parallel-worker trick reproducibly
+  # SIGSEGV'd at the photometric->geometric pass transition on this object.
+  geom_consistency: false
+  # Still crashed with a single worker at the exact same point (starting
+  # the geometric-consistency pass, "Reading inputs..." for the first
+  # view) - 3/3 reproducible SIGSEGVs regardless of matching method or
+  # worker count, pointing to a real bug in pycolmap-cuda12 4.1.0's
+  # geometric-consistency code path rather than an overlap/contention
+  # issue. Disabling geom_consistency skips that pass entirely - dense
+  # fusion falls back to photometric-only depth maps (a bit noisier at
+  # object boundaries, but no crash).

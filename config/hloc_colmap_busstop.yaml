@@ -1,0 +1,37 @@
+# Variant of hloc_colmap.yaml for bus_stop_001: 48 individually-shot
+# photos, not a video walk-around, so capture order isn't necessarily
+# viewpoint order - "window" pairing (compares each image to its N nearest
+# neighbors in capture order) would miss genuinely overlapping pairs that
+# are far apart in file order, the same issue that caused plain COLMAP's
+# sequential matching to fragment into two disconnected models. Switched to
+# "exhaustive" pairing instead (all 1128 pairs, fine at 48 images).
+#
+# geom_consistency also disabled: plain COLMAP's dense stage (shared code,
+# run_dense_reconstruction() in run_colmap_experiment.py) reproducibly
+# SIGSEGV'd 3/3 times in pycolmap-cuda12 4.1.0's geometric-consistency pass
+# on this object regardless of matching method or GPU worker count -
+# disabling it avoids the crash (falls back to photometric-only fusion,
+# now correctly wired up after fixing run_colmap_experiment.py's hardcoded
+# input_type="geometric" bug).
+
+image_selection:
+  num_images: 50
+  method: even
+
+camera:
+  camera_model: SIMPLE_RADIAL
+  single_camera: true
+
+features:
+  conf: superpoint_aachen
+
+matching:
+  conf: superpoint+lightglue
+  pairing: exhaustive
+  window_size: 8
+
+dense:
+  max_image_size: 3024
+  cache_size: 1.0
+  num_threads: 1
+  geom_consistency: false

@@ -1,0 +1,43 @@
+# Second-round tuned variant for bench_002, following exp_052 (swin-16/
+# matching_conf_thr 1.0/min_conf_thr 2.0/niter 500+500): that run visibly
+# fixed the doubled/warped bench slats from exp_046, but the user reported
+# it's now sparser than before and still has a residual seam/overlap
+# artifact where the seat and backrest meet. Changes from exp_052:
+#   - scenegraph: swin-16 -> swin-24 (more cross-frame constraints still,
+#     without approaching "complete"'s O(n^2) - ~1800 undirected pairs at
+#     150 images, still well short of the 2450 that OOM-killed the pod)
+#   - min_conf_thr: 2.0 -> 1.8 (ease export filtering slightly to recover
+#     some point density lost in exp_052)
+#   - subsample: 8 -> 4 (denser per-pair correspondences)
+# niter1/niter2 (500/500) and matching_conf_thr (1.0) kept from exp_052
+# since those seemed to help. Note: the residual seam may be a data
+# limitation (bench_002's overlap was weak even at full 280-frame density -
+# median 26.5%) rather than something further tuning alone can fix.
+
+image_selection:
+  num_images: 150
+  method: even
+  seed: 42
+
+model:
+  weights: naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric
+  device: auto
+  image_size: 512
+
+matching:
+  scenegraph: swin-24
+  shared_intrinsics: true
+  matching_conf_thr: 1.0
+  subsample: 4
+
+optimization:
+  lr1: 0.07
+  niter1: 500
+  lr2: 0.01
+  niter2: 500
+  opt_depth: true
+
+export:
+  min_conf_thr: 1.8
+  clean_depth: true
+  tsdf_thresh: 0

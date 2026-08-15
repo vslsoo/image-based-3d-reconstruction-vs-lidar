@@ -1,0 +1,45 @@
+# Tuned variant of mast3r_ga.yaml for bench_002's "broken/doubled bench slats"
+# artifact seen in exp_046 (150 images, default swin-8/niter 300+300/
+# min_conf_thr 1.5). Three changes suggested to fix visible drift/warp in the
+# joint optimization, tried together here:
+#   - scenegraph: swin-8 -> swin-16 (more cross-frame constraints on scale/
+#     pose without the O(n^2) blowup "complete" would cause - "complete" at
+#     just 50 images/2450 pairs already OOM-killed the pod, so it's out of
+#     the question at 150+)
+#   - matching_conf_thr: 0.0 -> 1.0 (filter noisy pairwise correspondences
+#     BEFORE they feed the joint optimization - addresses the likely root
+#     cause, vs. min_conf_thr below which only hides bad points after the
+#     fact)
+#   - niter1/niter2: 300 -> 500 (more optimization steps to fully converge)
+#   - min_conf_thr: 1.5 -> 2.0 (stricter export-time filtering too, as a
+#     complementary cleanup pass)
+# num_images is passed via --num-images 150 at the CLI (matches exp_046 for
+# a clean A/B comparison of just these parameter changes).
+
+image_selection:
+  num_images: 150
+  method: even
+  seed: 42
+
+model:
+  weights: naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric
+  device: auto
+  image_size: 512
+
+matching:
+  scenegraph: swin-16
+  shared_intrinsics: true
+  matching_conf_thr: 1.0
+  subsample: 8
+
+optimization:
+  lr1: 0.07
+  niter1: 500
+  lr2: 0.01
+  niter2: 500
+  opt_depth: true
+
+export:
+  min_conf_thr: 2.0
+  clean_depth: true
+  tsdf_thresh: 0

@@ -53,3 +53,6 @@ venv/
 
 # system
 .DS_Store
+
+# logs
+*.log

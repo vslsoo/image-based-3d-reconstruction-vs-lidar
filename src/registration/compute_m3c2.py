@@ -99,6 +99,7 @@ def run_m3c2(
     normal_scale: float,
     projection_scale: float,
     registration_error: float,
+    max_distance: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     """reference is epoch1 - corepoints must be drawn from it (that's what
     "core points" means: locations on epoch1 the comparison is evaluated
@@ -107,7 +108,18 @@ def run_m3c2(
     on that surface. comparison is epoch2. A positive distance means the
     comparison cloud sits further along the outward reference-surface normal
     than the reference at that point, negative means it sits inside/behind
-    it."""
+    it.
+
+    max_distance controls how far along the normal (in each direction) the
+    comparison cylinder searches - NOT exposed by default (max_distance=0.0),
+    in which case py4dgeo's cylinder_workingset_finder falls back to using
+    cyl_radius itself as the search depth (see lib/distances.cpp upstream:
+    `if (cylinder_length > radius) ... else cylinder_length = radius`) - i.e.
+    a cylinder only as deep as it is wide, not a deliberate choice. Set this
+    explicitly to control how large a real offset the metric can still
+    report as a number rather than silently marking it undefined (too short
+    and any genuine gap larger than cyl_radius just disappears into
+    "undefined" instead of being measured)."""
     epoch_reference = py4dgeo.Epoch(reference_points.astype(np.float64))
     epoch_comparison = py4dgeo.Epoch(comparison_points.astype(np.float64))
     m3c2 = py4dgeo.M3C2(
@@ -116,6 +128,7 @@ def run_m3c2(
         cyl_radius=projection_scale / 2,
         normal_radii=[normal_scale / 2],
         registration_error=registration_error,
+        max_distance=max_distance,
     )
     return m3c2.run()
 
@@ -156,6 +169,13 @@ def main() -> None:
         help="assumed alignment/registration error (meters), folded into the Level of Detection (LoD95) "
         "threshold (default: 0.01m = 1cm)",
     )
+    parser.add_argument(
+        "--max-distance", type=float, default=0.0,
+        help="how far along the normal (in each direction) the comparison cylinder searches, in meters "
+        "(default: 0.0, which makes py4dgeo fall back to using cyl_radius itself as the search depth - "
+        "see run_m3c2()'s docstring. Set explicitly to control how large a real offset the metric can "
+        "still report as a number instead of marking it undefined.)",
+    )
     args = parser.parse_args()
 
     source_path = resolve_path(args.source)
@@ -179,8 +199,10 @@ def main() -> None:
     corepoints = np.asarray(corepoint_pcd.points, dtype=np.float64)
     print(f"Core points (from {args.corepoints}, reference cloud): {len(corepoints)}")
 
+    effective_depth = args.max_distance if args.max_distance > 0 else args.projection_scale / 2
     print(
         f"Running M3C2 (D={args.normal_scale * 100:.0f}cm, d={args.projection_scale * 100:.0f}cm, "
+        f"max_distance={args.max_distance * 100:.0f}cm [effective cylinder half-length={effective_depth * 100:.1f}cm], "
         f"registration_error={args.registration_error * 100:.0f}cm)..."
     )
     distances, uncertainties = run_m3c2(
@@ -190,6 +212,7 @@ def main() -> None:
         args.normal_scale,
         args.projection_scale,
         args.registration_error,
+        args.max_distance,
     )
 
     valid = np.isfinite(distances)
@@ -260,6 +283,7 @@ def main() -> None:
         "normal_scale_D": args.normal_scale,
         "projection_scale_d": args.projection_scale,
         "registration_error": args.registration_error,
+        "max_distance": args.max_distance,
         "distance_stats": stats,
         "num_with_defined_lod": int(has_lod.sum()),
         "num_significant_at_lod95": int(significant.sum()),

@@ -27,6 +27,10 @@ Three ways to get the initial (coarse) alignment before ICP refinement:
     >=3 matching pairs by alternating: a point on the red cloud, then its
     match on the blue cloud, and so on. The initial transform is computed
     directly from those correspondences.
+  - --identity: skip coarse seeding entirely and start ICP from the identity
+    transform - use when source was already roughly positioned onto target
+    by hand outside this script (e.g. nudged into place in another viewer
+    and exported), so it's already a reasonable ICP seed as-is.
 
 Either way, the coarse transform is then refined with point-to-plane ICP.
 Reports fitness/RMSE for both stages plus point-to-point distance
@@ -390,6 +394,11 @@ def main() -> None:
         "(use for symmetric objects, e.g. bollards, where automatic matching can't tell rotations apart)",
     )
     parser.add_argument(
+        "--identity", action="store_true",
+        help="skip coarse seeding and start ICP from the identity transform - use when source was already "
+        "roughly aligned onto target by hand outside this script and just needs refinement",
+    )
+    parser.add_argument(
         "--axis-sweep", action="store_true",
         help="force PCA + rotational-sweep seeding (see module docstring) instead of FPFH+RANSAC; "
         "normally only used as an automatic fallback when FPFH+RANSAC fitness is low",
@@ -430,7 +439,11 @@ def main() -> None:
     allow_scaling = not args.rigid
     global_result = None
     initial_alignment = None
-    if args.manual:
+    if args.identity:
+        print("Identity seeding: starting ICP directly from source's current pose (already roughly aligned by hand).")
+        initial_transform = np.eye(4)
+        initial_alignment = "identity"
+    elif args.manual:
         print("Manual seeding: pick >=3 corresponding points on each cloud, in the same order.")
         initial_transform = manual_initial_transform(source, target, allow_scaling)
         print(f"Manual seed: scale~{extract_scale(initial_transform):.4f}")

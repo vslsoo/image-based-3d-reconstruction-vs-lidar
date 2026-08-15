@@ -20,3 +20,6 @@ Raw data and large outputs are not stored in this repository.
 - `scripts/` — command-line scripts
 - `config/` — configuration files
 - `docs/` — notes and experiment logs
+- `docs/tables/` — finalized summary tables (xlsx). `outputs/` is gitignored and
+  regenerable, so once a summary table (e.g. `outputs/metrics/*_summary_table.xlsx`)
+  is ready to keep as a result, copy it here so it's tracked in git.
