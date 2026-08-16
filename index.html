@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>image-based 3D reconstruction vs LiDAR — per-object reports</title>
+</head>
+<body>
+
+<style>
+  :root {
+    --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
+    --accent:#a8621f; --accent-soft:#f0dcc4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286; --accent:#e0a458; --accent-soft:#3a2f1e; }
+  }
+  :root[data-theme="dark"] { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286; --accent:#e0a458; --accent-soft:#3a2f1e; }
+  :root[data-theme="light"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6; --accent:#a8621f; --accent-soft:#f0dcc4; }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; line-height:1.45; }
+  .page { max-width:900px; margin:0 auto; padding:32px 24px 72px; display:flex; flex-direction:column; gap:20px; }
+  .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
+  h1 { font-size:24px; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em; }
+  .subtitle { color:var(--text-dim); font-size:14px; max-width:76ch; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:8px; }
+  .card { display:flex; flex-direction:column; gap:6px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:16px 18px; transition:border-color .15s; }
+  .card:hover { border-color:var(--accent); }
+  .card a.main-link { color:var(--text); text-decoration:none; }
+  .card .name { font-weight:650; font-size:15px; }
+  .card .desc { font-size:12.5px; color:var(--text-dim); }
+  .card .meta { font-size:11px; color:var(--text-faint); margin-top:2px; }
+  .card .actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .card .actions a { font-size:11.5px; padding:5px 10px; border-radius:7px; border:1px solid var(--panel-border); color:var(--text-dim); text-decoration:none; background:transparent; }
+  .card .actions a:hover { border-color:var(--accent); color:var(--text); }
+  .card .actions a.tuner-btn { border-color:#ff2dd055; color:#ff2dd0; }
+  .card .actions a.tuner-btn:hover { border-color:#ff2dd0; background:#ff2dd018; }
+  .warn-badge { display:inline-block; font-size:10.5px; font-weight:650; color:#f43f5e; border:1px solid #f43f5e55; background:#f43f5e14; border-radius:5px; padding:1px 7px; margin-left:6px; vertical-align:1px; }
+
+  .card-placeholder { display:flex; align-items:center; justify-content:center; border:1px dashed var(--panel-border); border-radius:12px; padding:16px 18px; font-size:12.5px; color:var(--text-faint); min-height:70px; }
+
+  footer { color:var(--text-faint); font-size:11.5px; padding-top:8px; }
+</style>
+
+<div class="page">
+  <div>
+    <div class="eyebrow">image-based 3D reconstruction vs LiDAR</div>
+    <h1>Per-object reports</h1>
+    <div class="subtitle">
+      Each object is a separate page: reference NN-spacing, a live DBSCAN gap-parameter tuner
+      (updates Accuracy/Completeness/F1 on the fly), and M3C2 in both directions.
+    </div>
+  </div>
+
+  <div>
+    <div class="eyebrow" style="margin-bottom:6px;">Tools</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));">
+      <div class="card">
+        <a class="main-link" href="tuner.html" target="_blank" rel="noopener">
+          <div class="name" style="color:#ff2dd0;">🎛️ DBSCAN gap tuner</div>
+          <div class="desc">Live tuning of far_threshold/eps/min_points, with an object selector (bus_stop_001, information_sign_002, bench_003, bollard_003, flashlight_003, bus_stop_sign_001) — slider ranges adapt to each object's scale automatically.</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="eyebrow" style="margin-bottom:6px;">Objects</div>
+    <div class="grid">
+      <div class="card">
+        <a class="main-link" href="bus_stop_001.html" target="_blank" rel="noopener">
+          <div class="name">bus_stop_001</div>
+          <div class="desc">4 methods (mast3r_ga / vggt / colmap / hloc_colmap) · gap-aware Accuracy/Completeness/F1 with a reactive DBSCAN tuner (built in) · M3C2 source↔target</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="information_sign_002.html" target="_blank" rel="noopener">
+          <div class="name">information_sign_002 <span class="warn-badge">⚠ incomplete reference</span></div>
+          <div class="desc">4 methods · same reactive pipeline as bus_stop_001 · incomplete reference (only the upper ~2/3 of the pole and one side were scanned) — comparison valid only within the scanned region; numbers computed as-is</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bench_003.html" target="_blank" rel="noopener">
+          <div class="name">bench_003</div>
+          <div class="desc">4 methods · same reactive pipeline as bus_stop_001 · clean, well-aligned object (park bench) · M3C2 source↔target</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bollard_003.html" target="_blank" rel="noopener">
+          <div class="name">bollard_003 <span class="warn-badge" style="color:#e0a458; border-color:#e0a45855; background:#e0a4581a;">ℹ single-sided reference</span></div>
+          <div class="desc">4 methods · bollard, clean geometry (median 1–2 cm) · LiDAR not scanned from all sides (~90° sector missing) — accuracy discounted via DBSCAN gap-exclusion · M3C2 source↔target</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="flashlight_003.html" target="_blank" rel="noopener">
+          <div class="name">flashlight_003 <span class="warn-badge">⚠ vggt failed</span></div>
+          <div class="desc">4 methods · lamppost ~6 m · mast3r_ga / colmap / hloc_colmap clean (median 0.9–1.3 cm), <b>vggt produced a noise cloud</b> (median ~10 cm) · M3C2 source↔target</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bus_stop_sign_001.html" target="_blank" rel="noopener">
+          <div class="name">bus_stop_sign_001</div>
+          <div class="desc">4 methods · bus-stop sign on a pole ~3.7 m · updated LiDAR reference · has an “Ignore DBSCAN” toggle · hloc/colmap/mast3r clean (median 2.5–2.9 cm), vggt worse (5.1 cm) · M3C2 source↔target</div>
+        </a>
+      </div>
+      <div class="card-placeholder">next object will appear here</div>
+    </div>
+  </div>
+
+  <footer>src/registration/ · outputs/density_matched/, outputs/metrics/</footer>
+</div>
+
+</body>
+</html>
