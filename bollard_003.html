@@ -135,6 +135,13 @@
           <input type="range" id="mp-slider" min="2" max="40" step="1" value="10">
         </div>
       </div>
+      <label id="no-dbscan-row" style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; font-weight:600; cursor:pointer; color:var(--text);">
+        <input type="checkbox" id="no-dbscan-chk" style="width:16px; height:16px; cursor:pointer;">
+        Ignore DBSCAN — count all points as-is (for objects without reference gaps)
+      </label>
+      <div style="font-size:11.5px; color:var(--text-faint); margin-top:4px; line-height:1.45;">
+        When enabled, no far point is excluded as a “gap”: accuracy/F1 are computed over the whole cloud.
+      </div>
       <div id="tuner-stats" class="panel-stats mono" style="margin-top:10px;">Loading...</div>
     </div>
   </section>
@@ -470,6 +477,7 @@ const RENDER_CAP = 6000;
 
 // global tuner state, shared by all 4 panels
 let farThreshold = 10, epsCm = 2, minPts = 10;
+let applyDbscan = true; // DBSCAN on by default; the "Ignore DBSCAN" checkbox switches to honest all-points mode
 
 const part1State = {};
 METHOD_IDS.forEach(methodId => {
@@ -493,6 +501,7 @@ METHOD_IDS.forEach(methodId => {
 function recomputeExclusion(methodId) {
   const s = part1State[methodId];
   const n = s.candidateDist.length;
+  if (!applyDbscan) { s.keptMask = new Uint8Array(n).fill(1); return; } // keep everything, no gap-exclusion
   const activeIdx = [];
   for (let i = 0; i < n; i++) if (s.candidateDist[i] > farThreshold) activeIdx.push(i);
   const pos = new Float32Array(activeIdx.length * 3);
@@ -652,6 +661,11 @@ for (const methodId of METHOD_IDS) {
 // ============ DBSCAN tuner controls (drive all 4 Part 1 panels above^) ============
 function fullRecomputeFromTuner() {
   const tunerStats = document.getElementById('tuner-stats');
+  if (!applyDbscan) {
+    METHOD_IDS.forEach(methodId => { recomputeExclusion(methodId); part1Panels[methodId].refresh(); });
+    tunerStats.innerHTML = '<b>DBSCAN off</b> — no point is excluded; accuracy/F1 are computed over the whole cloud.';
+    return;
+  }
   tunerStats.textContent = 'Recomputing DBSCAN for all 4 methods...';
   setTimeout(() => {
     const t0 = performance.now();
@@ -692,6 +706,18 @@ mpSlider.addEventListener('input', () => {
   document.getElementById('mp-val').textContent = minPts;
   onTunerChange();
 });
+
+const noDbscanChk = document.getElementById('no-dbscan-chk');
+function syncDbscanUiState() {
+  [ftSlider, epsSlider, mpSlider].forEach(sl => { sl.disabled = !applyDbscan; });
+  document.querySelector('#tuner-section .controls').style.opacity = applyDbscan ? '1' : '0.4';
+}
+noDbscanChk.addEventListener('change', () => {
+  applyDbscan = !noDbscanChk.checked;
+  syncDbscanUiState();
+  fullRecomputeFromTuner();
+});
+syncDbscanUiState();
 
 fullRecomputeFromTuner();
 
