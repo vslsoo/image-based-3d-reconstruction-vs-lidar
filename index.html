@@ -75,6 +75,12 @@
           <div class="desc">Does how you film the object change the reconstruction? 2 objects (bollard_003, information_sign_002) × 3 capture approaches (T1 close-ups+orbit / T2 overhead only / T3 full-object orbit) × 2 methods (COLMAP, MASt3R-GA) = 12 reconstructions · gap-aware Accuracy/Completeness/F1 with per-object live DBSCAN tuners · summary table + grouped F1 chart</div>
         </a>
       </div>
+      <div class="card">
+        <a class="main-link" href="frame_count_study.html" target="_blank" rel="noopener">
+          <div class="name">🖼️ Frame-count sensitivity</div>
+          <div class="desc">How many photos does the reconstruction need? information_sign_002_test_1's nested subsets (N=25/50/75/100, each a strict prefix of the next) × 2 methods (COLMAP, MASt3R-GA) = 8 reconstructions · Accuracy/Completeness/F1@3cm vs N, x-axis toggle N/N_max ↔ median pairwise SIFT-overlap (physically comparable across object sizes) · same live DBSCAN tuner + 3D viewers</div>
+        </a>
+      </div>
     </div>
   </div>
 
