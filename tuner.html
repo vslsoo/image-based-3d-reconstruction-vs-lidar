@@ -9,14 +9,15 @@
 
 <style>
   :root {
-    --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
-    --accent:#c2703a; --accent-soft:#f3ddc6; --ref-magenta:#ff2dd0; --canvas-bg:#0a0d13; --code-bg:#eceff4;
+    /* forced light palette — matches the thesis-defense deck (white bg, forest-green accent) */
+    --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+    --accent:#17805f; --accent-soft:#d9ece3; --ref-magenta:#2b2b28; --canvas-bg:#ffffff; --code-bg:#f5f4ef;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286; --accent:#f0a95e; --accent-soft:#3a2f1e; --ref-magenta:#ff2dd0; --code-bg:#0d1119; }
+    :root { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084; --accent:#17805f; --accent-soft:#d9ece3; --ref-magenta:#2b2b28; --code-bg:#f5f4ef; }
   }
-  :root[data-theme="dark"] { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286; --accent:#f0a95e; --accent-soft:#3a2f1e; --ref-magenta:#ff2dd0; --code-bg:#0d1119; }
-  :root[data-theme="light"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6; --accent:#c2703a; --accent-soft:#f3ddc6; --ref-magenta:#ff2dd0; --code-bg:#eceff4; }
+  :root[data-theme="dark"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084; --accent:#17805f; --accent-soft:#d9ece3; --ref-magenta:#2b2b28; --code-bg:#f5f4ef; }
+  :root[data-theme="light"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084; --accent:#17805f; --accent-soft:#d9ece3; --ref-magenta:#2b2b28; --code-bg:#f5f4ef; }
 
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; line-height:1.45; }
@@ -31,7 +32,7 @@
   .method-btn:hover { border-color:var(--accent); color:var(--text); }
   .method-btn.active { background:var(--accent-soft); border-color:var(--accent); color:var(--text); font-weight:650; }
 
-  .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
   canvas { width:100%; height:440px; display:block; border-radius:9px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
 
@@ -92,10 +93,10 @@
       </div>
     </div>
     <div class="legend">
-      <span><span class="swatch" style="background:#5a6072"></span>rest of the cloud (context, outside candidates)</span>
-      <span><span class="swatch" style="background:#ffcf4d"></span>candidate but isolated — kept (penalised)</span>
-      <span><span class="swatch" style="background:#ef4444"></span>in a cluster — will be excluded</span>
-      <span><span class="swatch" style="background:#ff2dd0"></span>“LiDAR ref” button above — reference overlay</span>
+      <span><span class="swatch" style="background:#c9cdc2"></span>rest of the cloud (context, outside candidates)</span>
+      <span><span class="swatch" style="background:#d4af00"></span>candidate but isolated — kept (penalised)</span>
+      <span><span class="swatch" style="background:#e16b3e"></span>in a cluster — will be excluded</span>
+      <span><span class="swatch" style="background:#2b2b28"></span>“LiDAR ref” button above — reference overlay</span>
     </div>
     <div class="stats-bar" id="stats-bar">Loading...</div>
     <div class="summary" id="summary-text"></div>
@@ -155,7 +156,7 @@ function makeViewer(canvas, layers) {
   const uMVP = gl.getUniformLocation(prog, 'uMVP');
   const uPointSize = gl.getUniformLocation(prog, 'uPointSize');
   function makeBuffer(data) { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); return b; }
-  const state = layers.map(l => ({ posBuf: makeBuffer(l.pos), colorBuf: makeBuffer(l.color), n: l.pos.length / 3, on: l.defaultOn !== false }));
+  const state = layers.map(l => ({ posBuf: makeBuffer(l.pos), colorBuf: makeBuffer(l.color), n: l.pos.length / 3, on: l.defaultOn !== false, sizeMul: l.sizeMul || 1 }));
 
   let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
   for (const l of layers) for (let i = 0; i < l.pos.length; i += 3) {
@@ -175,7 +176,7 @@ function makeViewer(canvas, layers) {
     resize();
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.enable(gl.DEPTH_TEST);
-    gl.clearColor(0.02, 0.03, 0.06, 1);
+    gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const eye = [
       center[0] + distance * Math.cos(elevation) * Math.cos(azimuth),
@@ -187,9 +188,10 @@ function makeViewer(canvas, layers) {
     const mvp = mat4Multiply(proj, view);
     gl.useProgram(prog);
     gl.uniformMatrix4fv(uMVP, false, mvp);
-    gl.uniform1f(uPointSize, Math.max(2.0, Math.min(canvas.width, canvas.height) / 160));
+    const baseSize = Math.max(2.2, Math.min(canvas.width, canvas.height) / 185);
     for (const s of state) {
       if (!s.on || s.n === 0) continue;
+      gl.uniform1f(uPointSize, baseSize * s.sizeMul);
       gl.bindBuffer(gl.ARRAY_BUFFER, s.posBuf); gl.enableVertexAttribArray(aPosition); gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, s.colorBuf); gl.enableVertexAttribArray(aColor); gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.POINTS, 0, s.n);
@@ -225,10 +227,10 @@ function solidColor(n, rgb) {
   return out;
 }
 
-const CONTEXT_COLOR = [0.353, 0.376, 0.447];
-const ISOLATED_COLOR = [1.0, 0.812, 0.302];
-const CLUSTER_COLOR = [0.937, 0.267, 0.267];  // red - "will be excluded"
-const LIDAR_COLOR = [1.0, 0.176, 0.816];      // magenta - reserved for reference overlay only
+const CONTEXT_COLOR = [0.788, 0.804, 0.761];  // #c9cdc2 - light, receded (reads as translucent against the white canvas)
+const ISOLATED_COLOR = [0.831, 0.686, 0.000];  // #d4af00 - validated distinct from CLUSTER_COLOR under deuteranopia
+const CLUSTER_COLOR = [0.882, 0.420, 0.243];  // #e16b3e - red, "will be excluded" (matches the site's status red elsewhere)
+const LIDAR_COLOR = [0.169, 0.169, 0.157];      // #2b2b28 - dark graphite, reserved for reference overlay only
 let lidarOn = false;
 
 // ---- grid-accelerated DBSCAN (standard Ester et al. 1996, border points absorbed into clusters) ----
@@ -362,7 +364,7 @@ function loadMethod() {
       { pos: md.contextPos, color: solidColor(md.contextPos.length/3, CONTEXT_COLOR), defaultOn: true },
       { pos: new Float32Array(0), color: new Float32Array(0), defaultOn: true },
       { pos: new Float32Array(0), color: new Float32Array(0), defaultOn: true },
-      { pos: lidarPos, color: solidColor(lidarPos.length/3, LIDAR_COLOR), defaultOn: lidarOn },
+      { pos: lidarPos, color: solidColor(lidarPos.length/3, LIDAR_COLOR), defaultOn: lidarOn, sizeMul: 0.85 },
     ]);
   } else {
     viewer.setLayer(0, md.contextPos, solidColor(md.contextPos.length/3, CONTEXT_COLOR));
