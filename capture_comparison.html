@@ -526,6 +526,34 @@ for (const obj of DATA.objects) {
     block.querySelector('.controls').style.opacity=t.applyDbscan?'1':'0.4'; recomputeObject(obj.id); });
 }
 
+// Hard cap on simultaneously-live WebGL contexts, enforced ourselves rather than
+// trusting a browser/GPU-specific limit (Chrome warns around ~16, but real GPUs/drivers
+// can silently evict sooner). The IntersectionObserver below is the primary mechanism
+// (free contexts once a panel is well off-screen); this cap is a backstop for the case
+// where more panels are simultaneously near-viewport than the browser can hold - it
+// evicts off-screen entries first and only touches a visible one as an absolute last
+// resort (a big monitor showing more rows than any browser could hold live at once).
+const __liveViewers = []; // {teardown, visible}, oldest-touched first
+const __MAX_LIVE_VIEWERS = 14;
+function __evictIfNeeded() {
+  while (__liveViewers.length > __MAX_LIVE_VIEWERS) {
+    let idx = __liveViewers.findIndex(v => !v.visible);
+    if (idx === -1) idx = 0;
+    __liveViewers.splice(idx, 1)[0].teardown();
+  }
+}
+function __registerViewer(entry) { entry.visible = true; __liveViewers.push(entry); __evictIfNeeded(); }
+function __touchViewer(entry) {
+  entry.visible = true;
+  const i = __liveViewers.indexOf(entry);
+  if (i >= 0) { __liveViewers.splice(i, 1); __liveViewers.push(entry); }
+}
+function __markInvisible(entry) { entry.visible = false; }
+function __unregisterViewer(entry) {
+  const i = __liveViewers.indexOf(entry);
+  if (i >= 0) __liveViewers.splice(i, 1);
+}
+
 function buildPanel(key) {
   const s = panelState[key], d = s.d;
   const panel = document.createElement('div');
@@ -546,7 +574,7 @@ function buildPanel(key) {
     <div class="panel-stats"><span class="tab-pct">-</span> within t &nbsp;·&nbsp; <span class="f1">F1=-</span><br>
       <span class="mono">n=${d.n_source_total.toLocaleString('en-US')} · ref=${d.n_target_total.toLocaleString('en-US')} · excl≈<span class="excl">0</span></span></div>
   `;
-  const canvas=panel.querySelector('canvas');
+  let canvas=panel.querySelector('canvas');
   const slider=panel.querySelector('input[type=range]');
   const thrVal=panel.querySelector('.thr-val');
   const tabPct=panel.querySelector('.tab-pct');
@@ -570,24 +598,41 @@ function buildPanel(key) {
     const ov=overlayLayer();
     viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
   }
+  const __lruEntry = { teardown: () => teardownViewer() };
   function ensureViewer(){
-    if(viewer) return;
+    if(viewer) { __touchViewer(__lruEntry); return; }
     const t=parseFloat(slider.value);
     const main=buildMain(key,activeTab,t,colorMode);
     const ov=overlayLayer();
     viewer=makeViewer(canvas,[{pos:main.pos,color:main.color,defaultOn:true},{pos:ov,color:solidColor(ov.length/3,MAGENTA),defaultOn:false,sizeMul:0.85}]);
     viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    __registerViewer(__lruEntry);
   }
   function teardownViewer(){
     if(!viewer) return;
     viewer.destroy();
     viewer=null;
+    __unregisterViewer(__lruEntry);
+    // A canvas whose WebGL context was explicitly lost via loseContext() keeps returning
+    // that SAME lost context from getContext() forever - there's no getting a live one
+    // back on that element without a manual restoreContext()+re-init dance. Swapping in a
+    // fresh (unused) canvas node is simpler and gives ensureViewer() a genuinely new context.
+    const fresh = canvas.cloneNode();
+    canvas.replaceWith(fresh);
+    io.unobserve(canvas);
+    canvas = fresh;
+    io.observe(canvas);
   }
-  // Only ~16 WebGL contexts can be live at once in most browsers; this page can have
-  // dozens of panels, so give each canvas a context only while it's near the viewport.
-  new IntersectionObserver(entries => {
-    for (const e of entries) { if (e.isIntersecting) ensureViewer(); else teardownViewer(); }
-  }, { rootMargin: '200px 0px 200px 0px' }).observe(canvas);
+  // Only ~16 WebGL contexts can be live at once in most browsers (fewer on some real
+  // GPUs/drivers); this page can have dozens of panels, so give each canvas a context
+  // only while it's near the viewport, with the LRU cap above as a hard backstop.
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      if (e.isIntersecting) ensureViewer();
+      else { __markInvisible(__lruEntry); teardownViewer(); }
+    }
+  }, { rootMargin: '150px 0px 150px 0px' });
+  io.observe(canvas);
   panelApi[key]={ refresh };
   requestAnimationFrame(refresh);
   slider.addEventListener('input',()=>{ thrVal.textContent=parseFloat(slider.value).toFixed(1)+'cm';
