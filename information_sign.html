@@ -76,8 +76,8 @@
     <div class="eyebrow">information_sign · gap-aware Chamfer</div>
     <h1>Accuracy / Completeness / F1 (reference-gap-aware)</h1>
     <div class="subtitle">
-      Drag to rotate, scroll to zoom. Section 0.5 is a live DBSCAN gap-exclusion tuner that
-      updates Section 1 (Accuracy/Completeness/F1) below as soon as any slider changes.
+      Drag to rotate, scroll to zoom. The DBSCAN gap tuner below is a live gap-exclusion tuner that
+      updates the Accuracy/Completeness/F1 panels further down as soon as any slider changes.
     </div>
     <div class="params" style="border-color:#f43f5e88;">
       <b>Reference limitation:</b> the reference for this object is incomplete — the LiDAR captured only the upper ~2/3 of
@@ -90,7 +90,7 @@
 
   <!-- ============ REFERENCE SPACING HISTOGRAM ============ -->
   <section id="hist-section">
-    <h2>0. Reference (LiDAR) — NN-spacing distribution</h2>
+    <h2>Reference (LiDAR) — NN-spacing distribution</h2>
     <div class="subtitle">
       Distance from every point of the cleaned reference to its nearest neighbour in the same cloud — the very
       spacing from which the voxel/radius for density-matching is derived (radius = 3× median).
@@ -105,11 +105,11 @@
 
   <!-- ============ DBSCAN GAP TUNER (drives Part 1 below) ============ -->
   <section id="tuner-section">
-    <h2>0.5. DBSCAN gap tuner</h2>
+    <h2>DBSCAN gap tuner</h2>
     <div class="subtitle">
       Controls which reconstruction points "far from the reference" are treated as a confirmed gap (excluded)
       vs. a single outlier (kept and penalised). Move any slider and the exclusion is recomputed for
-      all 4 methods, and the Accuracy/Completeness/F1 panels in Section 1 below update: both the cloud colouring and
+      all methods, and the Accuracy/Completeness/F1 panels below update: both the cloud colouring and
       accuracy%/F1.
     </div>
     <div class="panel tuner-panel">
@@ -142,7 +142,7 @@
 
   <!-- ============ PART 1 ============ -->
   <section id="part1-section">
-    <h2>1. Accuracy / Completeness / F1 — gap-excluded (reactive to the tuner above), adjustable threshold t</h2>
+    <h2>Accuracy / Completeness / F1 — gap-excluded (reactive to the tuner above), adjustable threshold t</h2>
     <div class="params">
       <b>Pipeline:</b> aligned → density-matched (voxel = median NN-spacing of the reference) → gap-exclusion by
       the current tuner parameters above (only clusters are excluded; single outliers are kept and penalised).
@@ -448,6 +448,7 @@ METHOD_IDS.forEach(methodId => {
   const d = PART1[methodId];
   part1State[methodId] = {
     label: d.label,
+    group: d.group,
     belowPos: b64ToFloat32(d.below_pos),
     belowDist: b64ToFloat32(d.below_dist_cm),
     candidatePos: b64ToFloat32(d.candidate_pos),
@@ -638,7 +639,7 @@ function fullRecomputeFromTuner() {
     tunerStats.innerHTML = '<b>DBSCAN off</b> — no point is excluded; accuracy/F1 are computed over the whole cloud.';
     return;
   }
-  tunerStats.textContent = 'Recomputing DBSCAN for all 4 methods...';
+  tunerStats.textContent = 'Recomputing DBSCAN for all methods...';
   setTimeout(() => {
     const t0 = performance.now();
     const parts = [];
