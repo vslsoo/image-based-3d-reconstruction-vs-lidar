@@ -97,7 +97,7 @@
       <div class="card">
         <a class="main-link" href="information_sign_002.html" target="_blank" rel="noopener">
           <div class="name">information_sign_002 <span class="warn-badge">incomplete reference</span></div>
-          <div class="desc">4 methods · same reactive pipeline as bus_stop_001 · incomplete reference (only the upper ~2/3 of the pole and one side were scanned) — comparison valid only within the scanned region; numbers computed as-is</div>
+          <div class="desc">4 methods · rebuilt on a hand-picked 75-photo subset (information_sign_002_test_1 pool, richer coverage than the original 32-photo capture) · same incomplete reference (only the upper ~2/3 of the pole and one side were scanned, systematic 25–30 cm+ gradient at the bottom) — wider DBSCAN far_threshold range for this object; numbers computed as-is</div>
         </a>
       </div>
       <div class="card">
@@ -109,7 +109,7 @@
       <div class="card">
         <a class="main-link" href="bollard_003.html" target="_blank" rel="noopener">
           <div class="name">bollard_003 <span class="warn-badge" style="color:#8a660f; border-color:#8a660f55; background:#8a660f14;">single-sided reference</span></div>
-          <div class="desc">4 methods · bollard, clean geometry (median 1–2 cm) · LiDAR not scanned from all sides (~90° sector missing) — accuracy discounted via DBSCAN gap-exclusion</div>
+          <div class="desc">4 methods · rebuilt on the full 69-photo uncurated pool (bollard_003_test_1_pool69, tuned configs), replacing the earlier 44-photo run · clean geometry (median 1.2–1.9 cm) · LiDAR not scanned from all sides (~90° sector missing) — accuracy discounted via DBSCAN gap-exclusion</div>
         </a>
       </div>
       <div class="card">
@@ -122,6 +122,24 @@
         <a class="main-link" href="bus_stop_sign_001.html" target="_blank" rel="noopener">
           <div class="name">bus_stop_sign_001</div>
           <div class="desc">4 methods · bus-stop sign on a pole ~3.7 m · updated LiDAR reference · has an “Ignore DBSCAN” toggle · hloc/colmap/mast3r clean (median 2.5–2.9 cm), vggt worse (5.1 cm)</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bench_004.html" target="_blank" rel="noopener">
+          <div class="name">bench_004</div>
+          <div class="desc">4 methods · second capture of the same bench, reusing bench_003's LiDAR reference · mast3r_ga/colmap/hloc_colmap clean (median 2.8–3.0 cm), vggt worse (4.4 cm)</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bus_stop_002.html" target="_blank" rel="noopener">
+          <div class="name">bus_stop_002</div>
+          <div class="desc">4 methods · second capture of the same bus stop, reusing bus_stop_001's LiDAR reference · colmap best (median 3.6 cm), hloc_colmap/mast3r_ga fair (4.1–4.9 cm), vggt worst (7.1 cm)</div>
+        </a>
+      </div>
+      <div class="card">
+        <a class="main-link" href="bus_stop_sign_002.html" target="_blank" rel="noopener">
+          <div class="name">bus_stop_sign_002</div>
+          <div class="desc">4 methods · second capture of the same sign, reusing bus_stop_sign_001's LiDAR reference · colmap/hloc_colmap clean (median 2.5–2.8 cm), <b>mast3r_ga and vggt notably worse this time</b> (6.2–8.3 cm) — the reverse of bus_stop_sign_001, where vggt was the only outlier</div>
         </a>
       </div>
       <div class="card-placeholder">next object will appear here</div>
