@@ -82,6 +82,12 @@
           <div class="desc">How many photos does the reconstruction need? information_sign_002_test_1's nested subsets (N=25/50/75/100, each a strict prefix of the next) × 2 methods (COLMAP, MASt3R-GA) = 8 reconstructions · Accuracy/Completeness/F1@3cm vs N, x-axis toggle N/N_max ↔ median pairwise SIFT-overlap (physically comparable across object sizes) · same live DBSCAN tuner + 3D viewers</div>
         </a>
       </div>
+      <div class="card">
+        <a class="main-link" href="performance_study.html" target="_blank" rel="noopener">
+          <div class="name">Compute cost vs frame count</div>
+          <div class="desc">Does reconstruction cost (time, RAM, VRAM) grow with N, and how, per method? Controlled sweeps only — bollard_003_test_1 (N=15/30/45/60) &amp; information_sign_002_test_1 (N=25/50/75/100), manual selection — COLMAP + MASt3R-GA(swin-8/logwin-7) + hloc+COLMAP · log-log time/RAM/VRAM curves, fitted scaling exponents, pipeline stage breakdown, RAM-vs-VRAM bottleneck per method · VGGT kept in a separate cross-sectional appendix (no controlled sweep exists for it)</div>
+        </a>
+      </div>
     </div>
   </div>
 
