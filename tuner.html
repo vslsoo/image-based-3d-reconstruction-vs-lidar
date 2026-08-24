@@ -73,7 +73,8 @@
   <div class="method-tabs" id="object-tabs"></div>
   <div style="font-size:11px; color:var(--text-faint); margin-top:4px; margin-bottom:-6px;">Method</div>
   <div class="method-tabs" id="method-tabs">
-    <button class="method-btn" id="lidar-toggle" style="order:1; margin-left:auto; border-color:var(--ref-magenta); color:var(--ref-magenta);">LiDAR ref</button>
+    <button class="method-btn" id="refonly-toggle" style="order:1; margin-left:auto; border-color:var(--ref-magenta); color:var(--ref-magenta);">Reference only</button>
+    <button class="method-btn" id="lidar-toggle" style="order:2; border-color:var(--ref-magenta); color:var(--ref-magenta);">LiDAR ref</button>
   </div>
 
   <div class="panel">
@@ -97,6 +98,7 @@
       <span><span class="swatch" style="background:#d4af00"></span>candidate but isolated — kept (penalised)</span>
       <span><span class="swatch" style="background:#e16b3e"></span>in a cluster — will be excluded</span>
       <span><span class="swatch" style="background:#2b2b28"></span>“LiDAR ref” button above — reference overlay</span>
+      <span>“Reference only” — hides the reconstruction entirely, shows just the raw LiDAR scan</span>
     </div>
     <div class="stats-bar" id="stats-bar">Loading...</div>
     <div class="summary" id="summary-text"></div>
@@ -148,6 +150,7 @@ function compileShader(gl, type, src) {
 
 function makeViewer(canvas, layers) {
   const gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true });
+  if (!gl) { canvas.replaceWith(document.createTextNode('WebGL not available')); return null; }
   const prog = gl.createProgram();
   gl.attachShader(prog, compileShader(gl, gl.VERTEX_SHADER, VERT_SRC));
   gl.attachShader(prog, compileShader(gl, gl.FRAGMENT_SHADER, FRAG_SRC));
@@ -233,6 +236,7 @@ const ISOLATED_COLOR = [0.831, 0.686, 0.000];  // #d4af00 - validated distinct f
 const CLUSTER_COLOR = [0.882, 0.420, 0.243];  // #e16b3e - red, "will be excluded" (matches the site's status red elsewhere)
 const LIDAR_COLOR = [0.169, 0.169, 0.157];      // #2b2b28 - dark graphite, reserved for reference overlay only
 let lidarOn = false;
+let refOnlyMode = false; // "Reference only": hides the reconstruction layers (0-2), forces the LiDAR layer (3) on at full size
 
 // ---- grid-accelerated DBSCAN (standard Ester et al. 1996, border points absorbed into clusters) ----
 function dbscan(pos, eps, minPts) {
@@ -322,6 +326,7 @@ METHOD_IDS.forEach(id => {
     document.querySelectorAll('#method-tabs .method-btn[data-method]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentMethod = id;
+    if (refOnlyMode) { refOnlyMode = false; setRefOnlyVisuals(); setControlsEnabled(true); }
     loadMethod();
   });
   methodTabs.appendChild(btn);
@@ -372,7 +377,29 @@ function loadMethod() {
     viewer.setLayer(3, lidarPos, solidColor(lidarPos.length/3, LIDAR_COLOR));
     viewer.setLayerOn(3, lidarOn);
   }
+  applyRefOnlyVisibility();
   recompute();
+}
+
+// "Reference only": hides the reconstruction (layers 0-2) and forces the LiDAR layer (3) on,
+// regardless of the separate "LiDAR ref" overlay toggle - independent of currentMethod, so
+// switching objects while active just keeps showing that object's raw reference alone.
+function applyRefOnlyVisibility() {
+  if (!viewer) return;
+  const showRecon = !refOnlyMode;
+  viewer.setLayerOn(0, showRecon);
+  viewer.setLayerOn(1, showRecon);
+  viewer.setLayerOn(2, showRecon);
+  viewer.setLayerOn(3, refOnlyMode ? true : lidarOn);
+}
+function setRefOnlyVisuals() {
+  refOnlyBtn.style.background = refOnlyMode ? 'var(--ref-magenta)' : 'transparent';
+  refOnlyBtn.style.color = refOnlyMode ? '#ffffff' : 'var(--ref-magenta)';
+  refOnlyBtn.style.fontWeight = refOnlyMode ? '700' : '400';
+}
+function setControlsEnabled(enabled) {
+  ['ft-slider', 'eps-slider', 'mp-slider'].forEach(id => { document.getElementById(id).disabled = !enabled; });
+  document.querySelector('.controls').style.opacity = enabled ? '1' : '0.4';
 }
 
 const lidarBtn = document.getElementById('lidar-toggle');
@@ -381,12 +408,27 @@ lidarBtn.addEventListener('click', () => {
   lidarBtn.style.background = lidarOn ? 'var(--ref-magenta)' : 'transparent';
   lidarBtn.style.color = lidarOn ? '#0a0d13' : 'var(--ref-magenta)';
   lidarBtn.style.fontWeight = lidarOn ? '700' : '400';
-  viewer.setLayerOn(3, lidarOn);
+  if (!refOnlyMode && viewer) viewer.setLayerOn(3, lidarOn);
+});
+
+const refOnlyBtn = document.getElementById('refonly-toggle');
+refOnlyBtn.addEventListener('click', () => {
+  refOnlyMode = !refOnlyMode;
+  setRefOnlyVisuals();
+  setControlsEnabled(!refOnlyMode);
+  applyRefOnlyVisibility();
+  recompute();
 });
 
 let recomputeTimer = null;
 function recompute() {
   clearTimeout(recomputeTimer);
+  if (refOnlyMode) {
+    document.getElementById('stats-bar').innerHTML = '<b>Reference only</b> — no reconstruction loaded, DBSCAN tuning does not apply.';
+    document.getElementById('summary-text').textContent = '';
+    return;
+  }
+  if (!viewer) return; // WebGL unavailable - nothing to recompute into
   recomputeTimer = setTimeout(() => {
     const md = getMethodData(currentObject, currentMethod);
     const ft = parseFloat(document.getElementById('ft-slider').value);
