@@ -1,0 +1,50 @@
+{
+  "nested_dir": "data/images/information_sign_002_test_1/nested",
+  "superset_size": 100,
+  "sizes": [
+    {
+      "size": 25,
+      "n_images": 25,
+      "n_pairs": 300,
+      "median_overlap_pct": 0.3243680360192018,
+      "mean_overlap_pct": 1.0199700525860067,
+      "p25_overlap_pct": 0.20836095196567464,
+      "p75_overlap_pct": 1.1223841692130407,
+      "min_overlap_pct": 0.13591573224600748,
+      "max_overlap_pct": 6.407669021190716
+    },
+    {
+      "size": 50,
+      "n_images": 50,
+      "n_pairs": 1225,
+      "median_overlap_pct": 0.3932785126921702,
+      "mean_overlap_pct": 1.7160257590653445,
+      "p25_overlap_pct": 0.2131871478605147,
+      "p75_overlap_pct": 1.768647698560914,
+      "min_overlap_pct": 0.10082903876316379,
+      "max_overlap_pct": 19.057377049180328
+    },
+    {
+      "size": 75,
+      "n_images": 75,
+      "n_pairs": 2775,
+      "median_overlap_pct": 0.4051757940138544,
+      "mean_overlap_pct": 2.025134387940006,
+      "p25_overlap_pct": 0.21722423845065356,
+      "p75_overlap_pct": 1.9059388392006023,
+      "min_overlap_pct": 0.10082903876316379,
+      "max_overlap_pct": 24.840952803669182
+    },
+    {
+      "size": 100,
+      "n_images": 100,
+      "n_pairs": 4950,
+      "median_overlap_pct": 0.47875281876984255,
+      "mean_overlap_pct": 2.4591246770617845,
+      "p25_overlap_pct": 0.21953896816684962,
+      "p75_overlap_pct": 2.4442446108619347,
+      "min_overlap_pct": 0.10082903876316379,
+      "max_overlap_pct": 33.52299668089142
+    }
+  ]
+}

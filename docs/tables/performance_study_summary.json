@@ -1,0 +1,1306 @@
+{
+  "ram_total_gib": 175.09,
+  "vram_total_mib": 46068,
+  "objects": [
+    {
+      "id": "bollard_003_test_1",
+      "title": "bollard_003_test_1",
+      "shape": "bollard (~1 m post)",
+      "sizes": [
+        15,
+        30,
+        45,
+        60
+      ],
+      "series": {
+        "colmap": {
+          "label": "COLMAP",
+          "colorvar": "--s-blue",
+          "dash": null,
+          "n": [
+            15.0,
+            30.0,
+            45.0,
+            60.0
+          ],
+          "exp_ids": [
+            "exp_115",
+            "exp_116",
+            "exp_117",
+            "exp_118"
+          ],
+          "time_s": [
+            481.43,
+            1198.39,
+            1834.71,
+            2680.22
+          ],
+          "ram_mib": [
+            12097.8,
+            16150.7,
+            18896.0,
+            22261.3
+          ],
+          "vram_mib": [
+            6549.0,
+            6549.0,
+            6549.0,
+            6549.0
+          ],
+          "stage_by_n": {
+            "15": {
+              "feature_extraction": 5.6,
+              "matching": 1.1,
+              "sparse_mapping": 67.5,
+              "dense_undistort": 5.9,
+              "dense_patchmatch": 368.3,
+              "dense_fusion": 32.9
+            },
+            "30": {
+              "feature_extraction": 9.6,
+              "matching": 3.3,
+              "sparse_mapping": 279.3,
+              "dense_undistort": 13.2,
+              "dense_patchmatch": 832.8,
+              "dense_fusion": 60.1
+            },
+            "45": {
+              "feature_extraction": 12.4,
+              "matching": 7.6,
+              "sparse_mapping": 414.1,
+              "dense_undistort": 20.6,
+              "dense_patchmatch": 1258.5,
+              "dense_fusion": 121.5
+            },
+            "60": {
+              "feature_extraction": 17.2,
+              "matching": 11.5,
+              "sparse_mapping": 772.9,
+              "dense_undistort": 29.6,
+              "dense_patchmatch": 1686.9,
+              "dense_fusion": 162.1
+            }
+          },
+          "fit_time": {
+            "b": 1.227,
+            "r2": 0.998
+          },
+          "fit_time_lin": {
+            "slope": 48.218,
+            "intercept": -259.5,
+            "r2": 0.997
+          },
+          "fit_ram_lin": {
+            "slope": 221.572,
+            "intercept": 9042.5,
+            "r2": 0.995
+          },
+          "fit_vram_lin": {
+            "slope": -0.0,
+            "intercept": 6549.0,
+            "r2": null
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "hloc_colmap": {
+          "label": "hloc + COLMAP",
+          "colorvar": "--s-orange",
+          "dash": null,
+          "n": [
+            15.0,
+            30.0,
+            45.0,
+            60.0
+          ],
+          "exp_ids": [
+            "exp_159",
+            "exp_160",
+            "exp_161",
+            "exp_170"
+          ],
+          "time_s": [
+            462.24,
+            1185.78,
+            1944.9,
+            3028.23
+          ],
+          "ram_mib": [
+            13183.9,
+            18039.8,
+            21817.8,
+            27729.0
+          ],
+          "vram_mib": [
+            4875.0,
+            6297.0,
+            6237.0,
+            5989.0
+          ],
+          "stage_by_n": {
+            "15": {
+              "matching": 5.9,
+              "feature_extraction": 2.1,
+              "sparse_mapping": 16.7,
+              "dense_undistort": 2.5,
+              "dense_patchmatch": 345.6,
+              "dense_fusion": 89.4
+            },
+            "30": {
+              "matching": 19.4,
+              "feature_extraction": 9.9,
+              "sparse_mapping": 145.2,
+              "dense_undistort": 9.8,
+              "dense_patchmatch": 785.8,
+              "dense_fusion": 215.7
+            },
+            "45": {
+              "matching": 40.0,
+              "feature_extraction": 21.2,
+              "sparse_mapping": 335.5,
+              "dense_undistort": 15.7,
+              "dense_patchmatch": 1166.0,
+              "dense_fusion": 366.4
+            },
+            "60": {
+              "matching": 137.1,
+              "feature_extraction": 7.3,
+              "sparse_mapping": 96.4,
+              "dense_undistort": 18.6,
+              "dense_patchmatch": 1870.1,
+              "dense_fusion": 898.3
+            }
+          },
+          "fit_time": {
+            "b": 1.341,
+            "r2": 0.999
+          },
+          "fit_time_lin": {
+            "slope": 56.381,
+            "intercept": -459.0,
+            "r2": 0.99
+          },
+          "fit_ram_lin": {
+            "slope": 316.089,
+            "intercept": 8339.3,
+            "r2": 0.993
+          },
+          "fit_vram_lin": {
+            "slope": 21.88,
+            "intercept": 5029.0,
+            "r2": 0.408
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "mast3r_ga": {
+          "label": "MASt3R-GA",
+          "colorvar": "--s-aqua",
+          "dash": null,
+          "n": [
+            15.0,
+            30.0,
+            45.0,
+            60.0
+          ],
+          "exp_ids": [
+            "exp_119",
+            "exp_120",
+            "exp_121",
+            "exp_122"
+          ],
+          "time_s": [
+            97.04,
+            195.35,
+            294.33,
+            394.76
+          ],
+          "ram_mib": [
+            11846.0,
+            11886.4,
+            11871.4,
+            11890.0
+          ],
+          "vram_mib": [
+            4365.0,
+            4689.0,
+            5313.0,
+            6216.0
+          ],
+          "stage_by_n": {
+            "15": {
+              "model_load": 7.7,
+              "matching_and_optimization": 87.8,
+              "export": 1.5
+            },
+            "30": {
+              "model_load": 7.9,
+              "matching_and_optimization": 184.6,
+              "export": 2.9
+            },
+            "45": {
+              "model_load": 8.0,
+              "matching_and_optimization": 282.0,
+              "export": 4.2
+            },
+            "60": {
+              "model_load": 8.0,
+              "matching_and_optimization": 380.3,
+              "export": 6.4
+            }
+          },
+          "fit_time": {
+            "b": 1.012,
+            "r2": 1.0
+          },
+          "fit_time_lin": {
+            "slope": 6.614,
+            "intercept": -2.7,
+            "r2": 1.0
+          },
+          "fit_ram_lin": {
+            "slope": 0.78,
+            "intercept": 11844.2,
+            "r2": 0.571
+          },
+          "fit_vram_lin": {
+            "slope": 41.18,
+            "intercept": 3601.5,
+            "r2": 0.958
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "vggt": {
+          "label": "VGGT",
+          "colorvar": "--s-yellow",
+          "dash": null,
+          "n": [
+            15.0,
+            30.0,
+            45.0,
+            60.0
+          ],
+          "exp_ids": [
+            "exp_165",
+            "exp_166",
+            "exp_167",
+            "exp_168"
+          ],
+          "time_s": [
+            6.52,
+            10.500000000000002,
+            23.409999999999997,
+            18.809999999999995
+          ],
+          "ram_mib": [
+            20524.3,
+            20565.3,
+            20549.5,
+            20542.8
+          ],
+          "vram_mib": [
+            14347.0,
+            15535.0,
+            15793.0,
+            17799.0
+          ],
+          "stage_by_n": {
+            "15": {
+              "model_load": 13.1,
+              "preprocess": 2.4,
+              "inference": 1.3,
+              "export": 2.7
+            },
+            "30": {
+              "model_load": 13.4,
+              "preprocess": 4.9,
+              "inference": 2.6,
+              "export": 2.7
+            },
+            "45": {
+              "model_load": 13.0,
+              "preprocess": 7.3,
+              "inference": 4.3,
+              "export": 11.4
+            },
+            "60": {
+              "model_load": 13.5,
+              "preprocess": 9.7,
+              "inference": 6.6,
+              "export": 1.9
+            }
+          },
+          "fit_time": {
+            "b": 0.892,
+            "r2": 0.86
+          },
+          "fit_time_lin": {
+            "slope": 0.332,
+            "intercept": 2.4,
+            "r2": 0.699
+          },
+          "fit_ram_lin": {
+            "slope": 0.265,
+            "intercept": 20535.5,
+            "r2": 0.091
+          },
+          "fit_vram_lin": {
+            "slope": 70.76,
+            "intercept": 13215.0,
+            "r2": 0.915
+          },
+          "n_points": 4,
+          "n_expected": 4
+        }
+      },
+      "even_check": [
+        {
+          "method": "COLMAP",
+          "n_points": 4,
+          "exponent": 1.232,
+          "r2": 0.999,
+          "rows": [
+            {
+              "n": 15,
+              "time_s": 433.4,
+              "ram_mib": 11609.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 30,
+              "time_s": 971.6,
+              "ram_mib": 15499.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 45,
+              "time_s": 1622.2,
+              "ram_mib": 18860.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 60,
+              "time_s": 2411.9,
+              "ram_mib": 22253.0,
+              "vram_mib": 6549.0
+            }
+          ]
+        },
+        {
+          "method": "MASt3R-GA",
+          "n_points": 4,
+          "exponent": 0.932,
+          "r2": 0.993,
+          "rows": [
+            {
+              "n": 15,
+              "time_s": 102.7,
+              "ram_mib": 11859.0,
+              "vram_mib": 4365.0
+            },
+            {
+              "n": 30,
+              "time_s": 197.4,
+              "ram_mib": 11877.0,
+              "vram_mib": 4978.0
+            },
+            {
+              "n": 45,
+              "time_s": 308.1,
+              "ram_mib": 11876.0,
+              "vram_mib": 5369.0
+            },
+            {
+              "n": 60,
+              "time_s": 360.2,
+              "ram_mib": 11868.0,
+              "vram_mib": 6081.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "information_sign_002_test_1",
+      "title": "information_sign_002_test_1",
+      "shape": "information sign (~2.5 m)",
+      "sizes": [
+        25,
+        50,
+        75,
+        100
+      ],
+      "series": {
+        "colmap": {
+          "label": "COLMAP",
+          "colorvar": "--s-blue",
+          "dash": null,
+          "n": [
+            25.0,
+            50.0,
+            75.0,
+            100.0
+          ],
+          "exp_ids": [
+            "exp_109",
+            "exp_110",
+            "exp_111",
+            "exp_123"
+          ],
+          "time_s": [
+            913.77,
+            2003.48,
+            3169.32,
+            4509.33
+          ],
+          "ram_mib": [
+            12936.5,
+            21188.4,
+            26203.4,
+            33625.1
+          ],
+          "vram_mib": [
+            6549.0,
+            6549.0,
+            6549.0,
+            6549.0
+          ],
+          "stage_by_n": {
+            "25": {
+              "feature_extraction": 7.7,
+              "matching": 2.2,
+              "sparse_mapping": 145.8,
+              "dense_undistort": 11.1,
+              "dense_patchmatch": 673.1,
+              "dense_fusion": 73.7
+            },
+            "50": {
+              "feature_extraction": 13.8,
+              "matching": 6.7,
+              "sparse_mapping": 461.5,
+              "dense_undistort": 23.7,
+              "dense_patchmatch": 1350.7,
+              "dense_fusion": 146.9
+            },
+            "75": {
+              "feature_extraction": 19.0,
+              "matching": 128.1,
+              "sparse_mapping": 751.2,
+              "dense_undistort": 41.0,
+              "dense_patchmatch": 2013.8,
+              "dense_fusion": 216.1
+            },
+            "100": {
+              "feature_extraction": 24.8,
+              "matching": 84.8,
+              "sparse_mapping": 1352.5,
+              "dense_undistort": 65.2,
+              "dense_patchmatch": 2736.6,
+              "dense_fusion": 245.3
+            }
+          },
+          "fit_time": {
+            "b": 1.147,
+            "r2": 1.0
+          },
+          "fit_time_lin": {
+            "slope": 47.81,
+            "intercept": -339.2,
+            "r2": 0.998
+          },
+          "fit_ram_lin": {
+            "slope": 268.323,
+            "intercept": 6718.2,
+            "r2": 0.992
+          },
+          "fit_vram_lin": {
+            "slope": -0.0,
+            "intercept": 6549.0,
+            "r2": null
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "hloc_colmap": {
+          "label": "hloc + COLMAP",
+          "colorvar": "--s-orange",
+          "dash": null,
+          "n": [
+            25.0,
+            50.0,
+            75.0,
+            100.0
+          ],
+          "exp_ids": [
+            "exp_155",
+            "exp_156",
+            "exp_129",
+            "exp_158"
+          ],
+          "time_s": [
+            887.07,
+            2101.64,
+            3245.3,
+            5006.2
+          ],
+          "ram_mib": [
+            16092.8,
+            22884.6,
+            31932.8,
+            39011.7
+          ],
+          "vram_mib": [
+            5907.0,
+            6143.0,
+            6193.0,
+            6005.0
+          ],
+          "stage_by_n": {
+            "25": {
+              "matching": 15.1,
+              "feature_extraction": 2.6,
+              "sparse_mapping": 87.8,
+              "dense_undistort": 8.8,
+              "dense_patchmatch": 611.4,
+              "dense_fusion": 161.3
+            },
+            "50": {
+              "matching": 47.8,
+              "feature_extraction": 4.5,
+              "sparse_mapping": 419.7,
+              "dense_undistort": 17.2,
+              "dense_patchmatch": 1239.1,
+              "dense_fusion": 373.2
+            },
+            "75": {
+              "matching": 111.3,
+              "feature_extraction": 13.2,
+              "sparse_mapping": 666.6,
+              "dense_undistort": 32.1,
+              "dense_patchmatch": 1888.4,
+              "dense_fusion": 533.6
+            },
+            "100": {
+              "matching": 203.5,
+              "feature_extraction": 8.0,
+              "sparse_mapping": 1483.2,
+              "dense_undistort": 47.8,
+              "dense_patchmatch": 2522.2,
+              "dense_fusion": 741.5
+            }
+          },
+          "fit_time": {
+            "b": 1.228,
+            "r2": 0.998
+          },
+          "fit_time_lin": {
+            "slope": 54.004,
+            "intercept": -565.2,
+            "r2": 0.989
+          },
+          "fit_ram_lin": {
+            "slope": 311.22,
+            "intercept": 8029.3,
+            "r2": 0.997
+          },
+          "fit_vram_lin": {
+            "slope": 1.376,
+            "intercept": 5976.0,
+            "r2": 0.116
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "mast3r_ga": {
+          "label": "MASt3R-GA",
+          "colorvar": "--s-aqua",
+          "dash": null,
+          "n": [
+            25.0,
+            50.0,
+            75.0,
+            100.0
+          ],
+          "exp_ids": [
+            "exp_112",
+            "exp_113",
+            "exp_114",
+            "exp_124"
+          ],
+          "time_s": [
+            178.63,
+            307.87,
+            465.71,
+            450.03
+          ],
+          "ram_mib": [
+            13113.5,
+            11879.8,
+            11881.7,
+            13146.4
+          ],
+          "vram_mib": [
+            4449.0,
+            6015.0,
+            6595.0,
+            7939.0
+          ],
+          "stage_by_n": {
+            "25": {
+              "model_load": 17.0,
+              "matching_and_optimization": 160.0,
+              "export": 1.6
+            },
+            "50": {
+              "model_load": 7.9,
+              "matching_and_optimization": 296.0,
+              "export": 4.0
+            },
+            "75": {
+              "model_load": 7.6,
+              "matching_and_optimization": 450.8,
+              "export": 7.2
+            },
+            "100": {
+              "model_load": 18.9,
+              "matching_and_optimization": 423.4,
+              "export": 7.7
+            }
+          },
+          "fit_time": {
+            "b": 0.722,
+            "r2": 0.948
+          },
+          "fit_time_lin": {
+            "slope": 3.888,
+            "intercept": 107.6,
+            "r2": 0.866
+          },
+          "fit_ram_lin": {
+            "slope": 0.402,
+            "intercept": 12480.2,
+            "r2": 0.0
+          },
+          "fit_vram_lin": {
+            "slope": 44.2,
+            "intercept": 3487.0,
+            "r2": 0.974
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "mast3r_ga_logwin7": {
+          "label": "MASt3R-GA (logwin-7)",
+          "colorvar": "--s-aqua",
+          "dash": "5 3",
+          "n": [
+            25.0,
+            50.0,
+            75.0,
+            100.0
+          ],
+          "exp_ids": [
+            "exp_128",
+            "exp_127",
+            "exp_126",
+            "exp_125"
+          ],
+          "time_s": [
+            115.32,
+            200.95,
+            310.37,
+            403.93
+          ],
+          "ram_mib": [
+            11812.5,
+            11848.0,
+            11846.3,
+            13283.2
+          ],
+          "vram_mib": [
+            4365.0,
+            5161.0,
+            5877.0,
+            6749.0
+          ],
+          "stage_by_n": {
+            "25": {
+              "model_load": 7.6,
+              "matching_and_optimization": 106.5,
+              "export": 1.1
+            },
+            "50": {
+              "model_load": 6.6,
+              "matching_and_optimization": 190.9,
+              "export": 3.3
+            },
+            "75": {
+              "model_load": 6.5,
+              "matching_and_optimization": 299.0,
+              "export": 4.8
+            },
+            "100": {
+              "model_load": 15.6,
+              "matching_and_optimization": 379.9,
+              "export": 8.4
+            }
+          },
+          "fit_time": {
+            "b": 0.91,
+            "r2": 0.996
+          },
+          "fit_time_lin": {
+            "slope": 3.901,
+            "intercept": 13.8,
+            "r2": 0.998
+          },
+          "fit_ram_lin": {
+            "slope": 17.642,
+            "intercept": 11094.9,
+            "r2": 0.619
+          },
+          "fit_vram_lin": {
+            "slope": 31.472,
+            "intercept": 3571.0,
+            "r2": 0.999
+          },
+          "n_points": 4,
+          "n_expected": 4
+        },
+        "vggt": {
+          "label": "VGGT",
+          "colorvar": "--s-yellow",
+          "dash": null,
+          "n": [
+            25.0,
+            50.0,
+            75.0,
+            100.0
+          ],
+          "exp_ids": [
+            "exp_162",
+            "exp_163",
+            "exp_130",
+            "exp_164"
+          ],
+          "time_s": [
+            7.469999999999999,
+            15.690000000000001,
+            25.55,
+            56.73
+          ],
+          "ram_mib": [
+            21636.8,
+            20535.2,
+            21416.8,
+            20520.0
+          ],
+          "vram_mib": [
+            15035.0,
+            15765.0,
+            18523.0,
+            19849.0
+          ],
+          "stage_by_n": {
+            "25": {
+              "model_load": 28.8,
+              "preprocess": 4.0,
+              "inference": 2.1,
+              "export": 1.1
+            },
+            "50": {
+              "model_load": 14.3,
+              "preprocess": 8.1,
+              "inference": 5.1,
+              "export": 2.1
+            },
+            "75": {
+              "model_load": 23.7,
+              "preprocess": 12.5,
+              "inference": 9.3,
+              "export": 3.1
+            },
+            "100": {
+              "model_load": 12.6,
+              "preprocess": 16.1,
+              "inference": 14.5,
+              "export": 25.4
+            }
+          },
+          "fit_time": {
+            "b": 1.382,
+            "r2": 0.952
+          },
+          "fit_time_lin": {
+            "slope": 0.631,
+            "intercept": -13.0,
+            "r2": 0.892
+          },
+          "fit_ram_lin": {
+            "slope": -9.875,
+            "intercept": 21644.4,
+            "r2": 0.298
+          },
+          "fit_vram_lin": {
+            "slope": 68.8,
+            "intercept": 12993.0,
+            "r2": 0.956
+          },
+          "n_points": 4,
+          "n_expected": 4
+        }
+      },
+      "even_check": [
+        {
+          "method": "COLMAP",
+          "n_points": 4,
+          "exponent": 1.329,
+          "r2": 0.997,
+          "rows": [
+            {
+              "n": 25,
+              "time_s": 719.5,
+              "ram_mib": 12542.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 50,
+              "time_s": 1735.0,
+              "ram_mib": 20914.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 75,
+              "time_s": 2892.8,
+              "ram_mib": 26249.0,
+              "vram_mib": 6549.0
+            },
+            {
+              "n": 100,
+              "time_s": 4671.2,
+              "ram_mib": 33875.0,
+              "vram_mib": 6549.0
+            }
+          ]
+        },
+        {
+          "method": "MASt3R-GA",
+          "n_points": 4,
+          "exponent": 0.916,
+          "r2": 0.999,
+          "rows": [
+            {
+              "n": 25,
+              "time_s": 172.2,
+              "ram_mib": 11878.0,
+              "vram_mib": 4710.0
+            },
+            {
+              "n": 50,
+              "time_s": 322.7,
+              "ram_mib": 11896.0,
+              "vram_mib": 4993.0
+            },
+            {
+              "n": 75,
+              "time_s": 483.6,
+              "ram_mib": 11870.0,
+              "vram_mib": 6794.0
+            },
+            {
+              "n": 100,
+              "time_s": 603.6,
+              "ram_mib": 11832.0,
+              "vram_mib": 7943.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stage_share": {
+    "colmap": {
+      "n_runs": 27,
+      "stages": [
+        {
+          "key": "feature_extraction",
+          "label": "feature extraction",
+          "median_pct": 0.7,
+          "median_s_per_frame": 0.288
+        },
+        {
+          "key": "matching",
+          "label": "matching",
+          "median_pct": 0.4,
+          "median_s_per_frame": 0.174
+        },
+        {
+          "key": "sparse_mapping",
+          "label": "sparse mapping",
+          "median_pct": 19.6,
+          "median_s_per_frame": 8.147
+        },
+        {
+          "key": "dense_undistort",
+          "label": "dense: undistort",
+          "median_pct": 1.2,
+          "median_s_per_frame": 0.446
+        },
+        {
+          "key": "dense_patchmatch",
+          "label": "dense: patchmatch",
+          "median_pct": 69.4,
+          "median_s_per_frame": 27.087
+        },
+        {
+          "key": "dense_fusion",
+          "label": "dense: fusion",
+          "median_pct": 6.7,
+          "median_s_per_frame": 2.701
+        }
+      ]
+    },
+    "hloc_colmap": {
+      "n_runs": 13,
+      "stages": [
+        {
+          "key": "feature_extraction",
+          "label": "feature extraction",
+          "median_pct": 0.3,
+          "median_s_per_frame": 0.139
+        },
+        {
+          "key": "matching",
+          "label": "matching",
+          "median_pct": 2.5,
+          "median_s_per_frame": 1.354
+        },
+        {
+          "key": "sparse_mapping",
+          "label": "sparse mapping",
+          "median_pct": 20.5,
+          "median_s_per_frame": 8.888
+        },
+        {
+          "key": "dense_undistort",
+          "label": "dense: undistort",
+          "median_pct": 0.8,
+          "median_s_per_frame": 0.373
+        },
+        {
+          "key": "dense_patchmatch",
+          "label": "dense: patchmatch",
+          "median_pct": 58.2,
+          "median_s_per_frame": 25.178
+        },
+        {
+          "key": "dense_fusion",
+          "label": "dense: fusion",
+          "median_pct": 16.4,
+          "median_s_per_frame": 7.19
+        }
+      ]
+    },
+    "mast3r_ga": {
+      "n_runs": 33,
+      "stages": [
+        {
+          "key": "model_load",
+          "label": "model load",
+          "median_pct": 2.9,
+          "median_s_per_frame": 0.158
+        },
+        {
+          "key": "matching_and_optimization",
+          "label": "matching + global optim.",
+          "median_pct": 95.4,
+          "median_s_per_frame": 5.739
+        },
+        {
+          "key": "export",
+          "label": "export",
+          "median_pct": 1.6,
+          "median_s_per_frame": 0.089
+        }
+      ]
+    },
+    "vggt": {
+      "n_runs": 15,
+      "stages": [
+        {
+          "key": "model_load",
+          "label": "model load",
+          "median_pct": 40.9,
+          "median_s_per_frame": 0.286
+        },
+        {
+          "key": "preprocess",
+          "label": "preprocess",
+          "median_pct": 25.2,
+          "median_s_per_frame": 0.162
+        },
+        {
+          "key": "inference",
+          "label": "inference",
+          "median_pct": 18.8,
+          "median_s_per_frame": 0.096
+        },
+        {
+          "key": "export",
+          "label": "export",
+          "median_pct": 7.6,
+          "median_s_per_frame": 0.042
+        }
+      ]
+    }
+  },
+  "stage_scaling": {
+    "colmap": [
+      {
+        "key": "feature_extraction",
+        "label": "feature extraction",
+        "exponent": 0.794,
+        "r2": 0.994
+      },
+      {
+        "key": "matching",
+        "label": "matching",
+        "exponent": 2.505,
+        "r2": 0.858
+      },
+      {
+        "key": "sparse_mapping",
+        "label": "sparse mapping",
+        "exponent": 1.55,
+        "r2": 0.976
+      },
+      {
+        "key": "dense_undistort",
+        "label": "dense: undistort",
+        "exponent": 1.23,
+        "r2": 0.994
+      },
+      {
+        "key": "dense_patchmatch",
+        "label": "dense: patchmatch",
+        "exponent": 1.043,
+        "r2": 0.997
+      },
+      {
+        "key": "dense_fusion",
+        "label": "dense: fusion",
+        "exponent": 1.091,
+        "r2": 0.963
+      }
+    ],
+    "hloc_colmap": [
+      {
+        "key": "feature_extraction",
+        "label": "feature extraction",
+        "exponent": 0.823,
+        "r2": 0.397
+      },
+      {
+        "key": "matching",
+        "label": "matching",
+        "exponent": 1.848,
+        "r2": 0.997
+      },
+      {
+        "key": "sparse_mapping",
+        "label": "sparse mapping",
+        "exponent": 2.232,
+        "r2": 0.972
+      },
+      {
+        "key": "dense_undistort",
+        "label": "dense: undistort",
+        "exponent": 1.453,
+        "r2": 0.972
+      },
+      {
+        "key": "dense_patchmatch",
+        "label": "dense: patchmatch",
+        "exponent": 1.036,
+        "r2": 0.997
+      },
+      {
+        "key": "dense_fusion",
+        "label": "dense: fusion",
+        "exponent": 1.11,
+        "r2": 0.99
+      }
+    ],
+    "mast3r_ga": [
+      {
+        "key": "model_load",
+        "label": "model load",
+        "exponent": 0.125,
+        "r2": 0.041
+      },
+      {
+        "key": "matching_and_optimization",
+        "label": "matching + global optim.",
+        "exponent": 0.891,
+        "r2": 0.957
+      },
+      {
+        "key": "export",
+        "label": "export",
+        "exponent": 0.997,
+        "r2": 0.93
+      }
+    ],
+    "vggt": [
+      {
+        "key": "model_load",
+        "label": "model load",
+        "exponent": -0.041,
+        "r2": 0.006
+      },
+      {
+        "key": "preprocess",
+        "label": "preprocess",
+        "exponent": 1.01,
+        "r2": 1.0
+      },
+      {
+        "key": "inference",
+        "label": "inference",
+        "exponent": 1.284,
+        "r2": 0.99
+      },
+      {
+        "key": "export",
+        "label": "export",
+        "exponent": 0.882,
+        "r2": 0.282
+      }
+    ]
+  },
+  "vggt": {
+    "rows": [
+      {
+        "object": "bus_stop_sign_002_master",
+        "n": 42,
+        "model_load_s": 29.3,
+        "work_s": 9.3,
+        "work_s_per_frame": 0.221,
+        "total_s": 40.2,
+        "ram_mib": 21802.0,
+        "vram_mib": 13439
+      },
+      {
+        "object": "bollard_003_test_1_pool69",
+        "n": 69,
+        "model_load_s": 23.6,
+        "work_s": 19.3,
+        "work_s_per_frame": 0.28,
+        "total_s": 57.7,
+        "ram_mib": 21396.0,
+        "vram_mib": 17329
+      },
+      {
+        "object": "bus_stop_sign_002",
+        "n": 79,
+        "model_load_s": 13.4,
+        "work_s": 18.8,
+        "work_s_per_frame": 0.237,
+        "total_s": 35.1,
+        "ram_mib": 20523.0,
+        "vram_mib": 15591
+      },
+      {
+        "object": "bus_stop_002_master",
+        "n": 81,
+        "model_load_s": 13.4,
+        "work_s": 19.5,
+        "work_s_per_frame": 0.24,
+        "total_s": 35.2,
+        "ram_mib": 20558.0,
+        "vram_mib": 16131
+      },
+      {
+        "object": "bench_004",
+        "n": 94,
+        "model_load_s": 13.0,
+        "work_s": 29.5,
+        "work_s_per_frame": 0.314,
+        "total_s": 64.2,
+        "ram_mib": 20524.0,
+        "vram_mib": 20141
+      },
+      {
+        "object": "bus_stop_002",
+        "n": 96,
+        "model_load_s": 15.8,
+        "work_s": 23.7,
+        "work_s_per_frame": 0.247,
+        "total_s": 47.4,
+        "ram_mib": 20527.0,
+        "vram_mib": 17147
+      },
+      {
+        "object": "flashlight_004",
+        "n": 105,
+        "model_load_s": 13.1,
+        "work_s": 26.0,
+        "work_s_per_frame": 0.248,
+        "total_s": 42.9,
+        "ram_mib": 20545.0,
+        "vram_mib": 16817
+      }
+    ],
+    "fit_total": {
+      "b": 0.159,
+      "r2": 0.044
+    },
+    "fit_work": {
+      "b": 1.174,
+      "r2": 0.923
+    },
+    "fit_work_lin": {
+      "slope": 0.286,
+      "intercept": -2.2,
+      "r2": 0.854
+    }
+  },
+  "hloc_status": {
+    "bollard_003_test_1": {
+      "have": [
+        15,
+        30,
+        45,
+        60
+      ],
+      "expected": [
+        15,
+        30,
+        45,
+        60
+      ]
+    },
+    "information_sign_002_test_1": {
+      "have": [
+        25,
+        50,
+        75,
+        100
+      ],
+      "expected": [
+        25,
+        50,
+        75,
+        100
+      ]
+    }
+  },
+  "method_label": {
+    "colmap": "COLMAP",
+    "hloc_colmap": "hloc + COLMAP",
+    "mast3r_ga": "MASt3R-GA",
+    "mast3r_ga_logwin7": "MASt3R-GA (logwin-7)",
+    "vggt": "VGGT"
+  }
+}
