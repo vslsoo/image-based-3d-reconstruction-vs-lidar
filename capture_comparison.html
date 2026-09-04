@@ -7,6 +7,11 @@
 </head>
 <body>
 <style>
+  /* Forced light palette, matching every other page on the site (index.html,
+     performance_study.html, the per-object report pages) - never flips dark, regardless
+     of system prefers-color-scheme or a data-theme toggle. This page used to actually
+     switch to a dark navy variant, which is why a system/browser in dark mode made it
+     look like a different, out-of-date page next to the rest of the (forced-light) site. */
   :root {
     --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
     --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --ref-magenta:#ff2dd0;
@@ -14,13 +19,13 @@
     --t1:#0ea5a3; --t2:#e0a458; --t3:#8b5cf6;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286;
-      --accent:#e0a458; --accent-soft:#3a2f1e; --green:#34d573; --red:#fb5876; --code-bg:#161b26; --best:#34d573; --best-soft:#16281d;
-      --t1:#2dd4bf; --t2:#e0a458; --t3:#a78bfa; }
+    :root { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
+      --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
+      --t1:#0ea5a3; --t2:#e0a458; --t3:#8b5cf6; }
   }
-  :root[data-theme="dark"] { --bg:#0a0d13; --panel:#12161f; --panel-border:#232a3a; --text:#e7e9ee; --text-dim:#9aa2b4; --text-faint:#6b7286;
-    --accent:#e0a458; --accent-soft:#3a2f1e; --green:#34d573; --red:#fb5876; --code-bg:#161b26; --best:#34d573; --best-soft:#16281d;
-    --t1:#2dd4bf; --t2:#e0a458; --t3:#a78bfa; }
+  :root[data-theme="dark"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
+    --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
+    --t1:#0ea5a3; --t2:#e0a458; --t3:#8b5cf6; }
   :root[data-theme="light"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
     --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
     --t1:#0ea5a3; --t2:#e0a458; --t3:#8b5cf6; }
@@ -413,9 +418,7 @@ function keptReconPos(key) {
 }
 
 // ---------- histogram (plain SVG) — from bus_stop_001 ----------
-function isDark(){ const t=document.documentElement.dataset.theme;
-  if(t==='dark')return true; if(t==='light')return false;
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+function isDark(){ return false; } // page is forced-light (see the CSS block above) - never dark
 function renderHist(svg, H) {
   const W=640, HH=200, padL=34, padB=26, padT=24, padR=8;
   const plotW=W-padL-padR, plotH=HH-padT-padB;
