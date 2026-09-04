@@ -56,7 +56,7 @@ HTML_HEAD = r"""<!doctype html>
      .row-note inherits --text-dim and reads as barely-bolder grey. */
   b, strong { color:var(--text); font-weight:600; }
   /* arrow bullets for the intro paragraphs, matching index.html */
-  .lede p { margin:0 0 9px; position:relative; padding-left:19px; }
+  .lede p { margin:0 0 15px; position:relative; padding-left:19px; }
   .lede p:last-child { margin-bottom:0; }
   .lede p::before { content:"\2192"; position:absolute; left:0; top:0; color:var(--accent); font-weight:600; }
   .mono { font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
@@ -221,13 +221,6 @@ HTML_HEAD = r"""<!doctype html>
   <hr class="sep">
   <section>
     <h2>Is the difference between capture approaches real?</h2>
-    <div class="aside" style="margin-bottom:4px">
-      <span class="k">The answer</span>
-      <b>It depends on the object — the split is by size and shape, not by method.</b> On the compact
-      bollard the strategy is <b>inconsequential</b>: nothing is resolvable for either family. On the
-      taller, flat-faced sign it is <b>decisive</b> — close-range-only loses 33–37 points. Both methods
-      agree, so it is the object's property, not an algorithm's.
-    </div>
     <div class="subtitle" style="max-width:92ch">
       A gap of a few points could just be luck of which surface patches happened to be covered. To tell,
       each pair of approaches is re-scored 2000 times on resampled patches of the object; the histogram
@@ -235,8 +228,19 @@ HTML_HEAD = r"""<!doctype html>
       approaches genuinely differ. <b>If it straddles 0</b>, the ranking is noise and the approaches are
       indistinguishable at this sample size. Computed at 3&nbsp;cm.
     </div>
-    <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:12px;"></div>
-    <div class="params" id="stats-caveats"></div>
+    <div class="with-aside">
+      <div>
+        <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px;"></div>
+        <div class="params" id="stats-caveats" style="margin-top:12px"></div>
+      </div>
+      <div class="aside">
+        <span class="k">The answer</span>
+        <b>It depends on the object — the split is by size and shape, not by method.</b> On the compact
+        bollard the strategy is <b>inconsequential</b>: nothing is resolvable for either family. On the
+        taller, flat-faced sign it is <b>decisive</b> — close-range-only loses 33–37 points. Both methods
+        agree, so it is the object's property, not an algorithm's.
+      </div>
+    </div>
   </section>
 
 
