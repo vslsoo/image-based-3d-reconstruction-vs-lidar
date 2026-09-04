@@ -148,6 +148,27 @@ def nn_spacing_all(points: np.ndarray) -> np.ndarray:
     return d[:, 1]
 
 
+def reg_rates_from_experiments_yaml() -> dict[str, float]:
+    """Registration rate per exp_id, parsed from config/experiments.yaml's "Registered
+    images: N/M" log line.
+
+    Fallback for reg_rates_from_metrics(): docs/tables/experiment_metrics.jsonl lost its
+    rows for exp_081-092 (overwritten 2026-08-31; only the performance-study experiments
+    were recoverable), so for these twelve the jsonl reports nothing. experiments.yaml is
+    intact and carries the same figure, so the column need not stay empty.
+    """
+    import re as _re
+    path = PROJECT_ROOT / "config" / "experiments.yaml"
+    if not path.exists():
+        return {}
+    out: dict[str, float] = {}
+    for m in _re.finditer(r"^  (exp_\d+):\n(.*?)(?=^  exp_|\Z)", path.read_text(), _re.S | _re.M):
+        got = _re.search(r"Registered images: (\d+)/(\d+)", m.group(2))
+        if got and int(got.group(2)):
+            out[m.group(1)] = round(int(got.group(1)) / int(got.group(2)) * 100, 1)
+    return out
+
+
 def reg_rates_from_metrics() -> dict[str, float]:
     out: dict[str, float] = {}
     if not METRICS_JSONL.exists():
@@ -230,7 +251,7 @@ def load_reference(path) -> o3d.geometry.PointCloud:
 
 
 
-def write_summary_xlsx(summary: list[dict], path: Path) -> None:
+def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> None:
     """Write the capture-comparison table as .xlsx.
 
     Generated here rather than by hand: the previous file was produced once, outside any
@@ -247,7 +268,8 @@ def write_summary_xlsx(summary: list[dict], path: Path) -> None:
         headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
     headers += ["ΔF1@10-3cm (pp)", "F1@3cm 95% CI lo", "F1@3cm 95% CI hi",
                 "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (cm)",
-                "points raw", "points density-matched", "excluded as gap", "DBSCAN (ft/eps/mp)"]
+                "reg-rate (%)", "points raw", "points density-matched", "excluded as gap",
+                "DBSCAN (ft/eps/mp)"]
 
     wb = Workbook(); ws = wb.active; ws.title = "capture_comparison"
     ws.append(headers)
@@ -264,7 +286,7 @@ def write_summary_xlsx(summary: list[dict], path: Path) -> None:
             vals += [r.get(f"acc_{k}"), r.get(f"comp_{k}"), r.get(f"f1_{k}")]
         vals += [r.get("f1_delta_10_3"), r.get("f1_ci_lo"), r.get("f1_ci_hi"),
                  r["accuracy_median_cm"], r["completeness_median_cm"], r.get("inlier_rmse_3cm"),
-                 r["raw_points"], r["matched_points"], r.get("n_excluded"),
+                 r.get("reg_rate"), r["raw_points"], r["matched_points"], r.get("n_excluded"),
                  f"{d['ft']:g}/{d['eps']:g}/{d['mp']:g}"]
         ws.append(vals)
 
@@ -283,10 +305,40 @@ def write_summary_xlsx(summary: list[dict], path: Path) -> None:
         for c in range(1, len(headers) + 1):
             ws.cell(row=idxs[0] + 2, column=c).border = top
 
-    widths = [21, 24, 12, 9] + [14, 16, 11] * len(thresh) + [15, 15, 15, 15, 17, 17, 12, 16, 14, 16]
+    widths = [21, 24, 12, 9] + [14, 16, 11] * len(thresh) + [15, 15, 15, 15, 17, 17, 11, 12, 16, 14, 16]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
     ws.freeze_panes = "E2"; ws.row_dimensions[1].height = 34
+
+    # --- sheet 2: the significance test, so "the difference is not resolvable" can be
+    # cited from the table itself rather than from a side JSON. Every pairwise F1@3cm
+    # difference with its block-bootstrap 95% CI; a CI spanning 0 means the two capture
+    # approaches are not distinguishable for that object/method at this sample size.
+    ws2 = wb.create_sheet("significance")
+    boot = sensitivity.get("bootstrap", {})
+    ws2.append([f"Pairwise F1@3cm differences, {boot.get('n_draws','?')} spatial block-bootstrap draws, "
+                f"{boot.get('block_cm','?')} cm blocks. CI spanning 0 = not resolvable."])
+    ws2["A1"].font = Font(italic=True, color="585D54")
+    ws2.append([])
+    head2 = ["object", "method", "pair", "ΔF1@3cm (pp)", "95% CI lo", "95% CI hi", "resolvable?"]
+    ws2.append(head2)
+    for c in ws2[3]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="1F3864")
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for e in sensitivity.get("per_object_method", []):
+        for pw in e.get("pairwise", []):
+            ws2.append([e["object"], METHOD_LABEL.get(e["method"], e["method"]), pw["label"],
+                        pw["delta"], pw["ci_lo"], pw["ci_hi"],
+                        "no - CI spans 0" if pw["includes_zero"] else "yes"])
+    for row in ws2.iter_rows(min_row=4, min_col=7, max_col=7):
+        for c in row:
+            if c.value == "yes":
+                c.font = Font(bold=True, color="0D8054")
+    for col, w in zip("ABCDEFG", (21, 12, 10, 15, 12, 12, 17)):
+        ws2.column_dimensions[col].width = w
+    ws2.freeze_panes = "A4"
+
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
     print(f"Wrote {path.relative_to(PROJECT_ROOT)}", flush=True)
@@ -294,6 +346,8 @@ def write_summary_xlsx(summary: list[dict], path: Path) -> None:
 
 def main() -> None:
     reg_rates = reg_rates_from_metrics()
+    for _e, _v in reg_rates_from_experiments_yaml().items():
+        reg_rates.setdefault(_e, _v)   # jsonl wins where present; yaml fills the gaps
 
     # per-object reference: load once, spacing + histogram + embedded target positions
     objects_data: list[dict] = []
@@ -577,12 +631,15 @@ def main() -> None:
     summary_path.write_text(json.dumps(summary, indent=2))
     print(f"Wrote {summary_path.relative_to(PROJECT_ROOT)}", flush=True)
 
-    write_summary_xlsx(summary, PROJECT_ROOT / "docs" / "tables" / "capture_comparison_summary.xlsx")
+    # one payload for both outputs, so the xlsx's significance sheet and the JSON can
+    # never quote different intervals
+    sens_payload = {"bootstrap": data["bootstrap"], "per_object_method": sensitivity,
+                    "per_object": object_sensitivity}
+
+    write_summary_xlsx(summary, sens_payload, PROJECT_ROOT / "docs" / "tables" / "capture_comparison_summary.xlsx")
 
     sens_path = PROJECT_ROOT / "docs" / "tables" / "capture_comparison_sensitivity.json"
-    sens_path.write_text(json.dumps(
-        {"bootstrap": data["bootstrap"], "per_object_method": sensitivity, "per_object": object_sensitivity},
-        indent=2))
+    sens_path.write_text(json.dumps(sens_payload, indent=2))
     print(f"Wrote {sens_path.relative_to(PROJECT_ROOT)}", flush=True)
 
 
