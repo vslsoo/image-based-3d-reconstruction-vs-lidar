@@ -39,6 +39,13 @@
   h2 { font-size:19px; font-weight:650; margin:0 0 2px; }
   h3 { font-size:15px; font-weight:650; margin:0; }
   .subtitle { color:var(--text-dim); font-size:13.5px; max-width:88ch; }
+  /* one treatment for emphasis: near-black. Without this, <b> inside .subtitle / .aside /
+     .row-note inherits --text-dim and reads as barely-bolder grey. */
+  b, strong { color:var(--text); font-weight:600; }
+  /* arrow bullets for the intro paragraphs, matching index.html */
+  .lede p { margin:0 0 9px; position:relative; padding-left:19px; }
+  .lede p:last-child { margin-bottom:0; }
+  .lede p::before { content:"\2192"; position:absolute; left:0; top:0; color:var(--accent); font-weight:600; }
   .mono { font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
   section { display:flex; flex-direction:column; gap:14px; }
   hr.sep { border:none; border-top:1px solid var(--panel-border); margin:2px 0; }
@@ -56,7 +63,7 @@
   .col-head { font-size:12.5px; font-weight:650; color:var(--text); padding:0 2px 2px; align-self:end; }
   .col-head .hint { display:block; font-weight:400; font-size:10px; color:var(--text-faint); margin-top:2px; }
   .row-note { grid-column:2 / -1; font-size:12px; color:var(--text-dim); background:var(--code-bg);
-              border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:7px 12px; margin:-4px 0 4px; }
+              border-left:3px solid var(--text-faint); border-radius:0 8px 8px 0; padding:7px 12px; margin:-4px 0 4px; }
   .row-note b { color:var(--text); }
   .row-head { display:flex; align-items:center; justify-content:center; font-weight:650; font-size:12.5px; writing-mode:vertical-rl; transform:rotate(180deg); color:var(--text-dim); }
 
@@ -100,11 +107,11 @@
 
   .with-aside { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; align-items:start; }
   @media (max-width:1100px) { .with-aside { grid-template-columns:minmax(0,1fr); } }
-  .aside { background:var(--accent-soft); border:1px solid var(--panel-border); border-left:3px solid var(--accent);
+  .aside { background:var(--code-bg); border:1px solid var(--panel-border); border-left:3px solid var(--text-faint);
            border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--text-dim); }
   .aside b { color:var(--text); }
   .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
-              color:var(--accent); margin-bottom:5px; }
+              color:var(--text-faint); margin-bottom:5px; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
 </style>
@@ -112,25 +119,28 @@
 <div class="page">
   <div>
     <div class="eyebrow">Capture-strategy ablation · gap-aware Chamfer (Accuracy / Completeness / F1)</div>
-    <h1>Does how you film the object change the reconstruction? — 2 objects × 3 capture approaches × 2 methods</h1>
-    <div class="subtitle" style="max-width:92ch">
-      Before the main captures were shot, one question had to be settled: <b>how should you walk around
-      an object?</b> Getting close shows detail but never the whole shape; staying back frames the whole
-      object but resolves less. This is the pilot that decided it — the same two objects, photographed
-      three ways with the same number of images each, reconstructed by two methods.
-      <br><br>
-      <b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot;
-      <b>T3</b> = distant only.
-      <br><br>
-      <b>Two objects, chosen as opposite extremes</b> on both axes the project varies: the bollard is
-      small, compact and convex with a semi-gloss painted surface — the easy end; the information sign is
-      taller, a flat slab with two near-identical faces under a glossy cover that mirrors the street — the
-      hard end. A strategy that works at both extremes should hold for everything in between, which is
-      why two contrasting objects are more informative here than two similar ones.
-      <br><br>
-      <b>Two methods, one from each family</b> — COLMAP matches features between views, MASt3R-GA
-      regresses geometry directly from a learned prior. Running both answers a second question: does
-      capture geometry matter in the same way for methods built on fundamentally different principles?
+    <h1>Does how you film the object change the reconstruction?</h1>
+    <div class="subtitle lede" style="max-width:92ch">
+      <p>
+        Before the main captures were shot, one question had to be settled: <b>how should you walk around
+        an object?</b> Getting close shows detail but never the whole shape; staying back frames the whole
+        object but resolves less. This is the pilot that decided it.
+      </p>
+      <p>
+        <b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot;
+        <b>T3</b> = distant only — same number of images in each.
+      </p>
+      <p>
+        <b>Two objects, opposite extremes</b> on both axes the project varies: the bollard small, compact
+        and convex under semi-gloss paint — the easy end; the information sign taller, a flat slab with two
+        near-identical faces under a glossy cover that mirrors the street — the hard end. A strategy that
+        survives both should hold for everything in between.
+      </p>
+      <p>
+        <b>Two methods, one from each family</b> — COLMAP matches features between views, MASt3R-GA
+        regresses geometry from a learned prior. Running both asks whether capture geometry matters the
+        same way for fundamentally different principles.
+      </p>
     </div>
   </div>
 
@@ -198,17 +208,12 @@
   <hr class="sep">
   <section>
     <h2>Is the difference between capture approaches real?</h2>
-    <div class="aside" style="max-width:92ch; margin-bottom:4px">
+    <div class="aside" style="margin-bottom:4px">
       <span class="k">The answer</span>
-      <b>It depends on the object, and the split is by size and shape rather than by method.</b>
-      On the small, compact bollard the capture strategy is <b>inconsequential</b> — no pairwise
-      difference is statistically resolvable, for either family, so at that scale you can walk around it
-      however you like. On the taller, flat-faced information sign it is <b>decisive</b>: close-range-only
-      loses 33–37 points, and the loss is real, not noise. Both methods agree, which means this is a
-      property of the object and the geometry of the capture, not of any one algorithm.
-      <br><br>
-      That is why every main capture in this project mixes close and distant views, with distant views in
-      the majority — the strategy that held up on the harder of the two.
+      <b>It depends on the object — the split is by size and shape, not by method.</b> On the compact
+      bollard the strategy is <b>inconsequential</b>: nothing is resolvable for either family. On the
+      taller, flat-faced sign it is <b>decisive</b> — close-range-only loses 33–37 points. Both methods
+      agree, so it is the object's property, not an algorithm's.
     </div>
     <div class="subtitle" style="max-width:92ch">
       A gap of a few points could just be luck of which surface patches happened to be covered. To tell,
