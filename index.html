@@ -42,6 +42,8 @@
   .card .desc { font-size:12.5px; color:var(--text-dim); }
   .card .meta { font-size:11px; color:var(--text-faint); margin-top:3px; font-variant-numeric:tabular-nums; }
   .card .trait { color:var(--text); font-weight:600; }
+  .card .head { display:flex; align-items:center; gap:12px; }
+  .card .thumb { width:62px; height:62px; flex:0 0 62px; object-fit:contain; }
   .card .tests { font-size:11.5px; color:var(--text-dim); margin-top:5px; padding-left:9px; border-left:2px solid var(--accent-soft); }
 
   .wide-card { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:18px 20px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
@@ -119,7 +121,10 @@
     <div class="grid">
       <div class="card">
         <a class="main-link" href="bus_stop.html" target="_blank" rel="noopener">
-          <div class="name">Bus shelter</div>
+          <div class="head">
+            <img class="thumb" src="img/bus_stop.png" alt="" width="62" height="62">
+            <div class="name">Bus shelter</div>
+          </div>
           <div class="desc">
             Largest, most self-occluding, glazed throughout — the hardest of the six: <b>no method passes 60% F1@3cm</b>.
           </div>
@@ -128,7 +133,10 @@
       </div>
       <div class="card">
         <a class="main-link" href="information_sign.html" target="_blank" rel="noopener">
-          <div class="name">Information sign</div>
+          <div class="head">
+            <img class="thumb" src="img/information_sign.png" alt="" width="62" height="62">
+            <div class="name">Information sign</div>
+          </div>
           <div class="desc">
             A glossy cover mirroring the street, over two near-identical faces. All four methods still land within ~3 cm.
           </div>
@@ -137,7 +145,10 @@
       </div>
       <div class="card">
         <a class="main-link" href="bench.html" target="_blank" rel="noopener">
-          <div class="name">Bench</div>
+          <div class="head">
+            <img class="thumb" src="img/bench.png" alt="" width="62" height="62">
+            <div class="name">Bench</div>
+          </div>
           <div class="desc">
             The longest and lowest, matte weathered timber — <b>a control object</b>, no failure predicted.
           </div>
@@ -146,7 +157,10 @@
       </div>
       <div class="card">
         <a class="main-link" href="bollard.html" target="_blank" rel="noopener">
-          <div class="name">Bollard</div>
+          <div class="head">
+            <img class="thumb" src="img/bollard.png" alt="" width="62" height="62">
+            <div class="name">Bollard</div>
+          </div>
           <div class="desc">
             The smallest and simplest; semi-gloss facets shift with viewpoint. Scores <b>best of all six: 94% F1@3cm</b>.
           </div>
@@ -155,7 +169,10 @@
       </div>
       <div class="card">
         <a class="main-link" href="flashlight.html" target="_blank" rel="noopener">
-          <div class="name">Lamppost</div>
+          <div class="head">
+            <img class="thumb" src="img/flashlight.png" alt="" width="62" height="62">
+            <div class="name">Lamppost</div>
+          </div>
           <div class="desc">
             The tallest and thinnest, dark and near-textureless. Where <b>VGGT breaks down: 22% F1 vs COLMAP's 89%</b>.
           </div>
@@ -164,7 +181,10 @@
       </div>
       <div class="card">
         <a class="main-link" href="bus_stop_sign.html" target="_blank" rel="noopener">
-          <div class="name">Bus-stop sign</div>
+          <div class="head">
+            <img class="thumb" src="img/bus_stop_sign.png" alt="" width="62" height="62">
+            <div class="name">Bus-stop sign</div>
+          </div>
           <div class="desc">
             A semi-gloss flag on a slender pole — tests whether a symmetric pole gets duplicated by spurious matches.
           </div>
