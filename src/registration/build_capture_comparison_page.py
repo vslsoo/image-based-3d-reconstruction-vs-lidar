@@ -165,7 +165,7 @@ def reg_rates_from_experiments_yaml() -> dict[str, float]:
     for m in _re.finditer(r"^  (exp_\d+):\n(.*?)(?=^  exp_|\Z)", path.read_text(), _re.S | _re.M):
         got = _re.search(r"Registered images: (\d+)/(\d+)", m.group(2))
         if got and int(got.group(2)):
-            out[m.group(1)] = round(int(got.group(1)) / int(got.group(2)) * 100, 1)
+            out[m.group(1)] = int(got.group(1)) / int(got.group(2))   # fraction, like the jsonl
     return out
 
 
@@ -286,7 +286,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
             vals += [r.get(f"acc_{k}"), r.get(f"comp_{k}"), r.get(f"f1_{k}")]
         vals += [r.get("f1_delta_10_3"), r.get("f1_ci_lo"), r.get("f1_ci_hi"),
                  r["accuracy_median_cm"], r["completeness_median_cm"], r.get("inlier_rmse_3cm"),
-                 r.get("reg_rate"), r["raw_points"], r["matched_points"], r.get("n_excluded"),
+                 (round(r["reg_rate"] * 100, 1) if r.get("reg_rate") is not None else None), r["raw_points"], r["matched_points"], r.get("n_excluded"),
                  f"{d['ft']:g}/{d['eps']:g}/{d['mp']:g}"]
         ws.append(vals)
 

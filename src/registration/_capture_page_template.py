@@ -71,7 +71,6 @@ HTML_HEAD = r"""<!doctype html>
   .row-head { display:flex; align-items:center; justify-content:center; font-weight:650; font-size:12.5px; writing-mode:vertical-rl; transform:rotate(180deg); color:var(--text-dim); }
 
   .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
-  .tuner-panel { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 2px 12px rgba(23,128,95,0.16); }
   .panel-title { font-weight:650; font-size:12.5px; display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
   .panel-title .exp { font-size:10px; color:var(--text-faint); font-weight:500; }
   canvas { width:100%; height:220px; display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
@@ -93,12 +92,6 @@ HTML_HEAD = r"""<!doctype html>
   .panel-stats b { color:var(--text); font-weight:600; }
   .panel-stats .f1 { color:var(--accent); font-weight:700; font-size:12px; }
 
-  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-  .control { display:flex; flex-direction:column; gap:4px; }
-  .control label { font-size:11.5px; color:var(--text-dim); display:flex; justify-content:space-between; }
-  .control label .val { color:var(--accent); font-weight:700; font-family:ui-monospace,monospace; }
-  .control input[type=range] { accent-color:var(--accent); }
-  .tuner-title { font-size:12.5px; font-weight:650; color:var(--text-dim); }
 
   .legend-bar { display:flex; flex-wrap:wrap; gap:14px 26px; padding:10px 14px; background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; align-items:center; font-size:11.5px; color:var(--text-dim); }
   .swatch { width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:-1px; border:1px solid var(--panel-border); }
@@ -115,11 +108,13 @@ HTML_HEAD = r"""<!doctype html>
   table.summary tbody tr:hover { background:color-mix(in srgb, var(--accent-soft) 40%, transparent); }
   .grouprule td { border-top:2px solid var(--panel-border); }
 
-  .interp { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
-  .interp .headline { font-size:15px; font-weight:650; }
-  .interp ul { margin:2px 0 0; padding-left:18px; font-size:13px; color:var(--text-dim); }
-  .interp li { margin:3px 0; }
-  .interp .win { color:var(--best); font-weight:650; }
+  .with-aside { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; align-items:start; }
+  @media (max-width:1100px) { .with-aside { grid-template-columns:minmax(0,1fr); } }
+  .aside { background:var(--accent-soft); border:1px solid var(--panel-border); border-left:3px solid var(--accent);
+           border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--text-dim); }
+  .aside b { color:var(--text); }
+  .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+              color:var(--accent); margin-bottom:5px; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
 </style>
@@ -128,9 +123,15 @@ HTML_HEAD = r"""<!doctype html>
   <div>
     <div class="eyebrow">Capture-strategy ablation · gap-aware Chamfer (Accuracy / Completeness / F1)</div>
     <h1>Does how you film the object change the reconstruction? — 2 objects × 3 capture approaches × 2 methods</h1>
-    <div class="subtitle">
-      Drag to rotate, scroll to zoom. <b>T1</b> = close-range + distant &middot;
-      <b>T2</b> = close-range only &middot; <b>T3</b> = distant only.
+    <div class="subtitle" style="max-width:92ch">
+      Before the main captures were shot, one question had to be settled: <b>how should you walk around
+      an object?</b> Getting close shows detail but never the whole shape; staying back frames the whole
+      object but resolves less. This is the pilot that decided it — the same two objects, photographed
+      three ways with the same number of images each, reconstructed by two methods.
+      <br><br>
+      <b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot;
+      <b>T3</b> = distant only. Its answer set the protocol for every other capture in the project:
+      mixed sets, with distant views in the majority.
     </div>
   </div>
 
@@ -139,7 +140,6 @@ HTML_HEAD = r"""<!doctype html>
     <span><span class="swatch" style="background:var(--green)"></span>within t (correct)&nbsp;&nbsp;<span class="swatch" style="background:var(--red)"></span>beyond t</span>
     <span>heatmap: <span class="gradient-bar" style="display:inline-block; vertical-align:middle"></span> 0…15 cm</span>
     <span><span class="swatch" style="background:var(--ref-magenta)"></span>LiDAR / reconstruction overlay</span>
-    <span><span class="swatch" style="background:var(--t1)"></span>T1&nbsp;<span class="swatch" style="background:var(--t2)"></span>T2&nbsp;<span class="swatch" style="background:var(--t3)"></span>T3</span>
   </div>
 
   <hr class="sep">
@@ -147,42 +147,61 @@ HTML_HEAD = r"""<!doctype html>
 
   <hr class="sep">
   <section>
-    <h2>Summary — object × approach × method</h2>
-    <div class="subtitle">Updates live with the DBSCAN tuner above. Best F1 per group highlighted.</div>
-    <div class="grid-wrap"><div id="summary-table-wrap"></div></div>
-  </section>
-
-  <hr class="sep">
-  <section>
     <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;">
-      <h2 id="chart-title">F1@3cm by capture approach</h2>
+      <h2>Summary — object × approach × method</h2>
       <div class="tabs" id="thr-toggle">
         <button class="tab-btn active" data-thr="3">3 cm</button>
         <button class="tab-btn" data-thr="5">5 cm</button>
         <button class="tab-btn" data-thr="10">10 cm</button>
       </div>
     </div>
-    <div class="subtitle" style="margin:0">
-      A weak bar that recovers as the threshold widens is <b>offset</b>; one that stays low even at
-      10&nbsp;cm is <b>missing geometry</b>. The small grey figure above each bar is ΔF1 from 3 to 10&nbsp;cm.
-      The significance test below is computed at 3&nbsp;cm only.
+    <div class="subtitle" style="max-width:92ch">
+      The threshold above drives this table and the chart below it. A score that recovers as the
+      threshold widens means the surface is <b>there but offset</b>; one that stays low even at 10&nbsp;cm
+      means the geometry is <b>simply missing</b>. Best F1 per group is highlighted.
     </div>
-    <div class="panel" style="max-width:1040px;"><svg id="f1-chart" viewBox="0 0 1000 340" style="width:100%; height:340px;"></svg></div>
+    <div class="with-aside">
+      <div class="grid-wrap"><div id="summary-table-wrap"></div></div>
+      <div class="aside">
+        <span class="k">What to look for</span>
+        On the <b>bollard</b> the three rows sit within a couple of points of each other — a small,
+        simple object is forgiving. On the <b>information sign</b> the <b>T2</b> row collapses for both
+        methods: shooting only from close up never sees the whole slab, so large parts of it are never
+        reconstructed at all.
+      </div>
+    </div>
+  </section>
+
+  <hr class="sep">
+  <section>
+    <h2 id="chart-title">F1@3cm by capture approach</h2>
+    <div class="with-aside">
+      <div class="panel"><svg id="f1-chart" viewBox="0 0 1000 340" style="width:100%; height:340px;"></svg></div>
+      <div class="aside">
+        <span class="k">Reading the bars</span>
+        The grey <b>Δ</b> above each bar is how much F1 gains between 3 and 10&nbsp;cm. A <b>small Δ</b>
+        means the surface is already where it should be. A <b>large Δ on a low bar</b> means the points
+        are far out — and if the bar is still low at 10&nbsp;cm, that geometry was never built.
+        <br><br>
+        The line under each group says what changing the capture cost that method.
+      </div>
+    </div>
   </section>
 
   <hr class="sep">
   <section>
     <h2>Is the difference between capture approaches real?</h2>
-    <div class="subtitle">Pairwise F1 differences (bootstrap). Entirely on one side of <b>0</b> = real difference.</div>
+    <div class="subtitle" style="max-width:92ch">
+      A gap of a few points could just be luck of which surface patches happened to be covered. To tell,
+      each pair of approaches is re-scored 2000 times on resampled patches of the object; the histogram
+      is the spread of differences that produces. <b>If it sits entirely to one side of 0</b>, the
+      approaches genuinely differ. <b>If it straddles 0</b>, the ranking is noise and the approaches are
+      indistinguishable at this sample size. Computed at 3&nbsp;cm.
+    </div>
     <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:12px;"></div>
     <div class="params" id="stats-caveats"></div>
   </section>
 
-  <hr class="sep">
-  <section>
-    <h2>Interpretation</h2>
-    <div class="interp" id="interp"></div>
-  </section>
 
   <footer>exp_081–092 · src/registration/build_capture_comparison_page.py</footer>
 </div>
@@ -467,25 +486,9 @@ for (const obj of DATA.objects) {
       <h2>${obj.title}</h2>
       <span class="chip">${obj.shape}</span>
       <span class="chip">ref median spacing ${obj.ref_spacing_cm.toFixed(2)} cm</span>
-      <span class="chip">DBSCAN default ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
+      <span class="chip">gap detection: ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
-    <div class="panel tuner-panel">
-      <div class="tuner-title">DBSCAN gap tuner — ${obj.title} (drives the six panels below + the table &amp; chart)</div>
-      <div class="controls">
-        <div class="control"><label>far_threshold <span class="val" id="ft-val-${obj.id}"></span></label>
-          <input type="range" id="ft-${obj.id}" min="3" max="20" step="0.5"></div>
-        <div class="control"><label>eps (DBSCAN radius) <span class="val" id="eps-val-${obj.id}"></span></label>
-          <input type="range" id="eps-${obj.id}" min="0.5" max="8" step="0.1"></div>
-        <div class="control"><label>min_points <span class="val" id="mp-val-${obj.id}"></span></label>
-          <input type="range" id="mp-${obj.id}" min="2" max="40" step="1"></div>
-      </div>
-      <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; font-weight:600; cursor:pointer;">
-        <input type="checkbox" id="nodbscan-${obj.id}" style="width:15px; height:15px; cursor:pointer;">
-        Ignore DBSCAN — count all points (no gap exclusion)
-      </label>
-      <div class="mono panel-stats" id="tunerstats-${obj.id}" style="margin-top:8px;">Loading…</div>
-    </div>
     <div class="grid-wrap"><div class="obj-grid" id="grid-${obj.id}"></div></div>
   `;
   objRoot.appendChild(block);
@@ -507,21 +510,10 @@ for (const obj of DATA.objects) {
     }
   }
 
-  // tuner wiring
-  const t = { ft:obj.dbscan.ft, eps:obj.dbscan.eps, mp:obj.dbscan.mp, applyDbscan:true };
-  objTuner[obj.id] = t;
-  const ftS=block.querySelector(`#ft-${obj.id}`), epsS=block.querySelector(`#eps-${obj.id}`), mpS=block.querySelector(`#mp-${obj.id}`);
-  const ftV=block.querySelector(`#ft-val-${obj.id}`), epsV=block.querySelector(`#eps-val-${obj.id}`), mpV=block.querySelector(`#mp-val-${obj.id}`);
-  ftS.value=t.ft; epsS.value=t.eps; mpS.value=t.mp;
-  ftV.textContent=t.ft.toFixed(1)+'cm'; epsV.textContent=t.eps.toFixed(1)+'cm'; mpV.textContent=t.mp;
-  const nod=block.querySelector(`#nodbscan-${obj.id}`);
-  let deb=null;
-  function onChange(){ clearTimeout(deb); deb=setTimeout(()=>recomputeObject(obj.id), 180); }
-  ftS.addEventListener('input',()=>{ t.ft=parseFloat(ftS.value); ftV.textContent=t.ft.toFixed(1)+'cm'; onChange(); });
-  epsS.addEventListener('input',()=>{ t.eps=parseFloat(epsS.value); epsV.textContent=t.eps.toFixed(1)+'cm'; onChange(); });
-  mpS.addEventListener('input',()=>{ t.mp=parseInt(mpS.value,10); mpV.textContent=t.mp; onChange(); });
-  nod.addEventListener('change',()=>{ t.applyDbscan=!nod.checked; [ftS,epsS,mpS].forEach(s=>s.disabled=!t.applyDbscan);
-    block.querySelector('.controls').style.opacity=t.applyDbscan?'1':'0.4'; recomputeObject(obj.id); });
+  // Gap-detection settings are fixed per object (the values tuned in tuner.html) rather
+  // than exposed as sliders here: this page compares capture approaches, so the gap
+  // handling has to be one constant, not something the reader can move mid-comparison.
+  objTuner[obj.id] = { ft:obj.dbscan.ft, eps:obj.dbscan.eps, mp:obj.dbscan.mp, applyDbscan:true };
 }
 
 // Hard cap on simultaneously-live WebGL contexts, enforced ourselves rather than
@@ -645,17 +637,11 @@ function buildPanel(key) {
 function recomputeObject(objId) {
   const t = objTuner[objId];
   const obj = DATA.objects.find(o=>o.id===objId);
-  const stats = document.getElementById(`tunerstats-${objId}`);
-  const parts = [];
   for (const key of obj.panels) {
     recomputeExclusion(key, t.ft, t.eps, t.mp, t.applyDbscan);
     panelApi[key].refresh();
-    const m = panelMetrics(key, activeThreshold);
-    parts.push(`${panelState[key].d.label}: F1=${m.f1.toFixed(1)} (excl≈${m.nExcluded.toLocaleString('en-US')})`);
   }
-  stats.innerHTML = t.applyDbscan ? parts.join(' &nbsp;·&nbsp; ')
-    : '<b>DBSCAN off</b> — no gap exclusion; Accuracy/F1 over the whole cloud.';
-  updateTable(); updateChart(); updateInterp();
+  updateTable(); updateChart();
 }
 
 // Metric threshold for the table and the F1 chart. panelMetrics(key, t) already takes any
@@ -746,12 +732,24 @@ function updateChart() {
       s+=`<text x="${bx+barW/2}" y="${by-15}" font-size="8.5" fill="${tick}" fill-opacity="0.75" text-anchor="middle">Δ${dF1.toFixed(0)}</text>`;
     });
     s+=`<text x="${gx+gW/2}" y="${H-42}" font-size="10.5" fill="${textc}" text-anchor="middle">${g.label}</text>`;
+    // one-line read of what changing the capture did to THIS method on THIS object:
+    // spread across the three approaches, at the threshold currently selected.
+    const f1s = APPROACHES.map(ap => panelMetrics(`${g.obj}__${g.method}__${ap}`, activeThreshold).f1);
+    const spread = Math.max(...f1s) - Math.min(...f1s);
+    const worstAp = APPROACHES[f1s.indexOf(Math.min(...f1s))];
+    const verdict = spread < 5
+      ? 'capture barely matters here'
+      : `T${worstAp} costs ${spread.toFixed(0)} pts`;
+    s+=`<text x="${gx+gW/2}" y="${H-28}" font-size="9.5" fill="${tick}" fill-opacity="0.85" text-anchor="middle">${verdict}</text>`;
   });
   // legend
   const lx=padL, ly=H-16;
-  APPROACHES.forEach((ap,ai)=>{ const x=lx+ai*130;
+  // 130px was narrower than the labels themselves, so they ran into each other; space the
+  // three entries evenly across the plot instead of at a fixed pitch.
+  const legendPitch = Math.max(200, (W - padR - lx) / APPROACHES.length);
+  APPROACHES.forEach((ap,ai)=>{ const x=lx+ai*legendPitch;
     s+=`<rect x="${x}" y="${ly-9}" width="11" height="11" rx="3" fill="${cssvar(APPROACH_COLORVAR[ap])}" fill-opacity="0.8"/>`;
-    s+=`<text x="${x+16}" y="${ly}" font-size="10.5" fill="${textc}">${DATA.approach_label[ap]}</text>`; });
+    s+=`<text x="${x+17}" y="${ly}" font-size="10.5" fill="${textc}">${DATA.approach_label[ap]}</text>`; });
   svg.innerHTML=s;
 }
 
@@ -825,30 +823,6 @@ document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListene
   if (h) h.textContent = `F1@${activeThreshold}cm by capture approach`;
   updateTable(); updateChart();
 }));
-
-function updateInterp() {
-  const el=document.getElementById('interp');
-  const groups=[];
-  for (const obj of DATA.objects) {
-    const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
-    for (const method of methods) {
-      const scores=APPROACHES.map(ap=>({ap, m:panelMetrics(`${obj.id}__${method}__${ap}`,3.0)}));
-      scores.sort((a,b)=>b.m.f1-a.m.f1);
-      groups.push({ obj:obj.title, method:DATA.method_label[method], objId:obj.id, methodId:method, scores });
-    }
-  }
-
-  // margins per group
-  let items='';
-  for (const g of groups) {
-    const best=g.scores[0], worst=g.scores[g.scores.length-1];
-    const margin=(best.m.f1-worst.m.f1);
-    const order = g.scores.map(x=>`T${x.ap} ${x.m.f1.toFixed(0)}`).join(' > ');
-    items += `<li><b>${g.obj} · ${g.method}:</b> ${order} &nbsp;(Δ=${margin.toFixed(0)} pts)</li>`;
-  }
-
-  el.innerHTML = buildSignificanceNarrative() + `<ul>${items}</ul>`;
-}
 
 // ---------- statistical-significance section (static, at default DBSCAN params) ----------
 function renderStats() {
