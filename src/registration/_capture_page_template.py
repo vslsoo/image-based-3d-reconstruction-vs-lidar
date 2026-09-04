@@ -955,9 +955,10 @@ function renderDiffHists() {
     }).join('&nbsp;&middot;&nbsp;');
     const panel = document.createElement('div');
     panel.className = 'panel';
-    panel.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; flex-wrap:wrap;">`
-      + `<span style="font-weight:650; font-size:12.5px;">${obj.title} &middot; ${DATA.method_label[sv.method]}</span>`
-      + `<span style="font-size:10px;">${legend}</span></div>`
+    // title on its own line, pair legend centred directly above the plot - at ~300px wide
+    // the two competed for the same row and wrapped awkwardly
+    panel.innerHTML = `<div style="font-weight:650; font-size:12.5px;">${obj.title} &middot; ${DATA.method_label[sv.method]}</div>`
+      + `<div style="font-size:10px; text-align:center; margin:3px 0 1px;">${legend}</div>`
       + `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${s}</svg>`
       + `<div style="font-size:10.5px; line-height:1.4;">${lines}<span style="color:var(--text-faint)">&nbsp; (* = 95% CI excludes 0)</span></div>`;
     grid.appendChild(panel);
