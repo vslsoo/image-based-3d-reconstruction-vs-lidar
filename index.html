@@ -39,6 +39,7 @@
   .card .desc { font-size:12.5px; color:var(--text-dim); }
   .card .meta { font-size:11px; color:var(--text-faint); margin-top:3px; font-variant-numeric:tabular-nums; }
   .card .trait { color:var(--text); font-weight:600; }
+  .card .tests { font-size:11.5px; color:var(--text-dim); margin-top:5px; padding-left:9px; border-left:2px solid var(--accent-soft); }
 
   .wide-card { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:18px 20px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
   .wide-card:hover { border-color:var(--accent); }
@@ -57,21 +58,24 @@
     <h1>How close does photogrammetry get to a laser scan?</h1>
     <div class="lede" style="margin-top:8px;">
       <p>
-        Six pieces of ordinary street furniture were photographed by hand and reconstructed in 3D by four
-        methods — two classical photogrammetry pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>) and two learned
-        feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>). Each reconstruction is compared against a LiDAR
-        scan of the same object, used as ground truth.
+        Road authorities are required to keep an inventory of street furniture, and a laser scanner is not
+        always available. So: <b>how accurately and completely can ordinary photographs recover this
+        geometry</b>, measured against a LiDAR scan of the same object?
       </p>
       <p>
-        Every object is measured the same way: the reconstruction is thinned onto a 1 cm grid to match the
-        reference's own sampling, and scored by <b>accuracy</b> (how far its points sit from the reference),
-        <b>completeness</b> (how much of the reference it covers) and their harmonic mean, <b>F1</b>, at
-        thresholds of 3, 5 and 10 cm.
+        Six objects were shot hand-held and reconstructed by four methods from two different families — the
+        classical correspondence pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>), which match features between
+        views and triangulate, and the learned feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>), which
+        regress geometry directly from a trained prior. The two families fail in opposite ways, which is much
+        of the point: when matching fails it leaves a <b>hole</b>, when a learned model fails it can
+        <b>invent</b> plausible geometry that is simply wrong.
       </p>
       <p>
-        Beyond the per-object comparison, three studies ask the practical questions: does it matter
-        <b>how</b> you shoot, <b>how many</b> photos you need, and what the whole thing <b>costs</b> in time
-        and memory.
+        Every object is scored the same way — reconstruction thinned onto a 1 cm grid to match the reference's
+        own sampling, then <b>accuracy</b> (how far its points sit from the reference), <b>completeness</b>
+        (how much of the reference it covers) and their harmonic mean <b>F1</b>, at 3, 5 and 10 cm. Metric
+        scale comes from a 9.5 cm marker in frame, not from the reference, so size is established
+        independently of the thing being measured.
       </p>
     </div>
   </div>
@@ -83,9 +87,10 @@
         <a class="main-link" href="capture_comparison.html" target="_blank" rel="noopener">
           <div class="name">Does the shooting style matter?</div>
           <div class="desc">
-            Field guidance: is it worth walking close to an object, or is a distant orbit enough? The same two
-            objects shot three ways — close-range + distant, close-range only, distant only — with bootstrap
-            confidence intervals to show which differences are real rather than noise.
+            Is it worth walking close, or is a distant orbit enough? The same two objects shot three ways,
+            with bootstrap intervals separating real differences from noise. Close-range alone did worst;
+            mixed and distant-heavy came out equivalent — so the main captures use mixed sets with distant
+            views in the majority.
           </div>
           <div class="meta">2 objects × 3 approaches × 2 methods · 12 reconstructions</div>
         </a>
@@ -95,8 +100,8 @@
           <div class="name">How many photos are enough?</div>
           <div class="desc">
             Where the payoff for extra shooting stops. Nested subsets — each larger set contains the smaller
-            one, so the only thing that changes is the count — reveal the point past which accuracy stops
-            improving.
+            one, so only the count changes. COLMAP improves and then plateaus; MASt3R-GA gains nothing and
+            gets worse on the sign, so more photos is not automatically better.
           </div>
           <div class="meta">2 objects · N = 15…100 · up to 3 method variants</div>
         </a>
@@ -117,9 +122,16 @@
   <div>
     <div class="eyebrow" style="margin-bottom:6px;">Objects</div>
     <div class="subtitle">
-      One page per object: all four reconstructions side by side in 3D against the same LiDAR reference,
-      with the full accuracy / completeness / F1 breakdown. Sizes below are measured from the
-      best-scoring reconstruction of each object.
+      These six were not chosen to be representative — they were chosen to span two axes along which
+      reconstruction is expected to break: <b>surface</b> (matte → semi-gloss → glossy → glazed) and
+      <b>geometry</b> (size, elongation, self-similarity, self-occlusion). Each card notes what that object
+      was picked to test. All belong to asset classes road authorities must inventory, so the findings apply
+      to real practice rather than convenient lab objects.
+      <br><br>
+      Captured hand-held on an iPhone 13 Pro, full circle at close, middle and upper levels, from roughly
+      1.2× the object's height, on overcast days for diffuse light — only the shelter was shot under changing
+      cloud. Each page shows all four reconstructions side by side in 3D with the full breakdown; sizes below
+      are measured from the best-scoring reconstruction.
     </div>
     <div class="grid">
       <div class="card">
@@ -130,6 +142,7 @@
             panels plus backlit advertising, so much of it is seen through or reflected off glass. The hardest
             of the six: no method passes 60% F1 at 3 cm.
           </div>
+          <div class="tests">Chosen to test transparent surfaces and extreme self-occlusion from inside viewpoints.</div>
           <div class="meta">4.3 × 2.0 × 2.8 m · 96 photos · reference incomplete (far side unscanned)</div>
         </a>
       </div>
@@ -141,6 +154,7 @@
             two near-identical flat faces, so its appearance shifts with viewpoint. All four methods still land
             within ~3 cm median, on the most incomplete reference of the set.
           </div>
+          <div class="tests">Chosen to test whether reflections block matching, and whether two similar faces get confused for one another.</div>
           <div class="meta">2.6 m tall · 75 photos · reference incomplete (upper ⅔, one side)</div>
         </a>
       </div>
@@ -152,6 +166,7 @@
             is seen from above far more than from the side. Weathered timber on a steel frame: matte throughout,
             the least reflective surface here.
           </div>
+          <div class="tests">A control object: matte and well-behaved, no failure predicted.</div>
           <div class="meta">4.1 × 2.2 × 0.8 m · 94 photos · reference incomplete (backrest, legs)</div>
         </a>
       </div>
@@ -163,6 +178,7 @@
             domed cap, its semi-gloss facets changing brightness with viewpoint. Simple enough to still score
             highest of all six: 94% F1 at 3 cm.
           </div>
+          <div class="tests">Chosen to test whether specular facets defeat feature matching — otherwise a control.</div>
           <div class="meta">26 × 26 cm × 1.0 m · 69 photos · reference incomplete (~90° sector)</div>
         </a>
       </div>
@@ -174,6 +190,7 @@
             dark and almost textureless, so it offers little to match on. This is where VGGT breaks down:
             22% F1 against COLMAP's 89%.
           </div>
+          <div class="tests">Chosen to test fine-structure recovery at working resolution, and visibility at grazing angles from a distance.</div>
           <div class="meta">5.8 m tall · 105 photos · complete reference</div>
         </a>
       </div>
@@ -184,6 +201,7 @@
             A semi-gloss printed flag on a slender pole — <span class="trait">two very different scales in one
             object</span>: a broad legible plate above a narrow column.
           </div>
+          <div class="tests">Chosen to test whether a symmetric pole gets duplicated by spurious matches.</div>
           <div class="meta">3.5 m tall · 79 photos · complete reference</div>
         </a>
       </div>
