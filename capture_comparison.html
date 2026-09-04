@@ -934,23 +934,25 @@ function renderDiffHists() {
     for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4;
       s += `<text x="${X(v).toFixed(1)}" y="${H - 18}" font-size="9" fill="${tick}" text-anchor="middle">${v.toFixed(0)}</text>`; }
     s += `<text x="${W / 2}" y="${H - 5}" font-size="8.5" fill="${tick}" text-anchor="middle">&Delta; F1@3cm (%) &middot; ${DATA.bootstrap.n_draws} bootstrap draws</text>`;
-    const legend = sv.pairwise.map((p, pi) => {
+    // One centred block above the plot instead of a legend above and figures below: the two
+    // carried the same three labels, and at ~300px per panel the figures wrapped into a
+    // cramped three-line run under the chart. Each row is now swatch + pair + delta + CI.
+    const rows = sv.pairwise.map((p, pi) => {
       const sig = !p.includes_zero;
-      return `<span style="color:${PAIR_COLORS[pi]}; font-weight:${sig ? '700' : '400'}">&#9632;&nbsp;${p.label}${sig ? ' *' : ''}</span>`;
-    }).join('&nbsp;&nbsp;');
-    const lines = sv.pairwise.map(p => {
-      const sig = !p.includes_zero;
-      const c = sig ? 'var(--red)' : 'var(--text-faint)';
-      return `<span style="color:${c}; font-weight:${sig ? '650' : '400'}">${p.label}: ${p.delta > 0 ? '+' : ''}${p.delta.toFixed(1)} [${p.ci_lo.toFixed(1)}, ${p.ci_hi.toFixed(1)}]</span>`;
-    }).join('&nbsp;&middot;&nbsp;');
+      return `<div style="white-space:nowrap; font-weight:${sig ? '650' : '400'}; color:${sig ? 'var(--text)' : 'var(--text-dim)'};">`
+        + `<span style="display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:0;`
+        + ` background:${PAIR_COLORS[pi]}; opacity:${sig ? '1' : '.65'};"></span>&nbsp;`
+        + `${p.label}: ${p.delta > 0 ? '+' : ''}${p.delta.toFixed(1)} [${p.ci_lo.toFixed(1)}, ${p.ci_hi.toFixed(1)}]`
+        + `${sig ? '&nbsp;*' : ''}</div>`;
+    }).join('');
     const panel = document.createElement('div');
     panel.className = 'panel';
     // title on its own line, pair legend centred directly above the plot - at ~300px wide
     // the two competed for the same row and wrapped awkwardly
     panel.innerHTML = `<div style="font-weight:650; font-size:12.5px;">${obj.title} &middot; ${DATA.method_label[sv.method]}</div>`
-      + `<div style="font-size:10px; text-align:center; margin:3px 0 1px;">${legend}</div>`
-      + `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${s}</svg>`
-      + `<div style="font-size:10.5px; line-height:1.4;">${lines}<span style="color:var(--text-faint)">&nbsp; (* = 95% CI excludes 0)</span></div>`;
+      + `<div style="font-size:10.5px; line-height:1.5; text-align:center; margin:4px 0 2px;">${rows}`
+      + `<div style="color:var(--text-faint); font-size:9.5px; margin-top:1px;">* = 95% CI excludes 0</div></div>`
+      + `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${s}</svg>`;
     grid.appendChild(panel);
   }
 }
