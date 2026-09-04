@@ -58,24 +58,17 @@
     <h1>How close does photogrammetry get to a laser scan?</h1>
     <div class="lede" style="margin-top:8px;">
       <p>
-        Road authorities are required to keep an inventory of street furniture, and a laser scanner is not
-        always available. So: <b>how accurately and completely can ordinary photographs recover this
-        geometry</b>, measured against a LiDAR scan of the same object?
+        Road authorities must inventory street furniture, and a laser scanner is not always at hand — so
+        <b>how accurately can photographs alone recover this geometry</b>, against a LiDAR scan?
       </p>
       <p>
-        Six objects were shot hand-held and reconstructed by four methods from two different families — the
-        classical correspondence pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>), which match features between
-        views and triangulate, and the learned feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>), which
-        regress geometry directly from a trained prior. The two families fail in opposite ways, which is much
-        of the point: when matching fails it leaves a <b>hole</b>, when a learned model fails it can
-        <b>invent</b> plausible geometry that is simply wrong.
+        Four methods, two families: correspondence pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>) and
+        feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>). They fail in opposite ways — matching leaves a
+        <b>hole</b>, a learned model can <b>invent</b> geometry that is wrong.
       </p>
       <p>
-        Every object is scored the same way — reconstruction thinned onto a 1 cm grid to match the reference's
-        own sampling, then <b>accuracy</b> (how far its points sit from the reference), <b>completeness</b>
-        (how much of the reference it covers) and their harmonic mean <b>F1</b>, at 3, 5 and 10 cm. Metric
-        scale comes from a 9.5 cm marker in frame, not from the reference, so size is established
-        independently of the thing being measured.
+        Scored on a 1 cm grid by accuracy, completeness and F1 at 3/5/10 cm; scale from a 9.5 cm marker in
+        frame, not from the reference.
       </p>
     </div>
   </div>
@@ -87,10 +80,7 @@
         <a class="main-link" href="capture_comparison.html" target="_blank" rel="noopener">
           <div class="name">Does the shooting style matter?</div>
           <div class="desc">
-            Is it worth walking close, or is a distant orbit enough? The same two objects shot three ways,
-            with bootstrap intervals separating real differences from noise. Close-range alone did worst;
-            mixed and distant-heavy came out equivalent — so the main captures use mixed sets with distant
-            views in the majority.
+            Close-range alone did worst; mixed and distant-heavy came out equivalent — so the main captures mix both, distant in the majority.
           </div>
           <div class="meta">2 objects × 3 approaches × 2 methods · 12 reconstructions</div>
         </a>
@@ -99,9 +89,7 @@
         <a class="main-link" href="frame_count_study.html" target="_blank" rel="noopener">
           <div class="name">How many photos are enough?</div>
           <div class="desc">
-            Where the payoff for extra shooting stops. Nested subsets — each larger set contains the smaller
-            one, so only the count changes. COLMAP improves and then plateaus; MASt3R-GA gains nothing and
-            gets worse on the sign, so more photos is not automatically better.
+            COLMAP improves then plateaus; MASt3R-GA gains nothing and degrades on the sign. More photos is not automatically better.
           </div>
           <div class="meta">2 objects · N = 15…100 · up to 3 method variants</div>
         </a>
@@ -110,8 +98,7 @@
         <a class="main-link" href="performance_study.html" target="_blank" rel="noopener">
           <div class="name">What does it cost to compute?</div>
           <div class="desc">
-            Whether a method is usable at scale: how wall-clock time, RAM and VRAM grow as photos are added,
-            which pipeline stage dominates, and which resource runs out first. All runs on identical hardware.
+            How time, RAM and VRAM grow with photo count, and which resource runs out first.
           </div>
           <div class="meta">Controlled N-sweeps · time / RAM / VRAM · fitted scaling</div>
         </a>
@@ -122,27 +109,17 @@
   <div>
     <div class="eyebrow" style="margin-bottom:6px;">Objects</div>
     <div class="subtitle">
-      These six were not chosen to be representative — they were chosen to span two axes along which
-      reconstruction is expected to break: <b>surface</b> (matte → semi-gloss → glossy → glazed) and
-      <b>geometry</b> (size, elongation, self-similarity, self-occlusion). Each card notes what that object
-      was picked to test. All belong to asset classes road authorities must inventory, so the findings apply
-      to real practice rather than convenient lab objects.
-      <br><br>
-      Captured hand-held on an iPhone 13 Pro, full circle at close, middle and upper levels, from roughly
-      1.2× the object's height, on overcast days for diffuse light — only the shelter was shot under changing
-      cloud. Each page shows all four reconstructions side by side in 3D with the full breakdown; sizes below
-      are measured from the best-scoring reconstruction.
+      Not representative — chosen to span two axes of expected failure: <b>surface</b> (matte → glazed) and
+      <b>geometry</b> (size, elongation, self-similarity, self-occlusion). Shot hand-held on an iPhone 13 Pro,
+      full circle, overcast. Sizes from the best reconstruction.
     </div>
     <div class="grid">
       <div class="card">
         <a class="main-link" href="bus_stop.html" target="_blank" rel="noopener">
           <div class="name">Bus shelter</div>
           <div class="desc">
-            <span class="trait">The largest object, and the most self-occluding</span> — glazed roof and side
-            panels plus backlit advertising, so much of it is seen through or reflected off glass. The hardest
-            of the six: no method passes 60% F1 at 3 cm.
+            Largest, most self-occluding, glazed throughout — the hardest of the six: <b>no method passes 60% F1@3cm</b>.
           </div>
-          <div class="tests">Chosen to test transparent surfaces and extreme self-occlusion from inside viewpoints.</div>
           <div class="meta">4.3 × 2.0 × 2.8 m · 96 photos · reference incomplete (far side unscanned)</div>
         </a>
       </div>
@@ -150,11 +127,8 @@
         <a class="main-link" href="information_sign.html" target="_blank" rel="noopener">
           <div class="name">Information sign</div>
           <div class="desc">
-            A printed panel behind a <span class="trait">glossy cover that mirrors its surroundings</span> —
-            two near-identical flat faces, so its appearance shifts with viewpoint. All four methods still land
-            within ~3 cm median, on the most incomplete reference of the set.
+            A glossy cover mirroring the street, over two near-identical faces. All four methods still land within ~3 cm.
           </div>
-          <div class="tests">Chosen to test whether reflections block matching, and whether two similar faces get confused for one another.</div>
           <div class="meta">2.6 m tall · 75 photos · reference incomplete (upper ⅔, one side)</div>
         </a>
       </div>
@@ -162,11 +136,8 @@
         <a class="main-link" href="bench.html" target="_blank" rel="noopener">
           <div class="name">Bench</div>
           <div class="desc">
-            <span class="trait">The longest and lowest object</span> — 4 m across but under a metre tall, so it
-            is seen from above far more than from the side. Weathered timber on a steel frame: matte throughout,
-            the least reflective surface here.
+            The longest and lowest, matte weathered timber — <b>a control object</b>, no failure predicted.
           </div>
-          <div class="tests">A control object: matte and well-behaved, no failure predicted.</div>
           <div class="meta">4.1 × 2.2 × 0.8 m · 94 photos · reference incomplete (backrest, legs)</div>
         </a>
       </div>
@@ -174,11 +145,8 @@
         <a class="main-link" href="bollard.html" target="_blank" rel="noopener">
           <div class="name">Bollard</div>
           <div class="desc">
-            <span class="trait">The smallest object in the set</span> — a compact painted-metal post with a
-            domed cap, its semi-gloss facets changing brightness with viewpoint. Simple enough to still score
-            highest of all six: 94% F1 at 3 cm.
+            The smallest and simplest; semi-gloss facets shift with viewpoint. Scores <b>best of all six: 94% F1@3cm</b>.
           </div>
-          <div class="tests">Chosen to test whether specular facets defeat feature matching — otherwise a control.</div>
           <div class="meta">26 × 26 cm × 1.0 m · 69 photos · reference incomplete (~90° sector)</div>
         </a>
       </div>
@@ -186,11 +154,8 @@
         <a class="main-link" href="flashlight.html" target="_blank" rel="noopener">
           <div class="name">Lamppost</div>
           <div class="desc">
-            <span class="trait">The tallest and thinnest object</span> — 6 m high but only ~15 cm across, and
-            dark and almost textureless, so it offers little to match on. This is where VGGT breaks down:
-            22% F1 against COLMAP's 89%.
+            The tallest and thinnest, dark and near-textureless. Where <b>VGGT breaks down: 22% F1 vs COLMAP's 89%</b>.
           </div>
-          <div class="tests">Chosen to test fine-structure recovery at working resolution, and visibility at grazing angles from a distance.</div>
           <div class="meta">5.8 m tall · 105 photos · complete reference</div>
         </a>
       </div>
@@ -198,10 +163,8 @@
         <a class="main-link" href="bus_stop_sign.html" target="_blank" rel="noopener">
           <div class="name">Bus-stop sign</div>
           <div class="desc">
-            A semi-gloss printed flag on a slender pole — <span class="trait">two very different scales in one
-            object</span>: a broad legible plate above a narrow column.
+            A semi-gloss flag on a slender pole — tests whether a symmetric pole gets duplicated by spurious matches.
           </div>
-          <div class="tests">Chosen to test whether a symmetric pole gets duplicated by spurious matches.</div>
           <div class="meta">3.5 m tall · 79 photos · complete reference</div>
         </a>
       </div>
@@ -215,20 +178,12 @@
         <div class="name">DBSCAN gap tuner</div>
         <div class="desc">
           <p>
-            Four of the six LiDAR references are incomplete — parts of the object were never scanned. A
-            reconstructed point sitting in one of those unscanned regions looks far from the reference, but that
-            is missing <em>reference</em>, not a reconstruction error. Counting it as error would penalise
-            exactly the methods that covered the object most fully.
+            Four of the six references are incomplete — parts were never scanned. A point there looks far from
+            the reference, but that is <b>missing reference, not error</b>.
           </p>
           <p>
-            The fix is to separate the two cases by shape: far points that form a coherent cluster mark a gap in
-            the reference and are excluded, while isolated far points are genuine reconstruction noise and stay
-            counted. DBSCAN does that clustering, and its three parameters decide where the line falls.
-          </p>
-          <p>
-            This tool makes that choice visible — move the sliders and watch accuracy, completeness and F1
-            respond, across every object, to see how much each conclusion depends on it. For the two objects
-            whose reference is complete there are no gaps to exclude, so gap detection is off by default.
+            DBSCAN splits the two by shape: clustered far points mark a gap and are excluded, isolated ones are
+            real noise and stay counted. The sliders show how much each conclusion depends on that line.
           </p>
         </div>
       </a>
