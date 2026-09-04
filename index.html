@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>image-based 3D reconstruction vs LiDAR — per-object reports</title>
+<title>image-based 3D reconstruction vs LiDAR</title>
 </head>
 <body>
 
@@ -21,26 +21,32 @@
 
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; line-height:1.45; }
-  .page { max-width:900px; margin:0 auto; padding:32px 24px 72px; display:flex; flex-direction:column; gap:20px; }
+  /* 1040px so the three study cards and the six object cards both sit 3-to-a-row */
+  .page { max-width:1040px; margin:0 auto; padding:32px 24px 72px; display:flex; flex-direction:column; gap:22px; }
   .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
   h1 { font-size:24px; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em; }
   .subtitle { color:var(--text-dim); font-size:14px; max-width:76ch; }
+  .lede { color:var(--text-dim); font-size:14.5px; max-width:80ch; }
+  .lede p { margin:0 0 9px; }
+  .lede p:last-child { margin-bottom:0; }
+  .lede b { color:var(--text); font-weight:600; }
 
-  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:8px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:8px; }
   .card { display:flex; flex-direction:column; gap:6px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:16px 18px; transition:border-color .15s, box-shadow .15s; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
   .card:hover { border-color:var(--accent); }
   .card a.main-link { color:var(--text); text-decoration:none; }
   .card .name { font-weight:650; font-size:15px; }
   .card .desc { font-size:12.5px; color:var(--text-dim); }
-  .card .meta { font-size:11px; color:var(--text-faint); margin-top:2px; }
-  .card .actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-  .card .actions a { font-size:11.5px; padding:5px 10px; border-radius:7px; border:1px solid var(--panel-border); color:var(--text-dim); text-decoration:none; background:transparent; }
-  .card .actions a:hover { border-color:var(--accent); color:var(--text); }
-  .card .actions a.tuner-btn { border-color:#1e4d8f55; color:#1e4d8f; }
-  .card .actions a.tuner-btn:hover { border-color:#1e4d8f; background:#1e4d8f18; }
-  .warn-badge { display:inline-block; font-size:10.5px; font-weight:650; color:#e16b3e; border:1px solid #e16b3e55; background:#e16b3e14; border-radius:5px; padding:1px 7px; margin-left:6px; vertical-align:1px; }
+  .card .meta { font-size:11px; color:var(--text-faint); margin-top:3px; font-variant-numeric:tabular-nums; }
+  .card .trait { color:var(--text); font-weight:600; }
 
-  .card-placeholder { display:flex; align-items:center; justify-content:center; border:1px dashed var(--panel-border); border-radius:12px; padding:16px 18px; font-size:12.5px; color:var(--text-faint); min-height:70px; }
+  .wide-card { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:18px 20px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
+  .wide-card:hover { border-color:var(--accent); }
+  .wide-card a { color:var(--text); text-decoration:none; }
+  .wide-card .name { font-weight:650; font-size:15px; margin-bottom:4px; }
+  .wide-card .desc { font-size:12.5px; color:var(--text-dim); max-width:88ch; }
+  .wide-card .desc p { margin:0 0 7px; }
+  .wide-card .desc p:last-child { margin-bottom:0; }
 
   footer { color:var(--text-faint); font-size:11.5px; padding-top:8px; }
 </style>
@@ -48,44 +54,61 @@
 <div class="page">
   <div>
     <div class="eyebrow">image-based 3D reconstruction vs LiDAR</div>
-    <h1>Per-object reports</h1>
-    <div class="subtitle">
-      Each object is a separate page with a live DBSCAN gap-parameter tuner
-      (updates Accuracy/Completeness/F1 on the fly).
-    </div>
-  </div>
-
-  <div>
-    <div class="eyebrow" style="margin-bottom:6px;">Tools</div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));">
-      <div class="card">
-        <a class="main-link" href="tuner.html" target="_blank" rel="noopener">
-          <div class="name" style="color:#1e4d8f;">DBSCAN gap tuner</div>
-          <div class="desc">Live tuning of far_threshold/eps/min_points, with a selector covering all 12 captures (2 per physical object: far-view-only vs. far+close-up) — slider ranges adapt to each object's scale automatically.</div>
-        </a>
-      </div>
+    <h1>How close does photogrammetry get to a laser scan?</h1>
+    <div class="lede" style="margin-top:8px;">
+      <p>
+        Six pieces of ordinary street furniture were photographed by hand and reconstructed in 3D by four
+        methods — two classical photogrammetry pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>) and two learned
+        feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>). Each reconstruction is compared against a LiDAR
+        scan of the same object, used as ground truth.
+      </p>
+      <p>
+        Every object is measured the same way: the reconstruction is thinned onto a 1 cm grid to match the
+        reference's own sampling, and scored by <b>accuracy</b> (how far its points sit from the reference),
+        <b>completeness</b> (how much of the reference it covers) and their harmonic mean, <b>F1</b>, at
+        thresholds of 3, 5 and 10 cm.
+      </p>
+      <p>
+        Beyond the per-object comparison, three studies ask the practical questions: does it matter
+        <b>how</b> you shoot, <b>how many</b> photos you need, and what the whole thing <b>costs</b> in time
+        and memory.
+      </p>
     </div>
   </div>
 
   <div>
     <div class="eyebrow" style="margin-bottom:6px;">Studies</div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));">
+    <div class="grid">
       <div class="card">
         <a class="main-link" href="capture_comparison.html" target="_blank" rel="noopener">
-          <div class="name">Capture-approach comparison</div>
-          <div class="desc">Does how you film the object change the reconstruction? 2 objects (bollard_003, information_sign_002) × 3 capture approaches (T1 close-range+distant / T2 close-range only / T3 distant only) × 2 methods (COLMAP, MASt3R-GA) = 12 reconstructions · gap-aware Accuracy/Completeness/F1 with per-object live DBSCAN tuners · summary table + grouped F1 chart</div>
+          <div class="name">Does the shooting style matter?</div>
+          <div class="desc">
+            Field guidance: is it worth walking close to an object, or is a distant orbit enough? The same two
+            objects shot three ways — close-range + distant, close-range only, distant only — with bootstrap
+            confidence intervals to show which differences are real rather than noise.
+          </div>
+          <div class="meta">2 objects × 3 approaches × 2 methods · 12 reconstructions</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="frame_count_study.html" target="_blank" rel="noopener">
-          <div class="name">Frame-count sensitivity</div>
-          <div class="desc">How many photos does the reconstruction need? information_sign_002_test_1's nested subsets (N=25/50/75/100, each a strict prefix of the next) × 2 methods (COLMAP, MASt3R-GA) = 8 reconstructions · Accuracy/Completeness/F1@3cm vs N, x-axis toggle N/N_max ↔ median pairwise SIFT-overlap (physically comparable across object sizes) · same live DBSCAN tuner + 3D viewers</div>
+          <div class="name">How many photos are enough?</div>
+          <div class="desc">
+            Where the payoff for extra shooting stops. Nested subsets — each larger set contains the smaller
+            one, so the only thing that changes is the count — reveal the point past which accuracy stops
+            improving.
+          </div>
+          <div class="meta">2 objects · N = 15…100 · up to 3 method variants</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="performance_study.html" target="_blank" rel="noopener">
-          <div class="name">Compute cost vs frame count</div>
-          <div class="desc">Does reconstruction cost (time, RAM, VRAM) grow with N, and how, per method? Controlled sweeps only — bollard_003_test_1 (N=15/30/45/60) &amp; information_sign_002_test_1 (N=25/50/75/100), manual selection — COLMAP + MASt3R-GA(swin-8/logwin-7) + hloc+COLMAP · log-log time/RAM/VRAM curves, fitted scaling exponents, pipeline stage breakdown, RAM-vs-VRAM bottleneck per method · VGGT kept in a separate cross-sectional appendix (no controlled sweep exists for it)</div>
+          <div class="name">What does it cost to compute?</div>
+          <div class="desc">
+            Whether a method is usable at scale: how wall-clock time, RAM and VRAM grow as photos are added,
+            which pipeline stage dominates, and which resource runs out first. All runs on identical hardware.
+          </div>
+          <div class="meta">Controlled N-sweeps · time / RAM / VRAM · fitted scaling</div>
         </a>
       </div>
     </div>
@@ -93,52 +116,105 @@
 
   <div>
     <div class="eyebrow" style="margin-bottom:6px;">Objects</div>
-    <div class="subtitle" style="margin-bottom:-4px;">
-      One page per physical object — every capture of it (different photo count/style) shown side by side, sharing one
-      LiDAR reference and one live DBSCAN tuner. Capture groups are labelled with photo count + shooting style.
+    <div class="subtitle">
+      One page per object: all four reconstructions side by side in 3D against the same LiDAR reference,
+      with the full accuracy / completeness / F1 breakdown. Sizes below are measured from the
+      best-scoring reconstruction of each object.
     </div>
     <div class="grid">
       <div class="card">
         <a class="main-link" href="bus_stop.html" target="_blank" rel="noopener">
-          <div class="name">bus_stop</div>
-          <div class="desc">bus_stop_001 (48 photos, far view only) + bus_stop_002 (96 photos, far + close-up) · 4 methods each · reactive DBSCAN tuner shared across both captures</div>
+          <div class="name">Bus shelter</div>
+          <div class="desc">
+            <span class="trait">The largest object in the set</span> — and the only enclosed structure, with a
+            roof and side panels rather than a single surface. Also the hardest to reconstruct well: no method
+            passes 60% F1 at 3 cm.
+          </div>
+          <div class="meta">4.3 × 2.0 × 2.8 m · 96 photos · reference incomplete (far side unscanned)</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="information_sign.html" target="_blank" rel="noopener">
-          <div class="name">information_sign</div>
-          <div class="desc">information_sign_002_v1 (32 photos, far view only) + information_sign_002 (75 photos, hand-picked diverse subset) · 4 methods each · same incomplete reference in both (only the upper ~2/3 of the pole and one side scanned, systematic 25–30 cm+ gradient) — wider far_threshold range</div>
+          <div class="name">Information sign</div>
+          <div class="desc">
+            A flat sign panel on a slim post — mostly one large planar face, unlike everything else here.
+            All four methods land within ~3 cm median, but its reference is the most incomplete of the set:
+            only the upper two thirds of the pole, from one side.
+          </div>
+          <div class="meta">2.6 m tall · 75 photos · reference incomplete (upper ⅔, one side)</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="bench.html" target="_blank" rel="noopener">
-          <div class="name">bench</div>
-          <div class="desc">bench_003 (50 photos, far view only) + bench_004 (94 photos, far + close-up) · 4 methods each · clean, well-aligned object (park bench)</div>
+          <div class="name">Bench</div>
+          <div class="desc">
+            <span class="trait">The longest and lowest object</span> — 4 m across but under a metre tall, so it
+            is seen from above far more than from the side.
+          </div>
+          <div class="meta">4.1 × 2.2 × 0.8 m · 94 photos · reference incomplete (backrest, legs)</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="bollard.html" target="_blank" rel="noopener">
-          <div class="name">bollard</div>
-          <div class="desc">bollard_003_v1 (30 photos, far view only) + bollard_003 (69 photos, far + close-up) · 4 methods each · clean geometry (median 1.0–2.0 cm) · LiDAR not scanned from all sides (~90° sector missing) — accuracy discounted via DBSCAN gap-exclusion</div>
+          <div class="name">Bollard</div>
+          <div class="desc">
+            <span class="trait">The smallest object in the set</span>, and the simplest shape — a short round
+            post. It scores highest of all six: 94% F1 at 3 cm.
+          </div>
+          <div class="meta">26 × 26 cm × 1.0 m · 69 photos · reference incomplete (~90° sector)</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="flashlight.html" target="_blank" rel="noopener">
-          <div class="name">lamppost</div>
-          <div class="desc">flashlight_003 (50 photos, far view only) + flashlight_004 (105 photos, far + close-up) · ~6 m tall · mast3r_ga/colmap/hloc_colmap clean in both, <b>vggt noisy in both</b> (median ~10 cm / ~11 cm)</div>
+          <div class="name">Lamppost</div>
+          <div class="desc">
+            <span class="trait">The tallest and thinnest object</span> — nearly 6 m high but only ~15 cm across,
+            so it fills very little of each frame. This is where VGGT breaks down: 22% F1 against COLMAP's 89%.
+          </div>
+          <div class="meta">5.8 m tall · 105 photos · complete reference</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="bus_stop_sign.html" target="_blank" rel="noopener">
-          <div class="name">bus_stop_sign</div>
-          <div class="desc">bus_stop_sign_001 (35 photos, far view only) + bus_stop_sign_002 (79 photos, far + close-up) · sign on a pole ~3.7 m · has an “Ignore DBSCAN” toggle (on by default, no gaps) · colmap/hloc_colmap consistently clean, mast3r_ga/vggt weaker on the second capture</div>
+          <div class="name">Bus-stop sign</div>
+          <div class="desc">
+            A sign plate on a tall thin pole — two very different scales in one object: a broad flat plate and a
+            narrow column beneath it.
+          </div>
+          <div class="meta">3.5 m tall · 79 photos · complete reference</div>
         </a>
       </div>
-      <div class="card-placeholder">next object will appear here</div>
     </div>
   </div>
 
-  <footer>src/registration/ · outputs/density_matched/, outputs/metrics/</footer>
+  <div>
+    <div class="eyebrow" style="margin-bottom:6px;">Tool</div>
+    <div class="wide-card">
+      <a href="tuner.html" target="_blank" rel="noopener">
+        <div class="name">DBSCAN gap tuner</div>
+        <div class="desc">
+          <p>
+            Four of the six LiDAR references are incomplete — parts of the object were never scanned. A
+            reconstructed point sitting in one of those unscanned regions looks far from the reference, but that
+            is missing <em>reference</em>, not a reconstruction error. Counting it as error would penalise
+            exactly the methods that covered the object most fully.
+          </p>
+          <p>
+            The fix is to separate the two cases by shape: far points that form a coherent cluster mark a gap in
+            the reference and are excluded, while isolated far points are genuine reconstruction noise and stay
+            counted. DBSCAN does that clustering, and its three parameters decide where the line falls.
+          </p>
+          <p>
+            This tool makes that choice visible — move the sliders and watch accuracy, completeness and F1
+            respond, across every object, to see how much each conclusion depends on it. For the two objects
+            whose reference is complete there are no gaps to exclude, so gap detection is off by default.
+          </p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <footer>src/registration/ · docs/tables/</footer>
 </div>
 
 </body>
