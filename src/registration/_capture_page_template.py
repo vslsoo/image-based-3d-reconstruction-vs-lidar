@@ -48,8 +48,8 @@ HTML_HEAD = r"""<!doctype html>
   .page { max-width:1560px; margin:0 auto; padding:28px 24px 72px; display:flex; flex-direction:column; gap:26px; }
   a { color:var(--accent); }
   .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
-  h1 { font-size:23px; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em; }
-  h2 { font-size:19px; font-weight:650; margin:0 0 2px; }
+  h1 { font-size:23px; font-weight:650; margin:4px 0 12px; letter-spacing:-.01em; }
+  h2 { font-size:19px; font-weight:650; margin:0 0 10px; }
   h3 { font-size:15px; font-weight:650; margin:0; }
   .subtitle { color:var(--text-dim); font-size:13.5px; max-width:88ch; }
   /* one treatment for emphasis: near-black. Without this, <b> inside .subtitle / .aside /
@@ -126,7 +126,6 @@ HTML_HEAD = r"""<!doctype html>
   .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
               color:var(--text-faint); margin-bottom:5px; }
 
-  footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
 </style>
 
 <div class="page">
@@ -233,7 +232,6 @@ HTML_HEAD = r"""<!doctype html>
         <!-- 240px, not 300: beside the 260px aside the left column is 1234px, and four panels at a
              300px minimum need 1236 - two pixels short, which pushed the fourth onto its own row. -->
         <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px;"></div>
-        <div class="params" id="stats-caveats" style="margin-top:12px"></div>
       </div>
       <div class="aside">
         <span class="k">The answer</span>
@@ -246,7 +244,6 @@ HTML_HEAD = r"""<!doctype html>
   </section>
 
 
-  <footer>exp_081–092 · src/registration/build_capture_comparison_page.py</footer>
 </div>
 """
 
@@ -907,12 +904,6 @@ document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListene
 
 // ---------- statistical-significance section (static, at default DBSCAN params) ----------
 function renderStats() {
-  const os = DATA.object_sensitivity.map(o => {
-    const t = DATA.objects.find(x => x.id === o.object).title;
-    return `<b>${t}</b>: spread ${o.mean_spread.toFixed(1)} pts (${o.any_resolvable ? 'resolvable' : 'within noise'})`;
-  }).join('&nbsp;&middot;&nbsp;');
-  const cav = document.getElementById('stats-caveats');
-  if (cav) cav.innerHTML = `${os}. n=2 objects — illustrative, not a population test.`;
   renderDiffHists();
 }
 
