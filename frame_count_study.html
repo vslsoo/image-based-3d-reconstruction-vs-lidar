@@ -7,31 +7,31 @@
 </head>
 <body>
 <style>
-  /* Forced light palette, matching every other page on the site (index.html,
-     performance_study.html, the per-object report pages) - never flips dark, regardless
-     of system prefers-color-scheme or a data-theme toggle. This page used to actually
-     switch to a dark navy variant, which is why a system/browser in dark mode made it
-     look like a different, out-of-date page next to the rest of the (forced-light) site. */
+  /* Forced light palette - matches the thesis-defense deck (white bg, forest-green accent)
+     and every other page on the site. Series hues are the CVD-safe set.
+     NOTE: this palette was originally applied by hand-editing the generated .html (commit
+     707db75) and was silently lost on the next rebuild, because the template it is built
+     from still had the old grey/orange one. It lives here now so a rebuild keeps it. */
   :root {
-    --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
-    --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --ref-magenta:#ff2dd0;
-    --canvas-bg:#0a0d13; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
-    --colmap:#e0a458; --mastr:#0ea5a3; --mastr2:#8b5cf6;
+    --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+    --accent:#17805f; --accent-soft:#d9ece3; --green:#1aacb3; --red:#e16b3e; --ref-magenta:#2b2b28;
+    --canvas-bg:#ffffff; --code-bg:#f5f4ef; --best:#0d8054; --best-soft:#e3f1ea;
+    --colmap:#c15c85; --mastr:#0d8054; --mastr2:#5d63c7;
     --n25:#bfdbfe; --n50:#7fb3f5; --n75:#3f7fe0; --n100:#1d4ed8;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
-      --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
-      --colmap:#e0a458; --mastr:#0ea5a3; --mastr2:#8b5cf6;
+    :root { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+      --accent:#17805f; --accent-soft:#d9ece3; --green:#1aacb3; --red:#e16b3e; --code-bg:#f5f4ef; --best:#0d8054; --best-soft:#e3f1ea;
+      --colmap:#c15c85; --mastr:#0d8054; --mastr2:#5d63c7;
       --n25:#bfdbfe; --n50:#7fb3f5; --n75:#3f7fe0; --n100:#1d4ed8; }
   }
-  :root[data-theme="dark"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
-    --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
-    --colmap:#e0a458; --mastr:#0ea5a3; --mastr2:#8b5cf6;
+  :root[data-theme="dark"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+    --accent:#17805f; --accent-soft:#d9ece3; --green:#1aacb3; --red:#e16b3e; --code-bg:#f5f4ef; --best:#0d8054; --best-soft:#e3f1ea;
+    --colmap:#c15c85; --mastr:#0d8054; --mastr2:#5d63c7;
     --n25:#bfdbfe; --n50:#7fb3f5; --n75:#3f7fe0; --n100:#1d4ed8; }
-  :root[data-theme="light"] { --bg:#f4f6f9; --panel:#ffffff; --panel-border:#dde2ea; --text:#1a2233; --text-dim:#5c6478; --text-faint:#8a92a6;
-    --accent:#a8621f; --accent-soft:#f0dcc4; --green:#22c55e; --red:#f43f5e; --code-bg:#eceff4; --best:#1f9d55; --best-soft:#e4f5ea;
-    --colmap:#e0a458; --mastr:#0ea5a3; --mastr2:#8b5cf6;
+  :root[data-theme="light"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+    --accent:#17805f; --accent-soft:#d9ece3; --green:#1aacb3; --red:#e16b3e; --code-bg:#f5f4ef; --best:#0d8054; --best-soft:#e3f1ea;
+    --colmap:#c15c85; --mastr:#0d8054; --mastr2:#5d63c7;
     --n25:#bfdbfe; --n50:#7fb3f5; --n75:#3f7fe0; --n100:#1d4ed8; }
 
   * { box-sizing:border-box; }
@@ -61,7 +61,8 @@
   .col-head .hint { display:block; font-weight:400; font-size:10px; color:var(--text-faint); margin-top:2px; }
   .row-head { display:flex; align-items:center; justify-content:center; font-weight:650; font-size:12.5px; writing-mode:vertical-rl; transform:rotate(180deg); color:var(--text-dim); }
 
-  .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
+  .tuner-panel { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 2px 12px rgba(23,128,95,0.16); }
   .panel-title { font-weight:650; font-size:12.5px; display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
   .panel-title .exp { font-size:10px; color:var(--text-faint); font-weight:500; }
   canvas { width:100%; height:220px; display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
@@ -280,7 +281,7 @@ function makeViewer(canvas, layers) {
   const uMVP = gl.getUniformLocation(prog, 'uMVP');
   const uPointSize = gl.getUniformLocation(prog, 'uPointSize');
   function makeBuffer(data){ const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW); return b; }
-  const state = layers.map(l => ({ posBuf: makeBuffer(l.pos), colorBuf: makeBuffer(l.color), n: l.pos.length/3, on: l.defaultOn !== false }));
+  const state = layers.map(l => ({ posBuf: makeBuffer(l.pos), colorBuf: makeBuffer(l.color), n: l.pos.length/3, on: l.defaultOn !== false, sizeMul: l.sizeMul || 1 }));
   let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
   for (const l of layers) for (let i=0;i<l.pos.length;i+=3){ const x=l.pos[i],y=l.pos[i+1],z=l.pos[i+2];
     if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; if(z<minZ)minZ=z; if(z>maxZ)maxZ=z; }
@@ -291,16 +292,17 @@ function makeViewer(canvas, layers) {
     if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } }
   function draw(){
     resize(); gl.viewport(0,0,canvas.width,canvas.height); gl.enable(gl.DEPTH_TEST);
-    gl.clearColor(0.02,0.03,0.06,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.clearColor(1,1,1,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     const eye=[center[0]+distance*Math.cos(elevation)*Math.cos(azimuth),
       center[1]+distance*Math.cos(elevation)*Math.sin(azimuth), center[2]+distance*Math.sin(elevation)];
     const view=mat4LookAt(eye,center,[0,0,1]);
     const proj=mat4Perspective(Math.PI/4, canvas.width/canvas.height, diag*0.01, diag*10);
     const mvp=mat4Multiply(proj,view);
     gl.useProgram(prog); gl.uniformMatrix4fv(uMVP,false,mvp);
-    gl.uniform1f(uPointSize, Math.max(2.0, Math.min(canvas.width,canvas.height)/150));
+    const baseSize = Math.max(2.2, Math.min(canvas.width,canvas.height)/185);
     for (const s of state) {
       if(!s.on||s.n===0) continue;
+      gl.uniform1f(uPointSize, baseSize * s.sizeMul);
       gl.bindBuffer(gl.ARRAY_BUFFER,s.posBuf); gl.enableVertexAttribArray(aPosition); gl.vertexAttribPointer(aPosition,3,gl.FLOAT,false,0,0);
       gl.bindBuffer(gl.ARRAY_BUFFER,s.colorBuf); gl.enableVertexAttribArray(aColor); gl.vertexAttribPointer(aColor,3,gl.FLOAT,false,0,0);
       gl.drawArrays(gl.POINTS,0,s.n);
@@ -313,7 +315,8 @@ function makeViewer(canvas, layers) {
     azimuth+=(e.clientX-lastX)*0.008; elevation=Math.max(-1.5,Math.min(1.5,elevation-(e.clientY-lastY)*0.008));
     lastX=e.clientX; lastY=e.clientY; draw(); });
   canvas.addEventListener('wheel',e=>{ e.preventDefault(); distance=Math.max(diag*0.1,Math.min(diag*6,distance*(1+e.deltaY*0.001))); draw(); }, { passive:false });
-  window.addEventListener('resize', draw);
+  const onResize = () => draw();
+  window.addEventListener('resize', onResize);
   draw();
   return {
     draw,
@@ -321,11 +324,15 @@ function makeViewer(canvas, layers) {
       gl.bindBuffer(gl.ARRAY_BUFFER,state[idx].posBuf); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.DYNAMIC_DRAW);
       gl.bindBuffer(gl.ARRAY_BUFFER,state[idx].colorBuf); gl.bufferData(gl.ARRAY_BUFFER,color,gl.DYNAMIC_DRAW); draw(); },
     setLayerOn(idx,on){ state[idx].on=on; draw(); },
+    // frees the WebGL context - browsers cap the number of *live* contexts per page
+    // (Chrome: ~16); with dozens of thumbnail viewers on one page we must give up
+    // off-screen contexts or the oldest ones get silently evicted and go blank.
+    destroy(){ window.removeEventListener('resize', onResize); const ext=gl.getExtension('WEBGL_lose_context'); if(ext) ext.loseContext(); },
   };
 }
 
 // ---------- colours ----------
-const GREEN=[0.133,0.773,0.369], RED=[0.957,0.247,0.369], MAGENTA=[1.0,0.176,0.816];
+const GREEN=[0.102,0.675,0.702], RED=[0.882,0.420,0.243], MAGENTA=[0.169,0.169,0.157]; // #1aacb3, #e16b3e, #2b2b28 (teal instead of green: validated far from red and from the undefined violet)
 const TURBO=[[48,18,59],[68,88,203],[62,155,254],[24,213,204],[70,247,131],[164,252,59],[225,220,55],[253,141,39],[122,4,3]];
 function turbo(dCm, vmax){
   let f=Math.max(0,Math.min(1,dCm/vmax)); let x=f*(TURBO.length-1); let i=Math.floor(x); let t=x-i;
@@ -427,14 +434,13 @@ function keptReconPos(key) {
 }
 
 // ---------- histogram (plain SVG) ----------
-function isDark(){ return false; } // page is forced-light (see the CSS block above) - never dark
 function renderHist(svg, H) {
   const W=640, HH=200, padL=34, padB=26, padT=24, padR=8;
   const plotW=W-padL-padR, plotH=HH-padT-padB;
   const counts=H.counts, edges=H.bin_edges_cm; const maxCount=Math.max(...counts)||1;
   const barW=plotW/counts.length;
-  const barColor='#d6336c', medianColor='#ff2dd0', meanColor='#fbbf24';
-  const lineColor = isDark()? '#e7e9ee55' : '#1a223355';
+  const barColor='#3f68b8', medianColor='#2b2b28', meanColor='#9c6c0e';
+  const axisColor = '#585d5460'; const tickColor = '#585d54';
   let s='';
   counts.forEach((c,i)=>{ const h=(c/maxCount)*plotH; const x=padL+i*barW; const y=padT+plotH-h;
     s+=`<rect x="${x+1}" y="${y}" width="${Math.max(barW-2,1)}" height="${h}" fill="${barColor}" opacity="0.85"><title>${edges[i].toFixed(1)}-${edges[i+1].toFixed(1)}cm: ${c}</title></rect>`; });
@@ -444,9 +450,9 @@ function renderHist(svg, H) {
   s+=`<line x1="${meanX}" y1="${padT}" x2="${meanX}" y2="${padT+plotH}" stroke="${meanColor}" stroke-width="1.5" stroke-dasharray="2,3"/>`;
   s+=`<line x1="${W-150}" y1="12" x2="${W-134}" y2="12" stroke="${medianColor}" stroke-width="1.5" stroke-dasharray="4,3"/><text x="${W-130}" y="16" font-size="10" fill="${medianColor}">median</text>`;
   s+=`<line x1="${W-70}" y1="12" x2="${W-54}" y2="12" stroke="${meanColor}" stroke-width="1.5" stroke-dasharray="2,3"/><text x="${W-50}" y="16" font-size="10" fill="${meanColor}">mean</text>`;
-  s+=`<line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="${lineColor}"/>`;
+  s+=`<line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="${axisColor}"/>`;
   for (let i=0;i<=edges.length-1;i+=5){ const x=padL+(edges[i]/edges[edges.length-1])*plotW;
-    s+=`<text x="${x}" y="${HH-8}" font-size="10" fill="${lineColor}" text-anchor="middle">${edges[i].toFixed(1)}</text>`; }
+    s+=`<text x="${x}" y="${HH-8}" font-size="10" fill="${tickColor}" text-anchor="middle">${edges[i].toFixed(1)}</text>`; }
   svg.setAttribute('viewBox',`0 0 ${W} ${HH}`); svg.innerHTML=s;
 }
 
@@ -471,7 +477,7 @@ for (const obj of DATA.objects) {
       <div class="mono" style="font-size:12px; color:var(--text-faint)" id="histstats-${obj.id}"></div>
       <svg id="hist-${obj.id}" viewBox="0 0 640 200" style="width:100%; height:200px;"></svg>
     </div>
-    <div class="panel">
+    <div class="panel tuner-panel">
       <div class="tuner-title">DBSCAN gap tuner — ${obj.title} (drives all ${obj.panels.length} panels below + the table &amp; curves)</div>
       <div class="controls">
         <div class="control"><label>far_threshold <span class="val" id="ft-val-${obj.id}"></span></label>
@@ -531,6 +537,34 @@ for (const obj of DATA.objects) {
     block.querySelector('.controls').style.opacity=t.applyDbscan?'1':'0.4'; recomputeObject(obj.id); });
 }
 
+// Hard cap on simultaneously-live WebGL contexts, enforced ourselves rather than
+// trusting a browser/GPU-specific limit (Chrome warns around ~16, but real GPUs/drivers
+// can silently evict sooner). The IntersectionObserver below is the primary mechanism
+// (free contexts once a panel is well off-screen); this cap is a backstop for the case
+// where more panels are simultaneously near-viewport than the browser can hold - it
+// evicts off-screen entries first and only touches a visible one as an absolute last
+// resort (a big monitor showing more rows than any browser could hold live at once).
+const __liveViewers = []; // {teardown, visible}, oldest-touched first
+const __MAX_LIVE_VIEWERS = 14;
+function __evictIfNeeded() {
+  while (__liveViewers.length > __MAX_LIVE_VIEWERS) {
+    let idx = __liveViewers.findIndex(v => !v.visible);
+    if (idx === -1) idx = 0;
+    __liveViewers.splice(idx, 1)[0].teardown();
+  }
+}
+function __registerViewer(entry) { entry.visible = true; __liveViewers.push(entry); __evictIfNeeded(); }
+function __touchViewer(entry) {
+  entry.visible = true;
+  const i = __liveViewers.indexOf(entry);
+  if (i >= 0) { __liveViewers.splice(i, 1); __liveViewers.push(entry); }
+}
+function __markInvisible(entry) { entry.visible = false; }
+function __unregisterViewer(entry) {
+  const i = __liveViewers.indexOf(entry);
+  if (i >= 0) __liveViewers.splice(i, 1);
+}
+
 function buildPanel(key) {
   const s = panelState[key], d = s.d;
   const panel = document.createElement('div');
@@ -552,7 +586,7 @@ function buildPanel(key) {
     <div class="panel-stats"><span class="tab-pct">-</span> within t &nbsp;·&nbsp; <span class="f1">F1=-</span><br>
       <span class="mono">n=${d.n_source_total.toLocaleString('en-US')} · ref=${d.n_target_total.toLocaleString('en-US')} · excl≈<span class="excl">0</span></span></div>
   `;
-  const canvas=panel.querySelector('canvas');
+  let canvas=panel.querySelector('canvas');
   const slider=panel.querySelector('input[type=range]');
   const thrVal=panel.querySelector('.thr-val');
   const tabPct=panel.querySelector('.tab-pct');
@@ -571,11 +605,46 @@ function buildPanel(key) {
     tabPct.textContent=(activeTab==='accuracy'?m.accPct:m.compPct).toFixed(1)+'%';
     f1El.textContent='F1='+m.f1.toFixed(1);
     exclEl.textContent=m.nExcluded.toLocaleString('en-US');
+    if(!viewer) return; // off-screen right now - ensureViewer() will pick up the current state when it scrolls back in
     const main=buildMain(key,activeTab,t,colorMode);
     const ov=overlayLayer();
-    if(!viewer){ viewer=makeViewer(canvas,[{pos:main.pos,color:main.color,defaultOn:true},{pos:ov,color:solidColor(ov.length/3,MAGENTA),defaultOn:false}]); }
-    else { viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,overlayBtn.classList.contains('active')); }
+    viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
   }
+  const __lruEntry = { teardown: () => teardownViewer() };
+  function ensureViewer(){
+    if(viewer) { __touchViewer(__lruEntry); return; }
+    const t=parseFloat(slider.value);
+    const main=buildMain(key,activeTab,t,colorMode);
+    const ov=overlayLayer();
+    viewer=makeViewer(canvas,[{pos:main.pos,color:main.color,defaultOn:true},{pos:ov,color:solidColor(ov.length/3,MAGENTA),defaultOn:false,sizeMul:0.85}]);
+    viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    __registerViewer(__lruEntry);
+  }
+  function teardownViewer(){
+    if(!viewer) return;
+    viewer.destroy();
+    viewer=null;
+    __unregisterViewer(__lruEntry);
+    // A canvas whose WebGL context was explicitly lost via loseContext() keeps returning
+    // that SAME lost context from getContext() forever - there's no getting a live one
+    // back on that element without a manual restoreContext()+re-init dance. Swapping in a
+    // fresh (unused) canvas node is simpler and gives ensureViewer() a genuinely new context.
+    const fresh = canvas.cloneNode();
+    canvas.replaceWith(fresh);
+    io.unobserve(canvas);
+    canvas = fresh;
+    io.observe(canvas);
+  }
+  // Only ~16 WebGL contexts can be live at once in most browsers (fewer on some real
+  // GPUs/drivers); this page can have dozens of panels, so give each canvas a context
+  // only while it's near the viewport, with the LRU cap above as a hard backstop.
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      if (e.isIntersecting) ensureViewer();
+      else { __markInvisible(__lruEntry); teardownViewer(); }
+    }
+  }, { rootMargin: '150px 0px 150px 0px' });
+  io.observe(canvas);
   panelApi[key]={ refresh };
   requestAnimationFrame(refresh);
   slider.addEventListener('input',()=>{ thrVal.textContent=parseFloat(slider.value).toFixed(1)+'cm';
