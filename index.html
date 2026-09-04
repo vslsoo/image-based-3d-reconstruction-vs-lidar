@@ -26,8 +26,11 @@
   .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
   h1 { font-size:24px; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em; }
   .subtitle { color:var(--text-dim); font-size:14px; max-width:76ch; }
+  .subtitle.arrow { position:relative; padding-left:19px; }
+  .subtitle.arrow::before { content:"\2192"; position:absolute; left:0; top:0; color:var(--accent); font-weight:600; }
   .lede { color:var(--text-dim); font-size:14.5px; max-width:80ch; }
-  .lede p { margin:0 0 9px; }
+  .lede p { margin:0 0 9px; position:relative; padding-left:19px; }
+  .lede p::before { content:"\2192"; position:absolute; left:0; top:0; color:var(--accent); font-weight:600; }
   .lede p:last-child { margin-bottom:0; }
   .lede b { color:var(--text); font-weight:600; }
 
@@ -45,7 +48,7 @@
   .wide-card:hover { border-color:var(--accent); }
   .wide-card a { color:var(--text); text-decoration:none; }
   .wide-card .name { font-weight:650; font-size:15px; margin-bottom:4px; }
-  .wide-card .desc { font-size:12.5px; color:var(--text-dim); max-width:88ch; }
+  .wide-card .desc { font-size:12.5px; color:var(--text-dim); }
   .wide-card .desc p { margin:0 0 7px; }
   .wide-card .desc p:last-child { margin-bottom:0; }
 
@@ -63,8 +66,8 @@
       </p>
       <p>
         Four methods, two families: correspondence pipelines (<b>COLMAP</b>, <b>hloc+COLMAP</b>) and
-        feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>). They fail in opposite ways — matching leaves a
-        <b>hole</b>, a learned model can <b>invent</b> geometry that is wrong.
+        feed-forward models (<b>MASt3R-GA</b>, <b>VGGT</b>). They fail in opposite ways — a correspondence pipeline
+        leaves a <b>hole</b>, a feed-forward model can <b>invent</b> geometry that is wrong.
       </p>
       <p>
         Scored on a 1 cm grid by accuracy, completeness and F1 at 3/5/10 cm; scale from a 9.5 cm marker in
@@ -89,7 +92,7 @@
         <a class="main-link" href="frame_count_study.html" target="_blank" rel="noopener">
           <div class="name">How many photos are enough?</div>
           <div class="desc">
-            COLMAP improves then plateaus; MASt3R-GA gains nothing and degrades on the sign. More photos is not automatically better.
+            The correspondence pipeline improves then plateaus; the feed-forward model gains nothing and degrades on the sign. More photos is not automatically better.
           </div>
           <div class="meta">2 objects · N = 15…100 · up to 3 method variants</div>
         </a>
@@ -108,7 +111,7 @@
 
   <div>
     <div class="eyebrow" style="margin-bottom:6px;">Objects</div>
-    <div class="subtitle">
+    <div class="subtitle arrow">
       Not representative — chosen to span two axes of expected failure: <b>surface</b> (matte → glazed) and
       <b>geometry</b> (size, elongation, self-similarity, self-occlusion). Shot hand-held on an iPhone 13 Pro,
       full circle, overcast. Sizes from the best reconstruction.
