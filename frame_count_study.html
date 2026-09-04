@@ -433,28 +433,6 @@ function keptReconPos(key) {
   return new Float32Array(pos);
 }
 
-// ---------- histogram (plain SVG) ----------
-function renderHist(svg, H) {
-  const W=640, HH=200, padL=34, padB=26, padT=24, padR=8;
-  const plotW=W-padL-padR, plotH=HH-padT-padB;
-  const counts=H.counts, edges=H.bin_edges_cm; const maxCount=Math.max(...counts)||1;
-  const barW=plotW/counts.length;
-  const barColor='#3f68b8', medianColor='#2b2b28', meanColor='#9c6c0e';
-  const axisColor = '#585d5460'; const tickColor = '#585d54';
-  let s='';
-  counts.forEach((c,i)=>{ const h=(c/maxCount)*plotH; const x=padL+i*barW; const y=padT+plotH-h;
-    s+=`<rect x="${x+1}" y="${y}" width="${Math.max(barW-2,1)}" height="${h}" fill="${barColor}" opacity="0.85"><title>${edges[i].toFixed(1)}-${edges[i+1].toFixed(1)}cm: ${c}</title></rect>`; });
-  const medX=padL+(H.median_cm/edges[edges.length-1])*plotW;
-  s+=`<line x1="${medX}" y1="${padT}" x2="${medX}" y2="${padT+plotH}" stroke="${medianColor}" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  const meanX=padL+(H.mean_cm/edges[edges.length-1])*plotW;
-  s+=`<line x1="${meanX}" y1="${padT}" x2="${meanX}" y2="${padT+plotH}" stroke="${meanColor}" stroke-width="1.5" stroke-dasharray="2,3"/>`;
-  s+=`<line x1="${W-150}" y1="12" x2="${W-134}" y2="12" stroke="${medianColor}" stroke-width="1.5" stroke-dasharray="4,3"/><text x="${W-130}" y="16" font-size="10" fill="${medianColor}">median</text>`;
-  s+=`<line x1="${W-70}" y1="12" x2="${W-54}" y2="12" stroke="${meanColor}" stroke-width="1.5" stroke-dasharray="2,3"/><text x="${W-50}" y="16" font-size="10" fill="${meanColor}">mean</text>`;
-  s+=`<line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="${axisColor}"/>`;
-  for (let i=0;i<=edges.length-1;i+=5){ const x=padL+(edges[i]/edges[edges.length-1])*plotW;
-    s+=`<text x="${x}" y="${HH-8}" font-size="10" fill="${tickColor}" text-anchor="middle">${edges[i].toFixed(1)}</text>`; }
-  svg.setAttribute('viewBox',`0 0 ${W} ${HH}`); svg.innerHTML=s;
-}
 
 // ---------- build the 3D grid ----------
 const objRoot = document.getElementById('objects-root');
@@ -473,10 +451,6 @@ for (const obj of DATA.objects) {
       <span class="chip">DBSCAN default ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
-    <div class="panel" style="max-width:720px;">
-      <div class="mono" style="font-size:12px; color:var(--text-faint)" id="histstats-${obj.id}"></div>
-      <svg id="hist-${obj.id}" viewBox="0 0 640 200" style="width:100%; height:200px;"></svg>
-    </div>
     <div class="panel tuner-panel">
       <div class="tuner-title">DBSCAN gap tuner — ${obj.title} (drives all ${obj.panels.length} panels below + the table &amp; curves)</div>
       <div class="controls">
@@ -497,12 +471,6 @@ for (const obj of DATA.objects) {
   `;
   objRoot.appendChild(block);
 
-  renderHist(block.querySelector(`#hist-${obj.id}`), obj.hist);
-  const H = obj.hist;
-  block.querySelector(`#histstats-${obj.id}`).innerHTML =
-    `reference NN-spacing · n=${H.n} · median=${H.median_cm.toFixed(2)}cm · mean=${H.mean_cm.toFixed(2)}cm · `
-    + `p95=${H.p95_cm.toFixed(2)}cm · max=${H.max_cm.toFixed(1)}cm `
-    + `(${H.overflow_pct.toFixed(2)}% &gt;${H.bin_edges_cm[H.bin_edges_cm.length-1]}cm off-chart)`;
 
   const grid = block.querySelector(`#grid-${obj.id}`);
   grid.appendChild(document.createElement('div')); // corner
@@ -886,7 +854,7 @@ for (const obj of DATA.objects) {
 buildTable();
 for (const obj of DATA.objects) recomputeObject(obj.id);
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
-mq.addEventListener && mq.addEventListener('change', ()=>{ for(const o of DATA.objects) renderHist(document.getElementById(`hist-${o.id}`), o.hist); updateCurves(); });
+mq.addEventListener && mq.addEventListener('change', ()=>{ updateCurves(); });
 </script>
 
 </body>
