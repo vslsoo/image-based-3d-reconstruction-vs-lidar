@@ -68,6 +68,9 @@ HTML_HEAD = r"""<!doctype html>
   .obj-grid { display:grid; grid-template-columns:78px repeat(3, minmax(280px,1fr)); gap:12px; min-width:960px; }
   .col-head { font-size:12.5px; font-weight:650; color:var(--text); padding:0 2px 2px; align-self:end; }
   .col-head .hint { display:block; font-weight:400; font-size:10px; color:var(--text-faint); margin-top:2px; }
+  .row-note { grid-column:2 / -1; font-size:12px; color:var(--text-dim); background:var(--code-bg);
+              border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:7px 12px; margin:-4px 0 4px; }
+  .row-note b { color:var(--text); }
   .row-head { display:flex; align-items:center; justify-content:center; font-weight:650; font-size:12.5px; writing-mode:vertical-rl; transform:rotate(180deg); color:var(--text-dim); }
 
   .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
@@ -93,7 +96,7 @@ HTML_HEAD = r"""<!doctype html>
   .panel-stats .f1 { color:var(--accent); font-weight:700; font-size:12px; }
 
 
-  .legend-bar { display:flex; flex-wrap:wrap; gap:14px 26px; padding:10px 14px; background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; align-items:center; font-size:11.5px; color:var(--text-dim); }
+  .legend-bar { display:flex; width:fit-content; max-width:100%; flex-wrap:wrap; gap:14px 26px; padding:10px 14px; background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; align-items:center; font-size:11.5px; color:var(--text-dim); }
   .swatch { width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:-1px; border:1px solid var(--panel-border); }
   .gradient-bar { height:9px; width:150px; border-radius:5px; border:1px solid var(--panel-border);
     background:linear-gradient(90deg,#30123b 0%,#4458cb 12%,#3e9bfe 25%,#18d5cc 37%,#46f783 50%,#a4fc3b 62%,#e1dc37 75%,#fd8d27 87%,#7a0403 100%); }
@@ -130,8 +133,17 @@ HTML_HEAD = r"""<!doctype html>
       three ways with the same number of images each, reconstructed by two methods.
       <br><br>
       <b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot;
-      <b>T3</b> = distant only. Its answer set the protocol for every other capture in the project:
-      mixed sets, with distant views in the majority.
+      <b>T3</b> = distant only.
+      <br><br>
+      <b>Two objects, chosen as opposite extremes</b> on both axes the project varies: the bollard is
+      small, compact and convex with a semi-gloss painted surface — the easy end; the information sign is
+      taller, a flat slab with two near-identical faces under a glossy cover that mirrors the street — the
+      hard end. A strategy that works at both extremes should hold for everything in between, which is
+      why two contrasting objects are more informative here than two similar ones.
+      <br><br>
+      <b>Two methods, one from each family</b> — COLMAP matches features between views, MASt3R-GA
+      regresses geometry directly from a learned prior. Running both answers a second question: does
+      capture geometry matter in the same way for methods built on fundamentally different principles?
     </div>
   </div>
 
@@ -143,6 +155,14 @@ HTML_HEAD = r"""<!doctype html>
   </div>
 
   <hr class="sep">
+  <section>
+    <h2>Source data — every reconstruction, side by side</h2>
+    <div class="subtitle" style="max-width:92ch">
+      Each row is one method; the three columns are the three capture approaches. Colour is distance to
+      the LiDAR reference. The line under each row says what changing the capture did to that method on
+      that object.
+    </div>
+  </section>
   <section id="objects-root"></section>
 
   <hr class="sep">
@@ -191,6 +211,18 @@ HTML_HEAD = r"""<!doctype html>
   <hr class="sep">
   <section>
     <h2>Is the difference between capture approaches real?</h2>
+    <div class="aside" style="max-width:92ch; margin-bottom:4px">
+      <span class="k">The answer</span>
+      <b>It depends on the object, and the split is by size and shape rather than by method.</b>
+      On the small, compact bollard the capture strategy is <b>inconsequential</b> — no pairwise
+      difference is statistically resolvable, for either family, so at that scale you can walk around it
+      however you like. On the taller, flat-faced information sign it is <b>decisive</b>: close-range-only
+      loses 33–37 points, and the loss is real, not noise. Both methods agree, which means this is a
+      property of the object and the geometry of the capture, not of any one algorithm.
+      <br><br>
+      That is why every main capture in this project mixes close and distant views, with distant views in
+      the majority — the strategy that held up on the harder of the two.
+    </div>
     <div class="subtitle" style="max-width:92ch">
       A gap of a few points could just be luck of which surface patches happened to be covered. To tell,
       each pair of approaches is re-scored 2000 times on resampled patches of the object; the histogram
@@ -508,6 +540,12 @@ for (const obj of DATA.objects) {
       const key = `${obj.id}__${method}__${ap}`;
       grid.appendChild(buildPanel(key));
     }
+    // what changing the capture did to THIS method on THIS object - one line per triple,
+    // recomputed whenever the threshold changes (see refreshRowNotes)
+    const note = document.createElement('div');
+    note.className = 'row-note';
+    note.id = `rownote-${obj.id}__${method}`;
+    grid.appendChild(note);
   }
 
   // Gap-detection settings are fixed per object (the values tuned in tuner.html) rather
@@ -641,7 +679,7 @@ function recomputeObject(objId) {
     recomputeExclusion(key, t.ft, t.eps, t.mp, t.applyDbscan);
     panelApi[key].refresh();
   }
-  updateTable(); updateChart();
+  updateTable(); updateChart(); refreshRowNotes();
 }
 
 // Metric threshold for the table and the F1 chart. panelMetrics(key, t) already takes any
@@ -656,8 +694,8 @@ function buildTable() {
   const wrap=document.getElementById('summary-table-wrap');
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Approach</th><th class="txt">Method</th>'
-    + '<th>F1@3cm</th><th>Acc@3cm</th><th>Comp@3cm</th><th>Acc median</th><th>Comp median</th>'
-    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE@3cm</th><th>excl≈</th></tr></thead><tbody>';
+    + '<th>F1</th><th>Acc</th><th>Comp</th><th>Acc median</th><th>Comp median</th>'
+    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) {
@@ -676,6 +714,38 @@ function buildTable() {
   h+='</tbody></table>';
   wrap.innerHTML=h;
 }
+// One sentence per (object, method) triple under the viewers: did the capture approach
+// change this reconstruction, and if so how - a deficit that closes as the threshold widens
+// is an offset, one that persists is geometry that was never built.
+function refreshRowNotes() {
+  for (const obj of DATA.objects) {
+    const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
+    for (const method of methods) {
+      const el = document.getElementById(`rownote-${obj.id}__${method}`);
+      if (!el) continue;
+      const f1 = APPROACHES.map(ap => panelMetrics(`${obj.id}__${method}__${ap}`, activeThreshold).f1);
+      const spread = Math.max(...f1) - Math.min(...f1);
+      const worst = APPROACHES[f1.indexOf(Math.min(...f1))];
+      const wide = panelMetrics(`${obj.id}__${method}__${worst}`, 10.0).f1;
+      const tight = panelMetrics(`${obj.id}__${method}__${worst}`, 3.0).f1;
+      const name = DATA.approach_label[worst].split('·')[1].trim();
+      if (spread < 5) {
+        el.innerHTML = `<b>Capture barely matters here.</b> All three land within `
+          + `${spread.toFixed(1)} points of each other — the shape is simple enough that every route `
+          + `around it sees essentially the same surface.`;
+      } else if (wide < 90) {
+        el.innerHTML = `<b>${name} costs ${spread.toFixed(0)} points, and the loss is permanent.</b> `
+          + `Even at a 10 cm threshold it only reaches ${wide.toFixed(0)}% — those parts of the object `
+          + `were never reconstructed, not merely misplaced.`;
+      } else {
+        el.innerHTML = `<b>${name} costs ${spread.toFixed(0)} points, but the surface is there.</b> `
+          + `Widening the threshold to 10 cm recovers it to ${wide.toFixed(0)}% (from `
+          + `${tight.toFixed(0)}% at 3 cm) — the geometry is built, just offset.`;
+      }
+    }
+  }
+}
+
 function updateTable() {
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
@@ -821,7 +891,7 @@ document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListene
   activeThreshold = parseFloat(b.dataset.thr);
   const h = document.getElementById('chart-title');
   if (h) h.textContent = `F1@${activeThreshold}cm by capture approach`;
-  updateTable(); updateChart();
+  updateTable(); updateChart(); refreshRowNotes();
 }));
 
 // ---------- statistical-significance section (static, at default DBSCAN params) ----------
