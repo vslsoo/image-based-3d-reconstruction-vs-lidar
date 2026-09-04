@@ -196,7 +196,10 @@
   <section>
     <h2 id="chart-title">F1@3cm by capture approach</h2>
     <div class="with-aside">
-      <div class="panel"><svg id="f1-chart" viewBox="0 0 1000 340" style="width:100%; height:340px;"></svg></div>
+      <div class="panel">
+        <div id="f1-legend" style="font-size:10.5px; text-align:center; margin:2px 0 4px; color:var(--text-dim);"></div>
+        <svg id="f1-chart" viewBox="0 0 1000 318" style="width:100%; height:318px;"></svg>
+      </div>
       <div class="aside">
         <span class="k">Reading the bars</span>
         The grey <b>Δ</b> above each bar is how much F1 gains between 3 and 10&nbsp;cm. A <b>small Δ</b>
@@ -777,7 +780,7 @@ function updateChart() {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) groups.push({ label:`${obj.title.replace('information_sign','is')} · ${DATA.method_label[method]}`, obj:obj.id, method });
   }
-  const W=1000,H=340,padL=42,padR=12,padT=20,padB=64;
+  const W=1000,H=318,padL=42,padR=12,padT=20,padB=42;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const gN=groups.length, gW=plotW/gN, barGap=9, innerPad=17;
   const barW=(gW-innerPad*2-barGap*(APPROACHES.length-1))/APPROACHES.length;
@@ -799,7 +802,7 @@ function updateChart() {
       const dF1 = panelMetrics(key,10.0).f1 - panelMetrics(key,3.0).f1;
       s+=`<text x="${bx+barW/2}" y="${by-15}" font-size="8.5" fill="${tick}" fill-opacity="0.75" text-anchor="middle">Δ${dF1.toFixed(0)}</text>`;
     });
-    s+=`<text x="${gx+gW/2}" y="${H-42}" font-size="10.5" fill="${textc}" text-anchor="middle">${g.label}</text>`;
+    s+=`<text x="${gx+gW/2}" y="${padT+plotH+22}" font-size="10.5" fill="${textc}" text-anchor="middle">${g.label}</text>`;
     // one-line read of what changing the capture did to THIS method on THIS object:
     // spread across the three approaches, at the threshold currently selected.
     const f1s = APPROACHES.map(ap => panelMetrics(`${g.obj}__${g.method}__${ap}`, activeThreshold).f1);
@@ -808,17 +811,18 @@ function updateChart() {
     const verdict = spread < 5
       ? 'capture barely matters here'
       : `T${worstAp} costs ${spread.toFixed(0)} pts`;
-    s+=`<text x="${gx+gW/2}" y="${H-28}" font-size="9.5" fill="${tick}" fill-opacity="0.85" text-anchor="middle">${verdict}</text>`;
+    s+=`<text x="${gx+gW/2}" y="${padT+plotH+36}" font-size="9.5" fill="${tick}" fill-opacity="0.85" text-anchor="middle">${verdict}</text>`;
   });
-  // legend
-  const lx=padL, ly=H-16;
-  // 130px was narrower than the labels themselves, so they ran into each other; space the
-  // three entries evenly across the plot instead of at a fixed pitch.
-  const legendPitch = Math.max(200, (W - padR - lx) / APPROACHES.length);
-  APPROACHES.forEach((ap,ai)=>{ const x=lx+ai*legendPitch;
-    s+=`<rect x="${x}" y="${ly-9}" width="11" height="11" rx="3" fill="${cssvar(APPROACH_COLORVAR[ap])}" fill-opacity="0.8"/>`;
-    s+=`<text x="${x+17}" y="${ly}" font-size="10.5" fill="${textc}">${DATA.approach_label[ap]}</text>`; });
   svg.innerHTML=s;
+
+  // Legend lives in HTML above the plot rather than inside the SVG: centred, and it wraps
+  // on narrow screens instead of running its labels into each other.
+  const leg = document.getElementById('f1-legend');
+  if (leg) leg.innerHTML = APPROACHES.map(ap =>
+    `<span style="white-space:nowrap; margin:0 12px;">`
+    + `<span style="display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px;`
+    + ` background:${cssvar(APPROACH_COLORVAR[ap])}; opacity:.8;"></span>&nbsp;${DATA.approach_label[ap]}</span>`
+  ).join('');
 }
 
 // ---------- interpretation (auto from the live numbers + the static bootstrap significance test) ----------
