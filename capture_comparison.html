@@ -141,7 +141,19 @@
 
   <hr class="sep">
   <section>
-    <h2>F1@3cm by capture approach</h2>
+    <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;">
+      <h2 id="chart-title">F1@3cm by capture approach</h2>
+      <div class="tabs" id="thr-toggle">
+        <button class="tab-btn active" data-thr="3">3 cm</button>
+        <button class="tab-btn" data-thr="5">5 cm</button>
+        <button class="tab-btn" data-thr="10">10 cm</button>
+      </div>
+    </div>
+    <div class="subtitle" style="margin:0">
+      A weak bar that recovers as the threshold widens is <b>offset</b>; one that stays low even at
+      10&nbsp;cm is <b>missing geometry</b>. The small grey figure above each bar is ΔF1 from 3 to 10&nbsp;cm.
+      The significance test below is computed at 3&nbsp;cm only.
+    </div>
     <div class="panel" style="max-width:1040px;"><svg id="f1-chart" viewBox="0 0 1000 340" style="width:100%; height:340px;"></svg></div>
   </section>
 
@@ -624,13 +636,19 @@ function recomputeObject(objId) {
   for (const key of obj.panels) {
     recomputeExclusion(key, t.ft, t.eps, t.mp, t.applyDbscan);
     panelApi[key].refresh();
-    const m = panelMetrics(key, 3.0);
+    const m = panelMetrics(key, activeThreshold);
     parts.push(`${panelState[key].d.label}: F1=${m.f1.toFixed(1)} (excl≈${m.nExcluded.toLocaleString('en-US')})`);
   }
   stats.innerHTML = t.applyDbscan ? parts.join(' &nbsp;·&nbsp; ')
     : '<b>DBSCAN off</b> — no gap exclusion; Accuracy/F1 over the whole cloud.';
   updateTable(); updateChart(); updateInterp();
 }
+
+// Metric threshold for the table and the F1 chart. panelMetrics(key, t) already takes any
+// t, so switching this recomputes both live in the browser - no rebuild needed. The
+// bootstrap CIs under "Is the difference real?" are precomputed in Python at 3cm only,
+// so the narrative below deliberately stays at 3.0 regardless of this setting.
+let activeThreshold = 3.0;
 
 // ---------- summary table ----------
 function fmtReg(r){ return r==null ? '—' : (r*100).toFixed(1)+'%'; }
@@ -665,7 +683,7 @@ function updateTable() {
       let bestF1=-1, bestKey=null;
       const rows=[];
       for (const ap of APPROACHES) {
-        const key=`${obj.id}__${method}__${ap}`; const m=panelMetrics(key,3.0);
+        const key=`${obj.id}__${method}__${ap}`; const m=panelMetrics(key,activeThreshold);
         rows.push({key,m}); if(m.f1>bestF1){ bestF1=m.f1; bestKey=key; }
       }
       for (const {key,m} of rows) {
@@ -700,14 +718,18 @@ function updateChart() {
   for (let y=0;y<=100;y+=20){ const yy=padT+plotH-(y/100)*plotH;
     s+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${tick}" stroke-opacity="0.16"/>`;
     s+=`<text x="${padL-6}" y="${yy+3}" font-size="10" fill="${tick}" text-anchor="end">${y}</text>`; }
-  s+=`<text x="12" y="${padT+plotH/2}" font-size="10" fill="${tick}" transform="rotate(-90 12 ${padT+plotH/2})" text-anchor="middle">F1@3cm (%)</text>`;
+  s+=`<text x="12" y="${padT+plotH/2}" font-size="10" fill="${tick}" transform="rotate(-90 12 ${padT+plotH/2})" text-anchor="middle">F1@${activeThreshold}cm (%)</text>`;
   groups.forEach((g,gi)=>{
     const gx=padL+gi*gW;
     APPROACHES.forEach((ap,ai)=>{
-      const key=`${g.obj}__${g.method}__${ap}`; const m=panelMetrics(key,3.0);
+      const key=`${g.obj}__${g.method}__${ap}`; const m=panelMetrics(key,activeThreshold);
       const bx=gx+innerPad+ai*(barW+barGap); const bh=(m.f1/100)*plotH; const by=padT+plotH-bh;
       s+=`<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" rx="5" fill="${cssvar(APPROACH_COLORVAR[ap])}" fill-opacity="0.8"><title>${g.label} · T${ap}: F1=${m.f1.toFixed(1)}</title></rect>`;
       s+=`<text x="${bx+barW/2}" y="${by-4}" font-size="9.5" fill="${tick}" text-anchor="middle">${m.f1.toFixed(0)}</text>`;
+      // ΔF1 from 3 to 10cm: small = the deficit is an offset that a wider threshold absorbs,
+      // large = the surface is genuinely absent and never comes back.
+      const dF1 = panelMetrics(key,10.0).f1 - panelMetrics(key,3.0).f1;
+      s+=`<text x="${bx+barW/2}" y="${by-15}" font-size="8.5" fill="${tick}" fill-opacity="0.75" text-anchor="middle">Δ${dF1.toFixed(0)}</text>`;
     });
     s+=`<text x="${gx+gW/2}" y="${H-42}" font-size="10.5" fill="${textc}" text-anchor="middle">${g.label}</text>`;
   });
@@ -721,7 +743,7 @@ function updateChart() {
 
 // ---------- interpretation (auto from the live numbers + the static bootstrap significance test) ----------
 function approachDesc(ap) {
-  return DATA.approach_label[ap].split('·')[1].trim();  // "T2 · overhead only" -> "overhead only"
+  return DATA.approach_label[ap].split('·')[1].trim();  // "T2 · close-range only" -> "close-range only"
 }
 
 // Data-driven per-object verdict: is ANY pairwise F1 difference actually statistically
@@ -730,7 +752,7 @@ function approachDesc(ap) {
 // tuner state, so this text doesn't need to move when a slider moves.
 function buildSignificanceNarrative() {
   const legend = `<div class="subtitle" style="margin:0">`
-    + `<b>T1</b> = close-ups + full orbit &middot; <b>T2</b> = overhead only &middot; <b>T3</b> = full orbit only.</div>`;
+    + `<b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot; <b>T3</b> = distant only.</div>`;
 
   let blocks = '';
   for (const obj of DATA.objects) {
@@ -779,6 +801,16 @@ function buildSignificanceNarrative() {
   }
   return legend + blocks;
 }
+
+// threshold toggle: recompute the table + chart in place
+document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#thr-toggle .tab-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  activeThreshold = parseFloat(b.dataset.thr);
+  const h = document.getElementById('chart-title');
+  if (h) h.textContent = `F1@${activeThreshold}cm by capture approach`;
+  updateTable(); updateChart();
+}));
 
 function updateInterp() {
   const el=document.getElementById('interp');
