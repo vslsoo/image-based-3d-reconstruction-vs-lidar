@@ -1,0 +1,109 @@
+{
+  "description": "ICP inlier RMSE (mm) per experiment, for the accuracy/F1 summary table.",
+  "metric": "open3d registration_icp inlier_rmse at the final coarse-to-fine threshold (voxel_size * 0.2), where voxel_size = target bbox diagonal * 0.01",
+  "generated": "2026-09-04",
+  "provenance_legend": {
+    "stored": "read from that registration's report.json",
+    "recomputed": "report.json/transform.txt were 0 bytes; recomputed read-only from the original source with the transform recovered from point-wise correspondence (residual ~1e-7 m). Procedure validated by reproducing all 15 stored values to 0.000 mm.",
+    "approximate": "pre-registration source not on disk; value from downsampling the aligned cloud. Fallback error measured at <=0.105 mm on comparable VGGT rows with a known true value."
+  },
+  "note_flashlight": "flashlight registrations were run against data/lidar/flashlight_001/... while the site's accuracy metrics use flashlight_003 (genuinely different files). RMSE here describes the registration as performed, so flashlight_001 is used for all four rows.",
+  "rmse_mm": {
+    "exp_142": {
+      "value": 8.275,
+      "provenance": "stored"
+    },
+    "exp_141": {
+      "value": 8.33,
+      "provenance": "stored"
+    },
+    "exp_139": {
+      "value": 7.92,
+      "provenance": "stored"
+    },
+    "exp_140": {
+      "value": 8.207,
+      "provenance": "stored"
+    },
+    "exp_146": {
+      "value": 1.547,
+      "provenance": "stored"
+    },
+    "exp_145": {
+      "value": 1.596,
+      "provenance": "stored"
+    },
+    "exp_143": {
+      "value": 1.443,
+      "provenance": "stored"
+    },
+    "exp_144": {
+      "value": 1.556,
+      "provenance": "stored"
+    },
+    "exp_150": {
+      "value": 11.961,
+      "provenance": "stored"
+    },
+    "exp_147": {
+      "value": 12.575,
+      "provenance": "stored"
+    },
+    "exp_148": {
+      "value": 12.225,
+      "provenance": "stored"
+    },
+    "exp_138": {
+      "value": 5.566,
+      "provenance": "stored"
+    },
+    "exp_137": {
+      "value": 5.733,
+      "provenance": "stored"
+    },
+    "exp_135": {
+      "value": 5.603,
+      "provenance": "stored"
+    },
+    "exp_136": {
+      "value": 5.559,
+      "provenance": "stored"
+    },
+    "exp_126": {
+      "value": 3.914,
+      "provenance": "recomputed"
+    },
+    "exp_111": {
+      "value": 4.019,
+      "provenance": "recomputed"
+    },
+    "exp_129": {
+      "value": 4.045,
+      "provenance": "recomputed"
+    },
+    "exp_134": {
+      "value": 7.424,
+      "provenance": "recomputed"
+    },
+    "exp_131": {
+      "value": 7.439,
+      "provenance": "recomputed"
+    },
+    "exp_132": {
+      "value": 7.377,
+      "provenance": "recomputed"
+    },
+    "exp_130": {
+      "value": 4.038,
+      "provenance": "approximate"
+    },
+    "exp_133": {
+      "value": 7.514,
+      "provenance": "approximate"
+    },
+    "exp_149": {
+      "value": 12.573,
+      "provenance": "approximate"
+    }
+  }
+}

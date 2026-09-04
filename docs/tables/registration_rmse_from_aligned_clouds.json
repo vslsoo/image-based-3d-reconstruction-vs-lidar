@@ -1,0 +1,254 @@
+{
+  "description": "Registration quality measured from the aligned .ply files the site actually uses, against the references the site actually uses.",
+  "why": "The per-registration report.json files describe superseded alignments for 14 of 15 rows - their aligned .ply was rewritten after transform.txt was written - so their stored inlier_rmse does not describe the cloud any site metric is computed from. These values are measured from the on-disk clouds directly.",
+  "definition": {
+    "voxel_m": 0.01,
+    "inlier_threshold_cm": 3.0,
+    "reference": "exact duplicates dropped, as in build_accuracy_f1_summary_table.py",
+    "rmse_inlier_mm": "RMSE over source points within the inlier threshold",
+    "rmse_all_mm": "RMSE over all source points (includes real reconstruction noise)"
+  },
+  "generated": "2026-09-04",
+  "rows": {
+    "exp_142": {
+      "rmse_inlier_mm": 19.08,
+      "inlier_share_pct": 38.7,
+      "rmse_all_mm": 80.9,
+      "median_mm": 39.63,
+      "object": "bus_stop_002",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/bus_stop_001/bus_stop_001_no_floor_centered_2.ply"
+    },
+    "exp_141": {
+      "rmse_inlier_mm": 20.04,
+      "inlier_share_pct": 18.7,
+      "rmse_all_mm": 126.0,
+      "median_mm": 72.37,
+      "object": "bus_stop_002",
+      "method": "vggt",
+      "reference": "data/lidar/bus_stop_001/bus_stop_001_no_floor_centered_2.ply"
+    },
+    "exp_139": {
+      "rmse_inlier_mm": 19.28,
+      "inlier_share_pct": 50.6,
+      "rmse_all_mm": 83.1,
+      "median_mm": 29.63,
+      "object": "bus_stop_002",
+      "method": "colmap",
+      "reference": "data/lidar/bus_stop_001/bus_stop_001_no_floor_centered_2.ply"
+    },
+    "exp_140": {
+      "rmse_inlier_mm": 19.75,
+      "inlier_share_pct": 42.8,
+      "rmse_all_mm": 87.9,
+      "median_mm": 34.9,
+      "object": "bus_stop_002",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/bus_stop_001/bus_stop_001_no_floor_centered_2.ply"
+    },
+    "exp_126": {
+      "rmse_inlier_mm": 16.09,
+      "inlier_share_pct": 42.3,
+      "rmse_all_mm": 65.3,
+      "median_mm": 44.56,
+      "object": "information_sign_002",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/information_sign_002/information_sign_002_no_floor_centered.ply"
+    },
+    "exp_130": {
+      "rmse_inlier_mm": 19.77,
+      "inlier_share_pct": 24.2,
+      "rmse_all_mm": 76.3,
+      "median_mm": 55.45,
+      "object": "information_sign_002",
+      "method": "vggt",
+      "reference": "data/lidar/information_sign_002/information_sign_002_no_floor_centered.ply"
+    },
+    "exp_111": {
+      "rmse_inlier_mm": 14.82,
+      "inlier_share_pct": 40.5,
+      "rmse_all_mm": 73.9,
+      "median_mm": 50.89,
+      "object": "information_sign_002",
+      "method": "colmap",
+      "reference": "data/lidar/information_sign_002/information_sign_002_no_floor_centered.ply"
+    },
+    "exp_129": {
+      "rmse_inlier_mm": 15.7,
+      "inlier_share_pct": 35.6,
+      "rmse_all_mm": 73.1,
+      "median_mm": 56.2,
+      "object": "information_sign_002",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/information_sign_002/information_sign_002_no_floor_centered.ply"
+    },
+    "exp_134": {
+      "rmse_inlier_mm": 19.55,
+      "inlier_share_pct": 56.1,
+      "rmse_all_mm": 38.9,
+      "median_mm": 27.32,
+      "object": "bench_004",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/bench_003/bench_003_no_floor_centered.ply"
+    },
+    "exp_133": {
+      "rmse_inlier_mm": 20.86,
+      "inlier_share_pct": 39.5,
+      "rmse_all_mm": 51.7,
+      "median_mm": 35.42,
+      "object": "bench_004",
+      "method": "vggt",
+      "reference": "data/lidar/bench_003/bench_003_no_floor_centered.ply"
+    },
+    "exp_131": {
+      "rmse_inlier_mm": 19.87,
+      "inlier_share_pct": 56.2,
+      "rmse_all_mm": 40.4,
+      "median_mm": 27.36,
+      "object": "bench_004",
+      "method": "colmap",
+      "reference": "data/lidar/bench_003/bench_003_no_floor_centered.ply"
+    },
+    "exp_132": {
+      "rmse_inlier_mm": 21.7,
+      "inlier_share_pct": 50.5,
+      "rmse_all_mm": 38.6,
+      "median_mm": 29.85,
+      "object": "bench_004",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/bench_003/bench_003_no_floor_centered.ply"
+    },
+    "exp_146": {
+      "rmse_inlier_mm": 12.82,
+      "inlier_share_pct": 72.2,
+      "rmse_all_mm": 41.8,
+      "median_mm": 12.88,
+      "object": "bollard_003",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/bollard_003/bollard_003_no_floor_centered.ply"
+    },
+    "exp_145": {
+      "rmse_inlier_mm": 14.65,
+      "inlier_share_pct": 64.0,
+      "rmse_all_mm": 49.7,
+      "median_mm": 18.6,
+      "object": "bollard_003",
+      "method": "vggt",
+      "reference": "data/lidar/bollard_003/bollard_003_no_floor_centered.ply"
+    },
+    "exp_143": {
+      "rmse_inlier_mm": 12.68,
+      "inlier_share_pct": 68.2,
+      "rmse_all_mm": 47.1,
+      "median_mm": 13.33,
+      "object": "bollard_003",
+      "method": "colmap",
+      "reference": "data/lidar/bollard_003/bollard_003_no_floor_centered.ply"
+    },
+    "exp_144": {
+      "rmse_inlier_mm": 12.19,
+      "inlier_share_pct": 69.6,
+      "rmse_all_mm": 46.0,
+      "median_mm": 12.19,
+      "object": "bollard_003",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/bollard_003/bollard_003_no_floor_centered.ply"
+    },
+    "exp_150": {
+      "rmse_inlier_mm": 16.84,
+      "inlier_share_pct": 44.5,
+      "rmse_all_mm": 197.5,
+      "median_mm": 34.78,
+      "object": "flashlight_004",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/flashlight_003/flashlight_003_no_floor_centered.ply",
+      "vs_flashlight_001": {
+        "rmse_inlier_mm": 18.47,
+        "inlier_share_pct": 15.0,
+        "rmse_all_mm": 152.6,
+        "median_mm": 112.44
+      }
+    },
+    "exp_149": {
+      "rmse_inlier_mm": 17.59,
+      "inlier_share_pct": 12.3,
+      "rmse_all_mm": 129.6,
+      "median_mm": 106.6,
+      "object": "flashlight_004",
+      "method": "vggt",
+      "reference": "data/lidar/flashlight_003/flashlight_003_no_floor_centered.ply",
+      "vs_flashlight_001": {
+        "rmse_inlier_mm": 19.0,
+        "inlier_share_pct": 3.4,
+        "rmse_all_mm": 254.9,
+        "median_mm": 222.65
+      }
+    },
+    "exp_147": {
+      "rmse_inlier_mm": 11.59,
+      "inlier_share_pct": 96.6,
+      "rmse_all_mm": 15.0,
+      "median_mm": 9.77,
+      "object": "flashlight_004",
+      "method": "colmap",
+      "reference": "data/lidar/flashlight_003/flashlight_003_no_floor_centered.ply",
+      "vs_flashlight_001": {
+        "rmse_inlier_mm": 19.03,
+        "inlier_share_pct": 16.8,
+        "rmse_all_mm": 142.2,
+        "median_mm": 131.16
+      }
+    },
+    "exp_148": {
+      "rmse_inlier_mm": 13.0,
+      "inlier_share_pct": 91.7,
+      "rmse_all_mm": 21.4,
+      "median_mm": 10.51,
+      "object": "flashlight_004",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/flashlight_003/flashlight_003_no_floor_centered.ply",
+      "vs_flashlight_001": {
+        "rmse_inlier_mm": 18.51,
+        "inlier_share_pct": 11.5,
+        "rmse_all_mm": 155.9,
+        "median_mm": 151.22
+      }
+    },
+    "exp_138": {
+      "rmse_inlier_mm": 17.87,
+      "inlier_share_pct": 28.6,
+      "rmse_all_mm": 273.0,
+      "median_mm": 83.14,
+      "object": "bus_stop_sign_002",
+      "method": "mast3r_ga",
+      "reference": "data/lidar/bus_stop_sign_001/bus_stop_sign_001_no_floor_centered.ply"
+    },
+    "exp_137": {
+      "rmse_inlier_mm": 18.17,
+      "inlier_share_pct": 35.5,
+      "rmse_all_mm": 74.8,
+      "median_mm": 45.0,
+      "object": "bus_stop_sign_002",
+      "method": "vggt",
+      "reference": "data/lidar/bus_stop_sign_001/bus_stop_sign_001_no_floor_centered.ply"
+    },
+    "exp_135": {
+      "rmse_inlier_mm": 17.77,
+      "inlier_share_pct": 58.8,
+      "rmse_all_mm": 51.7,
+      "median_mm": 24.9,
+      "object": "bus_stop_sign_002",
+      "method": "colmap",
+      "reference": "data/lidar/bus_stop_sign_001/bus_stop_sign_001_no_floor_centered.ply"
+    },
+    "exp_136": {
+      "rmse_inlier_mm": 16.59,
+      "inlier_share_pct": 52.7,
+      "rmse_all_mm": 130.8,
+      "median_mm": 27.83,
+      "object": "bus_stop_sign_002",
+      "method": "hloc_colmap",
+      "reference": "data/lidar/bus_stop_sign_001/bus_stop_sign_001_no_floor_centered.ply"
+    }
+  }
+}
