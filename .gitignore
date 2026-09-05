@@ -56,3 +56,18 @@ venv/
 
 # logs
 *.log
+
+# generated site
+# The builders are tracked, the pages they emit are not: 60 MB of HTML carrying
+# embedded base64 point clouds (bus_stop 12.7 MB, tuner 12.3 MB), rebuilt on every
+# run, so each rebuild would add that much to history permanently. Regenerate with
+# build_object_page.py / build_results_page.py from outputs/ and data/.
+site/
+
+# ...but the chapter 5 figures ARE kept, despite the figures/ and *.png rules above.
+# They are small (18-140 KB), they are what the thesis cites, and build_thesis_figures.py
+# builds them from the tracked workbook - being ignored by a rule meant for large
+# intermediate renders is an accident, not a decision.
+!docs/figures/
+!docs/figures/*.pdf
+!docs/figures/*.png
