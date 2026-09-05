@@ -12,6 +12,8 @@ the palette variables are already identical across all of them).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 # Page id -> (href, label). Order is the order in the bar.
 STUDIES = [
     ("capture_comparison", "capture_comparison.html", "capture strategy"),
@@ -41,12 +43,39 @@ NAV_CSS = """
   .sitenav a { color:var(--text-dim); text-decoration:none; white-space:nowrap; }
   .sitenav a:hover { color:var(--accent); text-decoration:underline; }
   .sitenav a[aria-current="page"] { color:var(--text); font-weight:650; border-bottom:2px solid var(--accent); }
+  /* forces the second row to start at Objects, so the bar breaks brand+results+studies /
+     objects+tool instead of leaving Tool alone on a line of its own */
+  .sitenav .row-break { flex-basis:100%; height:0; }
 """
 
 
 def _link(href: str, label: str, active: bool) -> str:
     current = ' aria-current="page"' if active else ''
     return f'<a href="{href}"{current}>{label}</a>'
+
+
+def sync_index(path: Path | None = None) -> None:
+    """Rewrite site/index.html's copy of the bar (CSS + markup) from this module.
+
+    index.html is the one page no builder generates, so its nav is a copy - and a copy is a
+    thing that goes stale. Running this after any edit here keeps it identical:
+
+        python src/registration/_site_nav.py
+    """
+    import re
+
+    path = path or Path(__file__).resolve().parents[2] / "site" / "index.html"
+    s = path.read_text(encoding="utf-8")
+    s2, n_css = re.subn(r"\n  /\* site navigation.*?\.sitenav \.row-break \{[^}]*\}\n",
+                        NAV_CSS.rstrip("\n") + "\n", s, flags=re.S)
+    if not n_css:  # first sync, or the CSS block predates .row-break
+        s2, n_css = re.subn(r'\n  /\* site navigation.*?aria-current="page"\] \{[^}]*\}\n',
+                            NAV_CSS.rstrip("\n") + "\n", s, flags=re.S)
+    s3, n_nav = re.subn(r'<nav class="sitenav">.*?</nav>\n', nav_html("index"), s2, flags=re.S)
+    if not (n_css and n_nav):
+        raise SystemExit(f"{path}: found {n_css} nav CSS block(s) and {n_nav} <nav> - fix by hand")
+    path.write_text(s3, encoding="utf-8")
+    print(f"Synced the nav in {path}")
 
 
 def nav_html(active: str = "") -> str:
@@ -59,8 +88,13 @@ def nav_html(active: str = "") -> str:
         f'    <span class="group"><span class="lbl">Results</span>'
         f'{_link("results.html", "all objects × methods", active == "results")}</span>\n'
         f'    <span class="group"><span class="lbl">Studies</span>{studies}</span>\n'
+        '    <span class="row-break"></span>\n'
         f'    <span class="group"><span class="lbl">Objects</span>{objects}</span>\n'
         f'    <span class="group"><span class="lbl">Tool</span>'
         f'{_link("tuner.html", "gap tuner", active == "tuner")}</span>\n'
         '  </nav>\n'
     )
+
+
+if __name__ == "__main__":
+    sync_index()
