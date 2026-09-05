@@ -33,6 +33,7 @@ from pathlib import Path
 import numpy as np
 
 from _object_page_template import HEAD_TOP2, BODY_TEMPLATE, MAIN_JS_AND_TAIL
+from _site_nav import NAV_CSS, nav_html
 
 # open3d is imported lazily - see --relayout, which re-renders a page from the payload it
 # already carries and never touches a point cloud. The import alone costs ~2 min in this venv.
@@ -388,7 +389,8 @@ def write_page(page_id: str, cfg: dict, part1: dict, panel_keys: list[str]) -> N
     # ----- assemble HTML -----
     dbscan = {**DEFAULT_DBSCAN_SLIDERS, **cfg.get("dbscan", {})}
 
-    body = BODY_TEMPLATE.replace("__OBJ_DISPLAY__", display_name).replace("__OBJ_ID__", page_id)
+    body = (BODY_TEMPLATE.replace("__OBJ_DISPLAY__", display_name).replace("__OBJ_ID__", page_id)
+            .replace("__SITE_NAV__", nav_html(page_id)))
     body = body.replace("__CALLOUT_BLOCK__", (cfg["callout"] or "") + ("\n" if cfg["callout"] else ""))
     body = body.replace("__CHECKBOX_CHECKED__", " checked" if cfg["checkbox_checked"] else "")
     body = body.replace("__CHECKBOX_NOTE__", (("        " + cfg["checkbox_note"] + "\n") if cfg["checkbox_note"] else ""))
@@ -404,7 +406,7 @@ def write_page(page_id: str, cfg: dict, part1: dict, panel_keys: list[str]) -> N
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{display_name} — Accuracy/Completeness/F1 (gap-aware)</title>\n"
-        + HEAD_TOP2 + "\n"
+        + HEAD_TOP2.replace("__NAV_CSS__", NAV_CSS) + "\n"
         + body + "\n"
         + f'<script type="application/json" id="part1-data">{part1_json}</script>\n'
         + exact_block(page_id)

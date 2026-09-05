@@ -97,6 +97,8 @@ HTML_HEAD = r"""<!doctype html>
   .preset-btn { font-size:10px; padding:2px 6px; border-radius:5px; border:1px solid var(--panel-border); background:transparent; color:var(--text-faint); cursor:pointer; }
   .preset-btn.active { border-color:var(--accent); color:var(--accent); font-weight:600; }
 
+  .obj-controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px 18px; padding:8px 11px;
+                  background:var(--code-bg); border:1px solid var(--panel-border); border-radius:9px; }
   .panel-stats { font-size:10.5px; color:var(--text-faint); }
   .panel-stats b { color:var(--text); font-weight:600; }
   .panel-stats .f1 { color:var(--accent); font-weight:700; font-size:12px; }
@@ -140,9 +142,11 @@ HTML_HEAD = r"""<!doctype html>
   .curve-panel svg { width:100%; height:auto; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
+__NAV_CSS__
 </style>
 
 <div class="page">
+  __SITE_NAV__
   <div>
     <div class="eyebrow">Frame-count ablation · gap-aware Chamfer (Accuracy / Completeness / F1)</div>
     <h1>How many photos does the reconstruction need?</h1>
@@ -228,6 +232,12 @@ HTML_HEAD = r"""<!doctype html>
     </div>
   </section>
 
+
+  <div class="subtitle" style="max-width:92ch">
+    <b>Is the largest N worth what it costs?</b> This page only says what the extra frames buy in
+    accuracy. What they cost in wall-clock time, RAM and VRAM is measured on the same runs in
+    <a href="performance_study.html">compute cost</a> — read the two together before choosing an N.
+  </div>
 
   <footer>information_sign_002: exp_109–114, exp_123–128 (COLMAP + MASt3R-GA swin-8 + MASt3R-GA logwin-7) · bollard_003: exp_115–122 (COLMAP + MASt3R-GA swin-8) · manual frame selection · src/registration/build_frame_count_study_page.py</footer>
 </div>
@@ -519,6 +529,61 @@ function keptReconPos(key) {
 const objRoot = document.getElementById('objects-root');
 const panelApi = {};
 const objTuner = {};
+// One view state per object - see buildObjectControls() and buildPanel()'s `view()`.
+const objView = {};
+
+// The strip that drives every panel of one object: which side of the comparison is drawn,
+// how it is coloured, whether the LiDAR reference is overlaid, and at what threshold.
+function buildObjectControls(obj) {
+  const row = document.createElement('div');
+  row.className = 'obj-controls';
+  row.innerHTML = `
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
+      <button class="tab-btn" data-tab="completeness">Completeness</button>
+      <button class="toggle-btn" data-color>heatmap</button>
+      <button class="toggle-btn" data-overlay>ref overlay</button>
+    </div>
+    <div class="slider-row" style="min-width:230px; max-width:320px;"><span>t=</span>
+      <input type="range" min="0.5" max="15" step="0.1" value="3">
+      <span class="mono thr-val">3.0cm</span>
+      <div class="preset-btns"><button class="preset-btn active" data-t="3">3</button><button class="preset-btn" data-t="5">5</button><button class="preset-btn" data-t="10">10</button></div>
+    </div>
+    <span style="font-size:10.5px; color:var(--text-faint);">drives every panel below</span>
+  `;
+  const slider = row.querySelector('input[type=range]');
+  const thrVal = row.querySelector('.thr-val');
+  const presetBtns = row.querySelectorAll('.preset-btn');
+  const tabBtns = row.querySelectorAll('.tab-btn');
+  const colorBtn = row.querySelector('[data-color]');
+  const overlayBtn = row.querySelector('[data-overlay]');
+
+  const refreshObject = () => { for (const key of obj.panels) panelApi[key] && panelApi[key].refresh(); };
+
+  slider.addEventListener('input', () => {
+    const t = parseFloat(slider.value);
+    objView[obj.id].t = t;
+    thrVal.textContent = t.toFixed(1) + 'cm';
+    presetBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.t) === t));
+    refreshObject();
+  });
+  presetBtns.forEach(b => b.addEventListener('click', () => { slider.value = b.dataset.t; slider.dispatchEvent(new Event('input')); }));
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active')); b.classList.add('active');
+    objView[obj.id].tab = b.dataset.tab; refreshObject();
+  }));
+  colorBtn.addEventListener('click', () => {
+    const v = objView[obj.id];
+    v.colorMode = v.colorMode === 'threshold' ? 'turbo' : 'threshold';
+    colorBtn.classList.toggle('active', v.colorMode === 'turbo'); refreshObject();
+  });
+  overlayBtn.addEventListener('click', () => {
+    const v = objView[obj.id];
+    v.overlay = !v.overlay;
+    overlayBtn.classList.toggle('active', v.overlay); refreshObject();
+  });
+  return row;
+}
 
 for (const obj of DATA.objects) {
   const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
@@ -531,9 +596,12 @@ for (const obj of DATA.objects) {
       <span class="chip">gap detection: ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
+    <div class="controls-slot"></div>
     <div class="grid-wrap"><div class="obj-grid" id="grid-${obj.id}"></div></div>
   `;
   objRoot.appendChild(block);
+  objView[obj.id] = { tab: 'accuracy', colorMode: 'threshold', overlay: false, t: 3.0 };
+  block.querySelector('.controls-slot').appendChild(buildObjectControls(obj));
 
 
   const grid = block.querySelector(`#grid-${obj.id}`);
@@ -591,51 +659,40 @@ function buildPanel(key) {
   panel.innerHTML = `
     <div class="panel-title"><span>${d.label}</span><span class="exp">${d.exp_id}</span></div>
     <canvas></canvas>
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
-      <button class="tab-btn" data-tab="completeness">Completeness</button>
-      <button class="toggle-btn" data-color>heatmap</button>
-      <button class="toggle-btn" data-overlay>ref</button>
-    </div>
-    <div class="slider-row"><span>t=</span><input type="range" min="0.5" max="15" step="0.1" value="3">
-      <span class="mono thr-val">3.0cm</span>
-      <div class="preset-btns"><button class="preset-btn active" data-t="3">3</button><button class="preset-btn" data-t="5">5</button><button class="preset-btn" data-t="10">10</button></div>
-    </div>
     <div class="panel-stats"><span class="tab-pct">-</span> within t &nbsp;·&nbsp; <span class="f1">F1=-</span><br>
       <span class="mono">n=${d.n_source_total.toLocaleString('en-US')} · ref=${d.n_target_total.toLocaleString('en-US')} · excl≈<span class="excl">0</span></span></div>
   `;
   let canvas=panel.querySelector('canvas');
-  const slider=panel.querySelector('input[type=range]');
-  const thrVal=panel.querySelector('.thr-val');
   const tabPct=panel.querySelector('.tab-pct');
   const f1El=panel.querySelector('.f1');
   const exclEl=panel.querySelector('.excl');
-  const tabBtns=panel.querySelectorAll('.tab-btn');
-  const colorBtn=panel.querySelector('[data-color]');
-  const overlayBtn=panel.querySelector('[data-overlay]');
-  const presetBtns=panel.querySelectorAll('.preset-btn');
-  let activeTab='accuracy', colorMode='threshold', viewer=null;
+  let viewer=null;
 
-  function overlayLayer(){ return activeTab==='accuracy' ? objTargetPos[s.d.object] : keptReconPos(key); }
+  // View state (tab / colouring / overlay / threshold) lives once per object, not once per
+  // panel: twelve panels each carried an identical five-control strip, and they were in the
+  // same state essentially always. See buildObjectControls().
+  const view = () => objView[d.object];
+
+  function overlayLayer(){ return view().tab==='accuracy' ? objTargetPos[s.d.object] : keptReconPos(key); }
   function refresh(){
-    const t=parseFloat(slider.value);
-    const m=shownMetrics(key,t);
-    tabPct.textContent=(activeTab==='accuracy'?m.accPct:m.compPct).toFixed(1)+'%';
+    const v=view();
+    const m=shownMetrics(key,v.t);
+    tabPct.textContent=(v.tab==='accuracy'?m.accPct:m.compPct).toFixed(1)+'%';
     f1El.textContent='F1='+m.f1.toFixed(1);
     exclEl.textContent=m.nExcluded.toLocaleString('en-US');
     if(!viewer) return; // off-screen right now - ensureViewer() will pick up the current state when it scrolls back in
-    const main=buildMain(key,activeTab,t,colorMode);
+    const main=buildMain(key,v.tab,v.t,v.colorMode);
     const ov=overlayLayer();
-    viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,v.overlay);
   }
   const __lruEntry = { teardown: () => teardownViewer() };
   function ensureViewer(){
     if(viewer) { __touchViewer(__lruEntry); return; }
-    const t=parseFloat(slider.value);
-    const main=buildMain(key,activeTab,t,colorMode);
+    const v=view();
+    const main=buildMain(key,v.tab,v.t,v.colorMode);
     const ov=overlayLayer();
     viewer=makeViewer(canvas,[{pos:main.pos,color:main.color,defaultOn:true},{pos:ov,color:solidColor(ov.length/3,MAGENTA),defaultOn:false,sizeMul:0.85}]);
-    viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    viewer.setLayerOn(1,v.overlay);
     __registerViewer(__lruEntry);
   }
   function teardownViewer(){
@@ -665,12 +722,6 @@ function buildPanel(key) {
   io.observe(canvas);
   panelApi[key]={ refresh };
   requestAnimationFrame(refresh);
-  slider.addEventListener('input',()=>{ thrVal.textContent=parseFloat(slider.value).toFixed(1)+'cm';
-    presetBtns.forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.t)===parseFloat(slider.value))); refresh(); });
-  presetBtns.forEach(b=>b.addEventListener('click',()=>{ slider.value=b.dataset.t; slider.dispatchEvent(new Event('input')); }));
-  tabBtns.forEach(b=>b.addEventListener('click',()=>{ tabBtns.forEach(x=>x.classList.remove('active')); b.classList.add('active'); activeTab=b.dataset.tab; refresh(); }));
-  colorBtn.addEventListener('click',()=>{ colorMode = colorMode==='threshold'?'turbo':'threshold'; colorBtn.classList.toggle('active',colorMode==='turbo'); refresh(); });
-  overlayBtn.addEventListener('click',()=>{ overlayBtn.classList.toggle('active'); if(viewer) viewer.setLayerOn(1,overlayBtn.classList.contains('active')); });
   return panel;
 }
 
@@ -695,13 +746,22 @@ let activeThreshold = 3.0;
 function ciValid(objId) { return activeThreshold === 3.0 && atDefaults(objId); }
 
 // ---------- summary table ----------
-function fmtReg(r){ return r==null ? '—' : (r*100).toFixed(1)+'%'; }
+// Registration rate was a column of twenty identical 100.0% cells. It is worth saying once
+// (a failed registration would invalidate everything below it), not twenty times.
+function regRateNote() {
+  const rates = Object.values(DATA.panels).map(p => p.reg_rate).filter(r => r != null);
+  if (!rates.length) return '';
+  const min = Math.min(...rates);
+  return min === 1
+    ? ` Every run registered 100% of its frames.`
+    : ` Registration rate ranges ${(min * 100).toFixed(1)}–${(Math.max(...rates) * 100).toFixed(1)}% across these runs.`;
+}
 function buildTable() {
   const wrap=document.getElementById('summary-table-wrap');
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">N</th><th class="txt">Method</th>'
     + '<th id="th-f1">F1@3cm</th><th>95% CI</th><th id="th-acc">Acc@3cm</th><th id="th-comp">Comp@3cm</th><th>Acc median</th><th>Comp median</th>'
-    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE@3cm</th><th>excl≈</th></tr></thead><tbody>';
+    + '<th>#pts (raw→matched)</th><th>inlier RMSE@3cm (mm)</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) {
@@ -713,7 +773,7 @@ function buildTable() {
           + `<td class="f1cell" data-col="f1">–</td><td class="mono ci-cell" data-col="ci">–</td>`
           + `<td data-col="acc">–</td><td data-col="comp">–</td>`
           + `<td>${d.accuracy_median_cm.toFixed(2)}</td><td>${d.completeness_median_cm.toFixed(2)}</td>`
-          + `<td>${fmtReg(d.reg_rate)}</td><td class="mono">${d.raw_points.toLocaleString('en-US')}→${d.matched_points.toLocaleString('en-US')}</td>`
+          + `<td class="mono">${d.raw_points.toLocaleString('en-US')}→${d.matched_points.toLocaleString('en-US')}</td>`
           + `<td data-col="rmse">–</td><td data-col="excl">–</td></tr>`;
       }
     }
@@ -733,7 +793,7 @@ function updateTable() {
         + `Accuracy reads low; return the tuner to its defaults for the exact figures.`
       : `Exact figures, computed on the full clouds — the same numbers as `
         + `<span class="mono">docs/tables/frame_count_study_summary.xlsx</span>. Move the tuner and the table `
-        + `switches to the browser's live estimate from the embedded subsample.`;
+        + `switches to the browser's live estimate from the embedded subsample.` + regRateNote();
   }
   // headers follow the threshold tabs - the columns did, but the labels used to stay at 3cm
   for (const [id, name] of [['th-f1','F1'], ['th-acc','Acc'], ['th-comp','Comp']]) {
@@ -762,7 +822,8 @@ function updateTable() {
         }
         tr.querySelector('[data-col=acc]').textContent=m.accPct.toFixed(1);
         tr.querySelector('[data-col=comp]').textContent=m.compPct.toFixed(1);
-        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':m.rmse.toFixed(2);
+        // cm internally (every distance on the page is cm), reported in mm like the tables
+        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':(m.rmse*10).toFixed(1);
         tr.querySelector('[data-col=excl]').textContent=m.nExcluded.toLocaleString('en-US');
         tr.classList.toggle('best', key===bestKey);
         tr.querySelector('[data-col=f1]').classList.toggle('best-cell', key===bestKey);
@@ -804,10 +865,27 @@ function renderCurvePanel(container, obj, methods, title, metricKey) {
   // raw N: each object is plotted on its own axis, so absolute counts are readable
   const xMin = 0, xMax = Math.max(...obj.sizes) * 1.06;
   const X = v => padL + (v - xMin) / (xMax - xMin) * plotW;
-  const Y = v => padT + plotH - (v / 100) * plotH;
+
+  // Y follows the data. A fixed 0-100 axis spent three quarters of the panel on empty space
+  // and flattened the differences between methods into one line. The floor is never allowed
+  // to rise above the lowest point, the span never shrinks below MIN_SPAN (so a one-point
+  // spread is not magnified into a cliff), and both ends snap to a round number that is
+  // printed on the axis - so a cropped axis is visible, not hidden.
+  const MIN_SPAN = 15;
+  const ys = series.flatMap(sr => sr.pts.map(p => p.y)).filter(v => !isNaN(v));
+  let yLo = 0, yHi = 100;
+  if (ys.length) {
+    const dataLo = Math.min(...ys), dataHi = Math.max(...ys);
+    const pad = Math.max((dataHi - dataLo) * 0.25, (MIN_SPAN - (dataHi - dataLo)) / 2, 1.5);
+    yLo = Math.max(0, Math.floor((dataLo - pad) / 5) * 5);
+    yHi = Math.min(100, Math.ceil((dataHi + pad) / 5) * 5);
+    if (yHi - yLo < MIN_SPAN) yLo = Math.max(0, yHi - MIN_SPAN);
+  }
+  const Y = v => padT + plotH - ((v - yLo) / (yHi - yLo)) * plotH;
 
   let s = '';
-  for (let y = 0; y <= 100; y += 20) {
+  const yStep = (yHi - yLo) <= 20 ? 5 : ((yHi - yLo) <= 50 ? 10 : 20);
+  for (let y = yLo; y <= yHi + 0.001; y += yStep) {
     const yy = Y(y);
     s += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${cssvar('--text-faint')}" stroke-opacity="0.15"/>`;
     s += `<text x="${padL-6}" y="${yy+3}" font-size="9.5" fill="${cssvar('--text-faint')}" text-anchor="end">${y}</text>`;
@@ -896,6 +974,18 @@ function sigColor(r) {
 
 // One panel per (object, method): a row per pair of frame counts, dot at the difference,
 // bar across its 95% CI, dashed line at 0.
+// Shared x domain for every panel of one object, so an interval drawn twice as wide really
+// is twice as wide. Per-panel scaling made the bollard's MASt3R-GA panel (+/-3 pp) look like
+// its COLMAP panel (-4 to +57 pp) - a fifteen-fold difference reading as "same spread".
+// Not shared across objects: the two are on different N axes and never compared directly.
+function sigDomain(objId) {
+  const methods = [...new Set(DATA.objects.find(o => o.id === objId).panels.map(k => panelState[k].d.method))];
+  const all = methods.flatMap(m => sigRows(objId, m));
+  const lo = Math.min(0, ...all.map(r => r.ci_lo)), hi = Math.max(0, ...all.map(r => r.ci_hi));
+  const pad = Math.max((hi - lo) * 0.06, 0.4);
+  return { dLo: lo - pad, dHi: hi + pad };
+}
+
 function renderSigPanel(objId, method) {
   const obj = DATA.objects.find(o => o.id === objId);
   const rows = sigRows(objId, method);
@@ -904,9 +994,10 @@ function renderSigPanel(objId, method) {
   const W = 452, padL = 86, padR = 108, padT = 20, padB = 30, rowH = 21;
   const H = padT + rows.length * rowH + padB;
   const plotW = W - padL - padR;
-  const lo = Math.min(0, ...rows.map(r => r.ci_lo)), hi = Math.max(0, ...rows.map(r => r.ci_hi));
-  const pad = Math.max((hi - lo) * 0.06, 0.4);
-  const dLo = lo - pad, dHi = hi + pad;
+  const { dLo, dHi } = sigDomain(objId);
+  // how much of that shared axis this panel's own intervals actually occupy
+  const ownSpan = Math.max(...rows.map(r => r.ci_hi)) - Math.min(...rows.map(r => r.ci_lo));
+  const cramped = ownSpan / (dHi - dLo) < 0.25;
   const X = v => padL + (v - dLo) / (dHi - dLo) * plotW;
   const tick = cssvar('--text-faint'), dim = cssvar('--text-dim');
 
@@ -944,6 +1035,8 @@ function renderSigPanel(objId, method) {
   const panel = document.createElement('div');
   panel.className = 'panel';
   panel.innerHTML = `<div style="font-weight:650; font-size:12.5px;">${obj.title.replace(/ \(.*\)$/, '')} &middot; ${DATA.method_label[method]}</div>`
+    + (cramped ? `<div style="font-size:10px; color:var(--text-faint); margin-top:-3px;">`
+        + `everything here falls within &plusmn;${(ownSpan / 2).toFixed(1)}&nbsp;pp — drawn on the object's shared axis</div>` : '')
     + `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
   return panel;
 }

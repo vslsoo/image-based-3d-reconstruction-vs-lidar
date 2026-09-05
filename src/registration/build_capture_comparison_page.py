@@ -278,7 +278,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
     for k in thresh:
         headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
     headers += ["ΔF1@10-3cm (pp)", "F1@3cm 95% CI lo", "F1@3cm 95% CI hi",
-                "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (cm)",
+                "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (mm)",
                 "reg-rate (%)", "points raw", "points density-matched", "excluded as gap",
                 "DBSCAN (ft/eps/mp)"]
 
@@ -296,7 +296,9 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
         for k in thresh:
             vals += [r.get(f"acc_{k}"), r.get(f"comp_{k}"), r.get(f"f1_{k}")]
         vals += [r.get("f1_delta_10_3"), r.get("f1_ci_lo"), r.get("f1_ci_hi"),
-                 r["accuracy_median_cm"], r["completeness_median_cm"], r.get("inlier_rmse_3cm"),
+                 r["accuracy_median_cm"], r["completeness_median_cm"],
+                 # mm, matching every other table on the site (it was the one column in cm)
+                 (round(r["inlier_rmse_3cm"] * 10, 2) if r.get("inlier_rmse_3cm") is not None else None),
                  (round(r["reg_rate"] * 100, 1) if r.get("reg_rate") is not None else None), r["raw_points"], r["matched_points"], r.get("n_excluded"),
                  f"{d['ft']:g}/{d['eps']:g}/{d['mp']:g}"]
         ws.append(vals)
@@ -660,7 +662,8 @@ def build_html(data: dict) -> str:
 
 
 def wrap_html(payload: str) -> str:
-    return HTML_HEAD + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("capture_comparison"))
+    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
 
 
 def relayout() -> None:
@@ -681,10 +684,21 @@ def relayout() -> None:
     print(f"Re-rendered {OUT_HTML.relative_to(PROJECT_ROOT)} from its existing payload "
           f"({OUT_HTML.stat().st_size / (1024 * 1024):.2f} MB)")
 
+    # The workbook is written from the same two JSON dumps the full run produces, so a
+    # formatting-only change to the table (a renamed column, a unit) does not need the clouds
+    # either. Numbers are copied through untouched.
+    tables = PROJECT_ROOT / "docs" / "tables"
+    summary_json, sens_json = tables / "capture_comparison_summary.json", tables / "capture_comparison_sensitivity.json"
+    if summary_json.exists() and sens_json.exists():
+        write_summary_xlsx(json.loads(summary_json.read_text()), json.loads(sens_json.read_text()),
+                           tables / "capture_comparison_summary.xlsx")
+        print(f"Rewrote {(tables / 'capture_comparison_summary.xlsx').relative_to(PROJECT_ROOT)} from those JSONs")
+
 
 # HTML_HEAD / MAIN_JS / HTML_TAIL are defined in the template module below to keep this
 # file readable; they are imported at module load.
 from _capture_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
+from _site_nav import NAV_CSS, nav_html  # noqa: E402
 
 
 if __name__ == "__main__":

@@ -70,14 +70,17 @@ METHOD_COLORVAR = {
 }
 METHOD_DASH = {"mast3r_ga_logwin7": "5 3"}
 
+# Keys stay the internal capture ids (that is what experiment_metrics.jsonl carries); the
+# titles drop the "_test_1" suffix, so one object is not called three different things across
+# the site - build_final_results_workbook.py strips it from the workbook for the same reason.
 CONTROLLED_OBJECTS = {
     "bollard_003_test_1": {
-        "title": "bollard_003_test_1",
+        "title": "bollard_003",
         "shape": "bollard (~1 m post)",
         "sizes": [15, 30, 45, 60],
     },
     "information_sign_002_test_1": {
-        "title": "information_sign_002_test_1",
+        "title": "information_sign_002",
         "shape": "information sign (~2.5 m)",
         "sizes": [25, 50, 75, 100],
     },
@@ -418,10 +421,12 @@ def sanitize(obj):
 
 def build_html(data: dict) -> str:
     payload = json.dumps(sanitize(data)).replace("</", "<\\/")
-    return HTML_HEAD + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("performance_study"))
+    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
 
 
 from _performance_study_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
+from _site_nav import NAV_CSS, nav_html  # noqa: E402
 
 
 if __name__ == "__main__":

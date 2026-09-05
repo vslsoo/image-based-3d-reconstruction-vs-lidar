@@ -603,7 +603,8 @@ def build_html(data: dict) -> str:
 
 
 def wrap_html(payload: str) -> str:
-    return HTML_HEAD + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("frame_count_study"))
+    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
 
 
 def relayout() -> None:
@@ -629,6 +630,7 @@ def relayout() -> None:
 # HTML_HEAD / MAIN_JS / HTML_TAIL are defined in the template module below to keep this
 # file readable; they are imported at module load.
 from _frame_count_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
+from _site_nav import NAV_CSS, nav_html  # noqa: E402
 
 
 if __name__ == "__main__":

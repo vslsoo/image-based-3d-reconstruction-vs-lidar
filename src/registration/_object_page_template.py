@@ -85,12 +85,14 @@ HEAD_TOP2 = """\
   .control input[type=range] { accent-color:var(--accent); }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
+__NAV_CSS__
 </style>
 
 """
 
 BODY_TEMPLATE = """\
 <div class="page">
+  __SITE_NAV__
   <div>
     <div class="eyebrow">__OBJ_DISPLAY__ · gap-aware Chamfer</div>
     <h1>Accuracy / Completeness / F1 (reference-gap-aware)</h1>
@@ -142,7 +144,9 @@ __CHECKBOX_NOTE__      </div>
   <!-- ============ PART 1 ============ -->
   <section id="part1-section">
     <h2>Accuracy / Completeness / F1 — gap-excluded (reactive to the tuner above), adjustable threshold t</h2>
-    <div class="params">
+    <details class="params">
+      <summary style="cursor:pointer; color:var(--text-dim);">How these numbers are computed</summary>
+      <div style="margin-top:8px;">
       <b>Pipeline:</b> aligned → density-matched (voxel = 1 cm, the grid the reference is delivered on) → gap-exclusion by
       the current tuner parameters above (only clusters are excluded; single outliers are kept and penalised).
       <b>Accuracy%/F1</b> are recomputed exactly (a population-weighted estimate over the true sizes of the "below floor"/
@@ -151,7 +155,8 @@ __CHECKBOX_NOTE__      </div>
       far_threshold (for "good" target points the nearest neighbour physically cannot be an excludable gap point,
       since gap points are by construction farther than far_threshold from ANY target point); for t above far_threshold
       completeness may be slightly optimistic.
-    </div>
+      </div>
+    </details>
     <div class="grid-wrap">
       <div class="grid1" id="part1-grid"></div>
     </div>
@@ -580,7 +585,7 @@ for (const methodId of METHOD_IDS) {
     const t = parseFloat(slider.value);
     const m = shownMetrics(methodId, t);
     tabPct.textContent = (activeTab === 'accuracy' ? m.accPct : m.compPct).toFixed(1) + '%';
-    f1El.textContent = 'F1=' + (m.f1Pct / 100).toFixed(3);
+    f1El.textContent = 'F1=' + m.f1Pct.toFixed(1) + '%';   // percent everywhere on the site
     exclEl.textContent = m.nExcluded.toLocaleString('ru-RU');
 
     const main = activeTab === 'accuracy'

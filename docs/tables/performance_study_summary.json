@@ -4,7 +4,7 @@
   "objects": [
     {
       "id": "bollard_003_test_1",
-      "title": "bollard_003_test_1",
+      "title": "bollard_003",
       "shape": "bollard (~1 m post)",
       "sizes": [
         15,
@@ -358,7 +358,7 @@
     },
     {
       "id": "information_sign_002_test_1",
-      "title": "information_sign_002_test_1",
+      "title": "information_sign_002",
       "shape": "information sign (~2.5 m)",
       "sizes": [
         25,

@@ -109,9 +109,11 @@ HTML_HEAD = r"""<!doctype html>
   .caveat { font-size:12px; color:var(--text-faint); border-left:3px solid var(--warn); padding:4px 0 4px 12px; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
+__NAV_CSS__
 </style>
 
 <div class="page">
+  __SITE_NAV__
   <div>
     <div class="eyebrow">Compute cost · time &amp; memory vs frame count</div>
     <h1>Does reconstruction cost grow with the number of photos — and how, per method?</h1>
@@ -170,6 +172,12 @@ HTML_HEAD = r"""<!doctype html>
     <h2>Interpretation</h2>
     <div class="interp" id="interp"></div>
   </section>
+
+  <div class="subtitle" style="max-width:92ch">
+    <b>And is the extra compute worth it?</b> This page only says what more frames cost. Whether they
+    buy any accuracy — and where that stops — is the same set of runs scored against LiDAR in
+    <a href="frame_count_study.html">frame count</a>.
+  </div>
 
   <footer id="footer-note">src/registration/build_performance_study_page.py · data: docs/tables/experiment_metrics.jsonl</footer>
 </div>
@@ -470,7 +478,7 @@ function renderEvenCheck() {
 function renderVggt() {
   const v = DATA.vggt;
   document.getElementById('vggt-caveat').innerHTML =
-    `bollard_003_test_1 and information_sign_002_test_1 now have a real VGGT N-sweep — see the main charts above, VGGT is
+    `bollard_003 and information_sign_002 now have a real VGGT N-sweep — see the main charts above, VGGT is
     charted there like every other method. Every row below is everything else: a <b>different object</b> at a different N,
     so an N-effect can't be isolated from an object/scene effect for these. <span class="mono">model_load</span>
     (13–29s, HF cache hot/cold) is stripped before fitting since it swamps the signal at these small N and has nothing to do with frame count.
@@ -478,7 +486,9 @@ function renderVggt() {
     preprocess+inference only: N<sup>${v.fit_work.b ?? '—'}</sup> (R²=${v.fit_work.r2 ?? '—'}), linear ≈ ${v.fit_work_lin.slope} s/frame + ${v.fit_work_lin.intercept}s.`;
   let html = '<table class="data" style="min-width:760px;"><thead><tr><th class="txt">object</th><th>N</th><th>model_load (s)</th><th>preprocess+inference (s)</th><th>s/frame (work only)</th><th>total (s)</th><th>RAM (MiB)</th><th>VRAM (MiB)</th></tr></thead><tbody>';
   v.rows.forEach(r => {
-    html += `<tr><td class="txt">${r.object}</td><td>${r.n}</td><td>${r.model_load_s}</td><td>${r.work_s}</td><td>${r.work_s_per_frame}</td><td>${r.total_s}</td><td>${fmt(r.ram_mib,0)}</td><td>${fmt(r.vram_mib,0)}</td></tr>`;
+    // "_test_1" is an internal capture suffix; other qualifiers (_master, _pool69) name a
+    // genuinely different capture and stay.
+    html += `<tr><td class="txt">${r.object.replace('_test_1','')}</td><td>${r.n}</td><td>${r.model_load_s}</td><td>${r.work_s}</td><td>${r.work_s_per_frame}</td><td>${r.total_s}</td><td>${fmt(r.ram_mib,0)}</td><td>${fmt(r.vram_mib,0)}</td></tr>`;
   });
   html += '</tbody></table>';
   document.getElementById('vggt-root').innerHTML = html;
@@ -492,7 +502,7 @@ function renderScopeAndInterp() {
   let hlocLines = '';
   Object.entries(DATA.hloc_status).forEach(([obj, st]) => {
     const missing = st.expected.filter(n => !st.have.includes(n));
-    if (missing.length) hlocLines += `<div>hloc+COLMAP · ${obj}: have N=${st.have.join(',')||'none'} <span class="pending-badge">missing N=${missing.join(',')}</span> — rerun this builder once the pod sweep lands.</div>`;
+    if (missing.length) hlocLines += `<div>hloc+COLMAP · ${obj.replace('_test_1','')}: have N=${st.have.join(',')||'none'} <span class="pending-badge">missing N=${missing.join(',')}</span> — rerun this builder once the pod sweep lands.</div>`;
   });
   const scopeLines = DATA.objects.map(obj => {
     const methods = Object.values(obj.series).map(s => s.label).join(', ');
