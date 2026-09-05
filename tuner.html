@@ -54,9 +54,30 @@
   .approx-note { color:var(--accent); font-size:11px; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
+
+  /* site navigation - see src/registration/_site_nav.py */
+  .sitenav { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:9px 0 11px;
+             border-bottom:1px solid var(--panel-border); margin-bottom:4px; font-size:12px; }
+  .sitenav .brand { font-weight:650; color:var(--text); text-decoration:none; font-size:12.5px; }
+  .sitenav .brand:hover { color:var(--accent); }
+  .sitenav .group { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 9px; }
+  .sitenav .group > .lbl { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+                           color:var(--text-faint); }
+  .sitenav a { color:var(--text-dim); text-decoration:none; white-space:nowrap; }
+  .sitenav a:hover { color:var(--accent); text-decoration:underline; }
+  .sitenav a[aria-current="page"] { color:var(--text); font-weight:650; border-bottom:2px solid var(--accent); }
+
 </style>
 
 <div class="page">
+  <nav class="sitenav">
+    <a class="brand" href="index.html">photogrammetry vs&nbsp;LiDAR</a>
+    <span class="group"><span class="lbl">Results</span><a href="results.html">all objects × methods</a></span>
+    <span class="group"><span class="lbl">Studies</span><a href="capture_comparison.html">capture strategy</a> <a href="frame_count_study.html">frame count</a> <a href="performance_study.html">compute cost</a></span>
+    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html">lamppost</a> <a href="bus_stop_sign.html">bus-stop sign</a></span>
+    <span class="group"><span class="lbl">Tool</span><a href="tuner.html" aria-current="page">gap tuner</a></span>
+  </nav>
+
   <div>
     <div class="eyebrow">gap-cluster DBSCAN tuner · all objects</div>
     <h1>Live tuning of eps / min_points / far_threshold</h1>

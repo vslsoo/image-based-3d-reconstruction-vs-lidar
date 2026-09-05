@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Main results — 6 objects × 4 methods vs LiDAR</title>
+</head>
+<body>
+<style>
+  :root {
+    --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
+    --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef; --best:#0d8054; --best-soft:#e3f1ea; --red:#e16b3e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54;
+            --text-faint:#8b9084; --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef; --best:#0d8054;
+            --best-soft:#e3f1ea; --red:#e16b3e; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); line-height:1.45;
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .page { max-width:1560px; margin:0 auto; padding:28px 24px 72px; display:flex; flex-direction:column; gap:22px; }
+  a { color:var(--accent); }
+  .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
+  h1 { font-size:23px; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em; }
+  h2 { font-size:19px; font-weight:650; margin:0 0 2px; }
+  .subtitle { color:var(--text-dim); font-size:13.5px; max-width:92ch; }
+  b, strong { color:var(--text); font-weight:600; }
+  .mono { font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  section { display:flex; flex-direction:column; gap:12px; }
+  hr.sep { border:none; border-top:1px solid var(--panel-border); margin:2px 0; }
+  .tabs { display:flex; flex-wrap:wrap; gap:5px; }
+  .tab-btn { font-family:inherit; font-size:10.5px; padding:3px 9px; border-radius:6px; border:1px solid var(--panel-border);
+             background:transparent; color:var(--text-dim); cursor:pointer; }
+  .tab-btn:hover { border-color:var(--accent); color:var(--text); }
+  .tab-btn.active { background:var(--accent-soft); border-color:var(--accent); color:var(--text); font-weight:600; }
+  .grid-wrap { overflow-x:auto; }
+  table.summary { border-collapse:collapse; font-size:12px; min-width:1080px; }
+  table.summary th, table.summary td { padding:6px 10px; border-bottom:1px solid var(--panel-border); text-align:right; white-space:nowrap; }
+  table.summary th { font-weight:650; color:var(--text-dim); position:sticky; top:0; background:var(--panel); }
+  table.summary td.txt, table.summary th.txt { text-align:left; }
+  table.summary td.f1cell { font-weight:700; font-variant-numeric:tabular-nums; }
+  table.summary tr.best td.f1cell { color:var(--best); }
+  table.summary td.best-cell { background:var(--best-soft); border-radius:4px; }
+  table.summary tbody tr:hover { background:color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+  .grouprule td { border-top:2px solid var(--panel-border); }
+  .note { font-size:11.5px; color:var(--text-faint); }
+  .bar { display:inline-block; height:7px; border-radius:3px; background:var(--accent); opacity:.75; vertical-align:1px; }
+
+  /* site navigation - see src/registration/_site_nav.py */
+  .sitenav { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:9px 0 11px;
+             border-bottom:1px solid var(--panel-border); margin-bottom:4px; font-size:12px; }
+  .sitenav .brand { font-weight:650; color:var(--text); text-decoration:none; font-size:12.5px; }
+  .sitenav .brand:hover { color:var(--accent); }
+  .sitenav .group { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 9px; }
+  .sitenav .group > .lbl { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+                           color:var(--text-faint); }
+  .sitenav a { color:var(--text-dim); text-decoration:none; white-space:nowrap; }
+  .sitenav a:hover { color:var(--accent); text-decoration:underline; }
+  .sitenav a[aria-current="page"] { color:var(--text); font-weight:650; border-bottom:2px solid var(--accent); }
+
+</style>
+
+<div class="page">
+  <nav class="sitenav">
+    <a class="brand" href="index.html">photogrammetry vs&nbsp;LiDAR</a>
+    <span class="group"><span class="lbl">Results</span><a href="results.html" aria-current="page">all objects × methods</a></span>
+    <span class="group"><span class="lbl">Studies</span><a href="capture_comparison.html">capture strategy</a> <a href="frame_count_study.html">frame count</a> <a href="performance_study.html">compute cost</a></span>
+    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html">lamppost</a> <a href="bus_stop_sign.html">bus-stop sign</a></span>
+    <span class="group"><span class="lbl">Tool</span><a href="tuner.html">gap tuner</a></span>
+  </nav>
+
+  <div>
+    <div class="eyebrow">Main results · gap-aware Chamfer vs the LiDAR reference</div>
+    <h1>Six objects, four methods, one table</h1>
+    <div class="subtitle">
+      Every reconstruction on this site, scored the same way: density-matched onto the reference's
+      1&nbsp;cm grid, source↔target Chamfer distances, gap-aware Accuracy / Completeness / F1. Each object
+      uses the gap-detection setting its own page defaults to, and the numbers are computed over the full
+      clouds — identical to <span class="mono">docs/tables/summary_all_objects_accuracy_f1.xlsx</span> and to
+      the “Main results” sheet of <span class="mono">FINAL_results.xlsx</span>.
+    </div>
+  </div>
+
+  <hr class="sep">
+  <section>
+    <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;">
+      <h2 id="table-title">Accuracy, Completeness and F1 at 3&nbsp;cm</h2>
+      <div class="tabs" id="thr-toggle">
+        <button class="tab-btn active" data-thr="3cm">3 cm</button>
+        <button class="tab-btn" data-thr="5cm">5 cm</button>
+        <button class="tab-btn" data-thr="10cm">10 cm</button>
+      </div>
+    </div>
+    <div class="subtitle">
+      Best F1 per object is highlighted. <b>ΔF1@10−3</b> is how much F1 recovers when the threshold widens
+      from 3 to 10&nbsp;cm: small means the surface is already where it should be, large means it is there
+      but displaced — and a row that stays low even at 10&nbsp;cm never reconstructed that geometry at all.
+    </div>
+    <div class="grid-wrap"><div id="table-wrap"></div></div>
+    <div class="note" id="table-note"></div>
+  </section>
+</div>
+
+<script type="application/json" id="page-data">{"objects": [{"id": "bus_stop_002", "page": "bus_stop.html", "name": "bus shelter", "shape": "bus shelter", "size_cm": [426.3, 202.2, 275.4], "dbscan_mode": "ft10/eps3/mp5", "ref_note": "incomplete reference: the bus stop's far side (away from the road) wasn't scanned; part of the reference is a merge of 2 scans that don't align perfectly in places", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 3.36, "comp_median_cm": 1.31, "rmse_mm": 19.08, "raw_points": 1150918, "matched_points": 458520, "delta_10_3": 42.3, "acc_3cm": 44.6, "comp_3cm": 79.2, "f1_3cm": 57.1, "acc_5cm": 68.6, "comp_5cm": 92.2, "f1_5cm": 78.7, "acc_10cm": 99.6, "comp_10cm": 99.2, "f1_10cm": 99.4}, {"method": "VGGT", "acc_median_cm": 4.75, "comp_median_cm": 0.71, "rmse_mm": 20.04, "raw_points": 6995057, "matched_points": 2432352, "delta_10_3": 55.5, "acc_3cm": 28.6, "comp_3cm": 96.4, "f1_3cm": 44.1, "acc_5cm": 52.8, "comp_5cm": 99.1, "f1_5cm": 68.9, "acc_10cm": 99.4, "comp_10cm": 99.9, "f1_10cm": 99.6}, {"method": "COLMAP", "acc_median_cm": 2.67, "comp_median_cm": 4.03, "rmse_mm": 19.28, "raw_points": 624826, "matched_points": 118844, "delta_10_3": 49.7, "acc_3cm": 56.8, "comp_3cm": 39, "f1_3cm": 46.3, "acc_5cm": 81.3, "comp_5cm": 59.8, "f1_5cm": 68.9, "acc_10cm": 99.1, "comp_10cm": 93, "f1_10cm": 96}, {"method": "hloc + COLMAP", "acc_median_cm": 3.09, "comp_median_cm": 3.7, "rmse_mm": 19.75, "raw_points": 789125, "matched_points": 139982, "delta_10_3": 51.2, "acc_3cm": 48.3, "comp_3cm": 40.5, "f1_3cm": 44.1, "acc_5cm": 75.5, "comp_5cm": 66.5, "f1_5cm": 70.7, "acc_10cm": 99.2, "comp_10cm": 91.7, "f1_10cm": 95.3}]}, {"id": "information_sign_002", "page": "information_sign.html", "name": "information sign", "shape": "information sign", "size_cm": [47.9, 31.9, 260.9], "dbscan_mode": "ft5/eps2/mp3", "ref_note": "incomplete reference: only the upper ~2/3 of the pole height and one side were scanned \u2014 comparison is only valid in that region (not a scale/rotation error)", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 1.61, "comp_median_cm": 0.64, "rmse_mm": 16.09, "raw_points": 734656, "matched_points": 70153, "delta_10_3": 11.5, "acc_3cm": 79.9, "comp_3cm": 99.1, "f1_3cm": 88.5, "acc_5cm": 100, "comp_5cm": 100, "f1_5cm": 100, "acc_10cm": 100, "comp_10cm": 100, "f1_10cm": 100}, {"method": "VGGT", "acc_median_cm": 2.84, "comp_median_cm": 0.63, "rmse_mm": 19.77, "raw_points": 3334257, "matched_points": 161957, "delta_10_3": 30, "acc_3cm": 54, "comp_3cm": 99.4, "f1_3cm": 70, "acc_5cm": 99.8, "comp_5cm": 100, "f1_5cm": 99.9, "acc_10cm": 99.9, "comp_10cm": 100, "f1_10cm": 100}, {"method": "COLMAP", "acc_median_cm": 1.38, "comp_median_cm": 0.58, "rmse_mm": 14.82, "raw_points": 1123433, "matched_points": 36738, "delta_10_3": 14.5, "acc_3cm": 81.5, "comp_3cm": 89.4, "f1_3cm": 85.3, "acc_5cm": 99.7, "comp_5cm": 95.2, "f1_5cm": 97.4, "acc_10cm": 99.9, "comp_10cm": 99.7, "f1_10cm": 99.8}, {"method": "hloc + COLMAP", "acc_median_cm": 1.61, "comp_median_cm": 0.91, "rmse_mm": 15.7, "raw_points": 1064834, "matched_points": 37804, "delta_10_3": 18.2, "acc_3cm": 75.9, "comp_3cm": 86.3, "f1_3cm": 80.8, "acc_5cm": 99.8, "comp_5cm": 92.3, "f1_5cm": 95.9, "acc_10cm": 100, "comp_10cm": 98.1, "f1_10cm": 99}]}, {"id": "bench_004", "page": "bench.html", "name": "bench", "shape": "bench", "size_cm": [409.8, 221.3, 77.4], "dbscan_mode": "ft5/eps3/mp2", "ref_note": "incomplete reference: the bench's backrest (rear side) and legs are missing", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 2.41, "comp_median_cm": 1.48, "rmse_mm": 19.55, "raw_points": 804316, "matched_points": 136786, "delta_10_3": 29.7, "acc_3cm": 66.2, "comp_3cm": 71.7, "f1_3cm": 68.8, "acc_5cm": 100, "comp_5cm": 85.4, "f1_5cm": 92.1, "acc_10cm": 100, "comp_10cm": 97.1, "f1_10cm": 98.5}, {"method": "VGGT", "acc_median_cm": 2.81, "comp_median_cm": 1.11, "rmse_mm": 20.86, "raw_points": 6726594, "matched_points": 359926, "delta_10_3": 32.5, "acc_3cm": 55.8, "comp_3cm": 84.5, "f1_3cm": 67.2, "acc_5cm": 99.8, "comp_5cm": 93.8, "f1_5cm": 96.7, "acc_10cm": 99.9, "comp_10cm": 99.4, "f1_10cm": 99.7}, {"method": "COLMAP", "acc_median_cm": 2.44, "comp_median_cm": 1.69, "rmse_mm": 19.87, "raw_points": 1520520, "matched_points": 115064, "delta_10_3": 24.8, "acc_3cm": 66.7, "comp_3cm": 67.2, "f1_3cm": 66.9, "acc_5cm": 99.9, "comp_5cm": 76.6, "f1_5cm": 86.7, "acc_10cm": 100, "comp_10cm": 84.7, "f1_10cm": 91.7}, {"method": "hloc + COLMAP", "acc_median_cm": 2.81, "comp_median_cm": 2.8, "rmse_mm": 21.7, "raw_points": 1462675, "matched_points": 103983, "delta_10_3": 36.2, "acc_3cm": 57.3, "comp_3cm": 54.6, "f1_3cm": 55.9, "acc_5cm": 99.9, "comp_5cm": 75.9, "f1_5cm": 86.3, "acc_10cm": 100, "comp_10cm": 85.4, "f1_10cm": 92.1}]}, {"id": "bollard_003", "page": "bollard.html", "name": "bollard", "shape": "bollard", "size_cm": [26.3, 26.3, 99.6], "dbscan_mode": "ft5/eps2/mp3", "ref_note": "incomplete reference: only one side was scanned (~90\u00b0 sector missing) \u2014 the missing side is handled via gap detection (DBSCAN)", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 1.1, "comp_median_cm": 0.61, "rmse_mm": 12.82, "raw_points": 533608, "matched_points": 14002, "delta_10_3": 6, "acc_3cm": 91.3, "comp_3cm": 97, "f1_3cm": 94, "acc_5cm": 100, "comp_5cm": 99.9, "f1_5cm": 99.9, "acc_10cm": 100, "comp_10cm": 100, "f1_10cm": 100}, {"method": "VGGT", "acc_median_cm": 1.31, "comp_median_cm": 0.63, "rmse_mm": 14.65, "raw_points": 3697595, "matched_points": 28592, "delta_10_3": 8.6, "acc_3cm": 86.4, "comp_3cm": 97, "f1_3cm": 91.4, "acc_5cm": 100, "comp_5cm": 100, "f1_5cm": 100, "acc_10cm": 100, "comp_10cm": 100, "f1_10cm": 100}, {"method": "COLMAP", "acc_median_cm": 1.03, "comp_median_cm": 1.21, "rmse_mm": 12.68, "raw_points": 214105, "matched_points": 6021, "delta_10_3": 16.1, "acc_3cm": 87.5, "comp_3cm": 80.4, "f1_3cm": 83.8, "acc_5cm": 99.7, "comp_5cm": 98.9, "f1_5cm": 99.3, "acc_10cm": 99.9, "comp_10cm": 100, "f1_10cm": 99.9}, {"method": "hloc + COLMAP", "acc_median_cm": 0.95, "comp_median_cm": 0.89, "rmse_mm": 12.19, "raw_points": 308184, "matched_points": 7106, "delta_10_3": 10.9, "acc_3cm": 88.3, "comp_3cm": 89.9, "f1_3cm": 89.1, "acc_5cm": 99.7, "comp_5cm": 99.3, "f1_5cm": 99.5, "acc_10cm": 100, "comp_10cm": 100, "f1_10cm": 100}]}, {"id": "flashlight_004", "page": "flashlight.html", "name": "lamppost", "shape": "lamppost (~6m)", "size_cm": [15.5, 15, 582.9], "dbscan_mode": "no DBSCAN", "ref_note": "full reference", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 3.48, "comp_median_cm": 1.32, "rmse_mm": 16.84, "raw_points": 177102, "matched_points": 46577, "delta_10_3": 34, "acc_3cm": 44.5, "comp_3cm": 88.8, "f1_3cm": 59.3, "acc_5cm": 64.3, "comp_5cm": 96.5, "f1_5cm": 77.2, "acc_10cm": 87.5, "comp_10cm": 100, "f1_10cm": 93.3}, {"method": "VGGT", "acc_median_cm": 10.66, "comp_median_cm": 1.17, "rmse_mm": 17.59, "raw_points": 293168, "matched_points": 152549, "delta_10_3": 41.6, "acc_3cm": 12.3, "comp_3cm": 96, "f1_3cm": 21.8, "acc_5cm": 20.9, "comp_5cm": 99, "f1_5cm": 34.5, "acc_10cm": 46.5, "comp_10cm": 100, "f1_10cm": 63.4}, {"method": "COLMAP", "acc_median_cm": 0.98, "comp_median_cm": 1.23, "rmse_mm": 11.59, "raw_points": 133185, "matched_points": 18583, "delta_10_3": 9.8, "acc_3cm": 96.6, "comp_3cm": 82.9, "f1_3cm": 89.2, "acc_5cm": 99.4, "comp_5cm": 90.9, "f1_5cm": 95, "acc_10cm": 99.9, "comp_10cm": 98, "f1_10cm": 99}, {"method": "hloc + COLMAP", "acc_median_cm": 1.05, "comp_median_cm": 1.65, "rmse_mm": 13, "raw_points": 59502, "matched_points": 10543, "delta_10_3": 11.5, "acc_3cm": 91.7, "comp_3cm": 75.2, "f1_3cm": 82.6, "acc_5cm": 97.5, "comp_5cm": 84.8, "f1_5cm": 90.8, "acc_10cm": 99.8, "comp_10cm": 89, "f1_10cm": 94.1}]}, {"id": "bus_stop_sign_002", "page": "bus_stop_sign.html", "name": "bus-stop sign", "shape": "sign on pole (~3.7m)", "size_cm": [63.4, 39.4, 347.4], "dbscan_mode": "no DBSCAN", "ref_note": "full reference", "methods": [{"method": "MASt3R-GA", "acc_median_cm": 8.31, "comp_median_cm": 1.3, "rmse_mm": 17.87, "raw_points": 569403, "matched_points": 130311, "delta_10_3": 27.2, "acc_3cm": 28.6, "comp_3cm": 83.3, "f1_3cm": 42.6, "acc_5cm": 40.8, "comp_5cm": 95.1, "f1_5cm": 57.1, "acc_10cm": 53.6, "comp_10cm": 100, "f1_10cm": 69.8}, {"method": "VGGT", "acc_median_cm": 4.5, "comp_median_cm": 0.58, "rmse_mm": 18.17, "raw_points": 2881563, "matched_points": 322936, "delta_10_3": 37, "acc_3cm": 35.5, "comp_3cm": 99.6, "f1_3cm": 52.4, "acc_5cm": 54, "comp_5cm": 100, "f1_5cm": 70.1, "acc_10cm": 80.9, "comp_10cm": 100, "f1_10cm": 89.4}, {"method": "COLMAP", "acc_median_cm": 2.49, "comp_median_cm": 1.88, "rmse_mm": 17.77, "raw_points": 327676, "matched_points": 29266, "delta_10_3": 27.2, "acc_3cm": 58.8, "comp_3cm": 78.4, "f1_3cm": 67.2, "acc_5cm": 76.6, "comp_5cm": 95.2, "f1_5cm": 84.9, "acc_10cm": 89.5, "comp_10cm": 99.8, "f1_10cm": 94.4}, {"method": "hloc + COLMAP", "acc_median_cm": 2.78, "comp_median_cm": 2.16, "rmse_mm": 16.59, "raw_points": 261293, "matched_points": 23147, "delta_10_3": 34.9, "acc_3cm": 52.7, "comp_3cm": 64.3, "f1_3cm": 58, "acc_5cm": 73.4, "comp_5cm": 86, "f1_5cm": 79.2, "acc_10cm": 86.9, "comp_10cm": 99.8, "f1_10cm": 92.9}]}], "thresholds": ["3cm", "5cm", "10cm"]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('page-data').textContent);
+let thr = '3cm';
+
+function fmt(v, d = 1) { return v == null ? '—' : (+v).toFixed(d); }
+
+function buildTable() {
+  let h = '<table class="summary"><thead><tr>'
+    + '<th class="txt">Object</th><th class="txt">Method</th>'
+    + `<th id="th-f1">F1@${thr}</th><th></th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
+    + '<th>ΔF1@10−3</th><th>Acc median (cm)</th><th>Comp median (cm)</th><th>align. RMSE (mm)</th>'
+    + '<th>#pts (raw→matched)</th></tr></thead><tbody>';
+  for (const obj of DATA.objects) {
+    const best = Math.max(...obj.methods.map(m => m[`f1_${thr}`] ?? 0));
+    obj.methods.forEach((m, i) => {
+      const isBest = (m[`f1_${thr}`] ?? 0) === best;
+      const f1 = m[`f1_${thr}`];
+      h += `<tr${i === 0 ? ' class="grouprule"' : ''}${isBest ? ' style="font-weight:500"' : ''}>`
+        + `<td class="txt">${i === 0 ? `<a href="${obj.page}">${obj.name}</a>`
+             + `<div class="note">${obj.size_cm.map(v => (v / 100).toFixed(2)).join(' × ')} m · ${obj.dbscan_mode}</div>` : ''}</td>`
+        + `<td class="txt">${m.method}</td>`
+        + `<td class="f1cell${isBest ? ' best-cell' : ''}">${fmt(f1)}</td>`
+        + `<td style="width:110px; text-align:left;"><span class="bar" style="width:${Math.max(0, (f1 ?? 0)) }px"></span></td>`
+        + `<td>${fmt(m[`acc_${thr}`])}</td><td>${fmt(m[`comp_${thr}`])}</td>`
+        + `<td>${fmt(m.delta_10_3)}</td>`
+        + `<td>${fmt(m.acc_median_cm, 2)}</td><td>${fmt(m.comp_median_cm, 2)}</td><td>${fmt(m.rmse_mm)}</td>`
+        + `<td class="mono">${(m.raw_points ?? 0).toLocaleString('en-US')}→${(m.matched_points ?? 0).toLocaleString('en-US')}</td>`
+        + '</tr>';
+    });
+  }
+  h += '</tbody></table>';
+  document.getElementById('table-wrap').innerHTML = h;
+  document.getElementById('table-title').innerHTML =
+    `Accuracy, Completeness and F1 at ${thr.replace('cm', '&nbsp;cm')}`;
+
+  // one line of context that follows the threshold, rather than a paragraph that cannot
+  const rows = DATA.objects.flatMap(o => o.methods.map(m => ({ obj: o, m })));
+  const top = rows.reduce((a, b) => (b.m[`f1_${thr}`] ?? 0) > (a.m[`f1_${thr}`] ?? 0) ? b : a);
+  const bottom = rows.reduce((a, b) => (b.m[`f1_${thr}`] ?? 0) < (a.m[`f1_${thr}`] ?? 0) ? b : a);
+  document.getElementById('table-note').innerHTML =
+    `At ${thr}: best is <b>${top.obj.name} · ${top.m.method}</b> at ${fmt(top.m[`f1_${thr}`])}%, `
+    + `worst is <b>${bottom.obj.name} · ${bottom.m.method}</b> at ${fmt(bottom.m[`f1_${thr}`])}%. `
+    + `Four of the six references are incomplete (parts were never scanned); those gaps are excluded by `
+    + `DBSCAN at each object's own setting, shown under its name — see the `
+    + `<a href="tuner.html">gap tuner</a> for what that line depends on.`;
+}
+
+document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#thr-toggle .tab-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  thr = b.dataset.thr;
+  buildTable();
+}));
+
+buildTable();
+</script>
+</body>
+</html>

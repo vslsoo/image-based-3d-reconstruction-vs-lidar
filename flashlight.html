@@ -68,10 +68,31 @@
   .control input[type=range] { accent-color:var(--accent); }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
+
+  /* site navigation - see src/registration/_site_nav.py */
+  .sitenav { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:9px 0 11px;
+             border-bottom:1px solid var(--panel-border); margin-bottom:4px; font-size:12px; }
+  .sitenav .brand { font-weight:650; color:var(--text); text-decoration:none; font-size:12.5px; }
+  .sitenav .brand:hover { color:var(--accent); }
+  .sitenav .group { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 9px; }
+  .sitenav .group > .lbl { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+                           color:var(--text-faint); }
+  .sitenav a { color:var(--text-dim); text-decoration:none; white-space:nowrap; }
+  .sitenav a:hover { color:var(--accent); text-decoration:underline; }
+  .sitenav a[aria-current="page"] { color:var(--text); font-weight:650; border-bottom:2px solid var(--accent); }
+
 </style>
 
 
 <div class="page">
+  <nav class="sitenav">
+    <a class="brand" href="index.html">photogrammetry vs&nbsp;LiDAR</a>
+    <span class="group"><span class="lbl">Results</span><a href="results.html">all objects × methods</a></span>
+    <span class="group"><span class="lbl">Studies</span><a href="capture_comparison.html">capture strategy</a> <a href="frame_count_study.html">frame count</a> <a href="performance_study.html">compute cost</a></span>
+    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html" aria-current="page">lamppost</a> <a href="bus_stop_sign.html">bus-stop sign</a></span>
+    <span class="group"><span class="lbl">Tool</span><a href="tuner.html">gap tuner</a></span>
+  </nav>
+
   <div>
     <div class="eyebrow">lamppost · gap-aware Chamfer</div>
     <h1>Accuracy / Completeness / F1 (reference-gap-aware)</h1>
@@ -131,7 +152,9 @@
   <!-- ============ PART 1 ============ -->
   <section id="part1-section">
     <h2>Accuracy / Completeness / F1 — gap-excluded (reactive to the tuner above), adjustable threshold t</h2>
-    <div class="params">
+    <details class="params">
+      <summary style="cursor:pointer; color:var(--text-dim);">How these numbers are computed</summary>
+      <div style="margin-top:8px;">
       <b>Pipeline:</b> aligned → density-matched (voxel = 1 cm, the grid the reference is delivered on) → gap-exclusion by
       the current tuner parameters above (only clusters are excluded; single outliers are kept and penalised).
       <b>Accuracy%/F1</b> are recomputed exactly (a population-weighted estimate over the true sizes of the "below floor"/
@@ -140,7 +163,8 @@
       far_threshold (for "good" target points the nearest neighbour physically cannot be an excludable gap point,
       since gap points are by construction farther than far_threshold from ANY target point); for t above far_threshold
       completeness may be slightly optimistic.
-    </div>
+      </div>
+    </details>
     <div class="grid-wrap">
       <div class="grid1" id="part1-grid"></div>
     </div>
@@ -569,7 +593,7 @@ for (const methodId of METHOD_IDS) {
     const t = parseFloat(slider.value);
     const m = shownMetrics(methodId, t);
     tabPct.textContent = (activeTab === 'accuracy' ? m.accPct : m.compPct).toFixed(1) + '%';
-    f1El.textContent = 'F1=' + (m.f1Pct / 100).toFixed(3);
+    f1El.textContent = 'F1=' + m.f1Pct.toFixed(1) + '%';   // percent everywhere on the site
     exclEl.textContent = m.nExcluded.toLocaleString('ru-RU');
 
     const main = activeTab === 'accuracy'

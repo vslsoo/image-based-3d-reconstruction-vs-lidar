@@ -85,6 +85,8 @@
   .preset-btn { font-size:10px; padding:2px 6px; border-radius:5px; border:1px solid var(--panel-border); background:transparent; color:var(--text-faint); cursor:pointer; }
   .preset-btn.active { border-color:var(--accent); color:var(--accent); font-weight:600; }
 
+  .obj-controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px 18px; padding:8px 11px;
+                  background:var(--code-bg); border:1px solid var(--panel-border); border-radius:9px; }
   .panel-stats { font-size:10.5px; color:var(--text-faint); }
   .panel-stats b { color:var(--text); font-weight:600; }
   .panel-stats .f1 { color:var(--accent); font-weight:700; font-size:12px; }
@@ -103,6 +105,7 @@
   table.summary tr.best td.f1cell { color:var(--best); }
   table.summary td.best-cell { background:var(--best-soft); border-radius:4px; }
   .ci-cell { color:var(--text-faint); font-size:11px; }
+  @media (min-width:1040px) { #diff-hist-grid { grid-template-columns:repeat(2, minmax(0,1fr)) !important; } }
   table.summary tbody tr:hover { background:color-mix(in srgb, var(--accent-soft) 40%, transparent); }
   .grouprule td { border-top:2px solid var(--panel-border); }
 
@@ -114,9 +117,30 @@
   .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
               color:var(--text-faint); margin-bottom:5px; }
 
+
+  /* site navigation - see src/registration/_site_nav.py */
+  .sitenav { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:9px 0 11px;
+             border-bottom:1px solid var(--panel-border); margin-bottom:4px; font-size:12px; }
+  .sitenav .brand { font-weight:650; color:var(--text); text-decoration:none; font-size:12.5px; }
+  .sitenav .brand:hover { color:var(--accent); }
+  .sitenav .group { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 9px; }
+  .sitenav .group > .lbl { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+                           color:var(--text-faint); }
+  .sitenav a { color:var(--text-dim); text-decoration:none; white-space:nowrap; }
+  .sitenav a:hover { color:var(--accent); text-decoration:underline; }
+  .sitenav a[aria-current="page"] { color:var(--text); font-weight:650; border-bottom:2px solid var(--accent); }
+
 </style>
 
 <div class="page">
+  <nav class="sitenav">
+    <a class="brand" href="index.html">photogrammetry vs&nbsp;LiDAR</a>
+    <span class="group"><span class="lbl">Results</span><a href="results.html">all objects × methods</a></span>
+    <span class="group"><span class="lbl">Studies</span><a href="capture_comparison.html" aria-current="page">capture strategy</a> <a href="frame_count_study.html">frame count</a> <a href="performance_study.html">compute cost</a></span>
+    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html">lamppost</a> <a href="bus_stop_sign.html">bus-stop sign</a></span>
+    <span class="group"><span class="lbl">Tool</span><a href="tuner.html">gap tuner</a></span>
+  </nav>
+
   <div>
     <div class="eyebrow">Capture-strategy ablation · exp_081–092 · gap-aware Chamfer (Accuracy / Completeness / F1)</div>
     <h1>Does how you film the object change the reconstruction?</h1>
@@ -224,12 +248,26 @@
       is the spread of differences that produces. <b>If it sits entirely to one side of 0</b>, the
       approaches genuinely differ. <b>If it straddles 0</b>, the ranking is noise and the approaches are
       indistinguishable at this sample size. Computed at 3&nbsp;cm.
+      <br><br>
+      The difference here is <b>unpaired</b>: two capture approaches are two separate flights over the
+      object, so the two clouds share no frames and each side is resampled on its own. The frame-count
+      study on <a href="frame_count_study.html">frame_count_study.html</a> can pair its draws instead —
+      its frame sets are nested, so the same resampled patches feed both sides and the between-patch
+      variation cancels. Pairing is the stronger test where the design allows it; it does not here.
     </div>
     <div class="with-aside">
       <div>
         <!-- 240px, not 300: beside the 260px aside the left column is 1234px, and four panels at a
              300px minimum need 1236 - two pixels short, which pushed the fourth onto its own row. -->
-        <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px;"></div>
+        <!-- 2 columns, so the four panels sit 2x2 instead of 3+1 -->
+        <div id="diff-hist-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:12px;"></div>
+        <div style="font-size:10.5px; color:var(--text-faint); text-align:center; margin-top:8px;">
+          Each row is <b>left approach &minus; right approach</b>:
+          <span class="swatch" style="background:var(--best)"></span>the left one scored higher&nbsp;&nbsp;
+          <span class="swatch" style="background:var(--red)"></span>the right one did&nbsp;&nbsp;
+          <span class="swatch" style="background:var(--text-faint)"></span>within noise (95% CI spans 0)
+          &nbsp;&middot;&nbsp; * = 95% CI excludes 0
+        </div>
       </div>
       <div class="aside">
         <span class="k">The answer</span>
@@ -531,6 +569,61 @@ function keptReconPos(key) {
 const APPROACHES = [1,2,3];
 const APPROACH_COLORVAR = { 1:'--t1', 2:'--t2', 3:'--t3' };
 const objRoot = document.getElementById('objects-root');
+// One view state per object - see buildObjectControls() and buildPanel()'s `view()`.
+const objView = {};
+
+// The strip that drives every panel of one object: which side of the comparison is drawn,
+// how it is coloured, whether the LiDAR reference is overlaid, and at what threshold.
+function buildObjectControls(obj) {
+  const row = document.createElement('div');
+  row.className = 'obj-controls';
+  row.innerHTML = `
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
+      <button class="tab-btn" data-tab="completeness">Completeness</button>
+      <button class="toggle-btn" data-color>heatmap</button>
+      <button class="toggle-btn" data-overlay>ref overlay</button>
+    </div>
+    <div class="slider-row" style="min-width:230px; max-width:320px;"><span>t=</span>
+      <input type="range" min="0.5" max="15" step="0.1" value="3">
+      <span class="mono thr-val">3.0cm</span>
+      <div class="preset-btns"><button class="preset-btn active" data-t="3">3</button><button class="preset-btn" data-t="5">5</button><button class="preset-btn" data-t="10">10</button></div>
+    </div>
+    <span style="font-size:10.5px; color:var(--text-faint);">drives every panel below</span>
+  `;
+  const slider = row.querySelector('input[type=range]');
+  const thrVal = row.querySelector('.thr-val');
+  const presetBtns = row.querySelectorAll('.preset-btn');
+  const tabBtns = row.querySelectorAll('.tab-btn');
+  const colorBtn = row.querySelector('[data-color]');
+  const overlayBtn = row.querySelector('[data-overlay]');
+
+  const refreshObject = () => { for (const key of obj.panels) panelApi[key] && panelApi[key].refresh(); };
+
+  slider.addEventListener('input', () => {
+    const t = parseFloat(slider.value);
+    objView[obj.id].t = t;
+    thrVal.textContent = t.toFixed(1) + 'cm';
+    presetBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.t) === t));
+    refreshObject();
+  });
+  presetBtns.forEach(b => b.addEventListener('click', () => { slider.value = b.dataset.t; slider.dispatchEvent(new Event('input')); }));
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active')); b.classList.add('active');
+    objView[obj.id].tab = b.dataset.tab; refreshObject();
+  }));
+  colorBtn.addEventListener('click', () => {
+    const v = objView[obj.id];
+    v.colorMode = v.colorMode === 'threshold' ? 'turbo' : 'threshold';
+    colorBtn.classList.toggle('active', v.colorMode === 'turbo'); refreshObject();
+  });
+  overlayBtn.addEventListener('click', () => {
+    const v = objView[obj.id];
+    v.overlay = !v.overlay;
+    overlayBtn.classList.toggle('active', v.overlay); refreshObject();
+  });
+  return row;
+}
 const panelApi = {};   // key -> { refresh() }
 const objTuner = {};   // objectId -> { ft, eps, mp, applyDbscan }
 
@@ -542,13 +635,15 @@ for (const obj of DATA.objects) {
     <div class="obj-head">
       <h2>${obj.title}</h2>
       <span class="chip">${obj.shape}</span>
-      <span class="chip">ref median spacing ${obj.ref_spacing_cm.toFixed(2)} cm</span>
       <span class="chip">gap detection: ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
+    <div class="controls-slot"></div>
     <div class="grid-wrap"><div class="obj-grid" id="grid-${obj.id}"></div></div>
   `;
   objRoot.appendChild(block);
+  objView[obj.id] = { tab: 'accuracy', colorMode: 'threshold', overlay: false, t: 3.0 };
+  block.querySelector('.controls-slot').appendChild(buildObjectControls(obj));
 
 
   // grid: header row, then one row per method
@@ -614,51 +709,39 @@ function buildPanel(key) {
   panel.innerHTML = `
     <div class="panel-title"><span>${d.label}</span><span class="exp">${d.exp_id}</span></div>
     <canvas></canvas>
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
-      <button class="tab-btn" data-tab="completeness">Completeness</button>
-      <button class="toggle-btn" data-color>heatmap</button>
-      <button class="toggle-btn" data-overlay>ref</button>
-    </div>
-    <div class="slider-row"><span>t=</span><input type="range" min="0.5" max="15" step="0.1" value="3">
-      <span class="mono thr-val">3.0cm</span>
-      <div class="preset-btns"><button class="preset-btn active" data-t="3">3</button><button class="preset-btn" data-t="5">5</button><button class="preset-btn" data-t="10">10</button></div>
-    </div>
     <div class="panel-stats"><span class="tab-pct">-</span> within t &nbsp;·&nbsp; <span class="f1">F1=-</span><br>
       <span class="mono">n=${d.n_source_total.toLocaleString('en-US')} · ref=${d.n_target_total.toLocaleString('en-US')} · excl≈<span class="excl">0</span></span></div>
   `;
   let canvas=panel.querySelector('canvas');
-  const slider=panel.querySelector('input[type=range]');
-  const thrVal=panel.querySelector('.thr-val');
   const tabPct=panel.querySelector('.tab-pct');
   const f1El=panel.querySelector('.f1');
   const exclEl=panel.querySelector('.excl');
-  const tabBtns=panel.querySelectorAll('.tab-btn');
-  const colorBtn=panel.querySelector('[data-color]');
-  const overlayBtn=panel.querySelector('[data-overlay]');
-  const presetBtns=panel.querySelectorAll('.preset-btn');
-  let activeTab='accuracy', colorMode='threshold', viewer=null;
+  let viewer=null;
 
-  function overlayLayer(){ return activeTab==='accuracy' ? objTargetPos[s.d.object] : keptReconPos(key); }
+  // View state (tab / colouring / overlay / threshold) is per object, not per panel: six
+  // panels each carried an identical control strip and were in the same state anyway.
+  const view = () => objView[d.object];
+
+  function overlayLayer(){ return view().tab==='accuracy' ? objTargetPos[s.d.object] : keptReconPos(key); }
   function refresh(){
-    const t=parseFloat(slider.value);
-    const m=shownMetrics(key,t);
-    tabPct.textContent=(activeTab==='accuracy'?m.accPct:m.compPct).toFixed(1)+'%';
+    const v=view();
+    const m=shownMetrics(key,v.t);
+    tabPct.textContent=(v.tab==='accuracy'?m.accPct:m.compPct).toFixed(1)+'%';
     f1El.textContent='F1='+m.f1.toFixed(1);
     exclEl.textContent=m.nExcluded.toLocaleString('en-US');
     if(!viewer) return; // off-screen right now - ensureViewer() will pick up the current state when it scrolls back in
-    const main=buildMain(key,activeTab,t,colorMode);
+    const main=buildMain(key,v.tab,v.t,v.colorMode);
     const ov=overlayLayer();
-    viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    viewer.setLayer(0,main.pos,main.color); viewer.setLayer(1,ov,solidColor(ov.length/3,MAGENTA)); viewer.setLayerOn(1,v.overlay);
   }
   const __lruEntry = { teardown: () => teardownViewer() };
   function ensureViewer(){
     if(viewer) { __touchViewer(__lruEntry); return; }
-    const t=parseFloat(slider.value);
-    const main=buildMain(key,activeTab,t,colorMode);
+    const v=view();
+    const main=buildMain(key,v.tab,v.t,v.colorMode);
     const ov=overlayLayer();
     viewer=makeViewer(canvas,[{pos:main.pos,color:main.color,defaultOn:true},{pos:ov,color:solidColor(ov.length/3,MAGENTA),defaultOn:false,sizeMul:0.85}]);
-    viewer.setLayerOn(1,overlayBtn.classList.contains('active'));
+    viewer.setLayerOn(1,v.overlay);
     __registerViewer(__lruEntry);
   }
   function teardownViewer(){
@@ -688,12 +771,6 @@ function buildPanel(key) {
   io.observe(canvas);
   panelApi[key]={ refresh };
   requestAnimationFrame(refresh);
-  slider.addEventListener('input',()=>{ thrVal.textContent=parseFloat(slider.value).toFixed(1)+'cm';
-    presetBtns.forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.t)===parseFloat(slider.value))); refresh(); });
-  presetBtns.forEach(b=>b.addEventListener('click',()=>{ slider.value=b.dataset.t; slider.dispatchEvent(new Event('input')); }));
-  tabBtns.forEach(b=>b.addEventListener('click',()=>{ tabBtns.forEach(x=>x.classList.remove('active')); b.classList.add('active'); activeTab=b.dataset.tab; refresh(); }));
-  colorBtn.addEventListener('click',()=>{ colorMode = colorMode==='threshold'?'turbo':'threshold'; colorBtn.classList.toggle('active',colorMode==='turbo'); refresh(); });
-  overlayBtn.addEventListener('click',()=>{ overlayBtn.classList.toggle('active'); if(viewer) viewer.setLayerOn(1,overlayBtn.classList.contains('active')); });
   return panel;
 }
 
@@ -720,7 +797,7 @@ function buildTable() {
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Approach</th><th class="txt">Method</th>'
     + '<th id="th-f1">F1</th><th>95% CI</th><th id="th-acc">Acc</th><th id="th-comp">Comp</th><th>Acc median</th><th>Comp median</th>'
-    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE</th><th>excl≈</th></tr></thead><tbody>';
+    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE (mm)</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) {
@@ -811,7 +888,8 @@ function updateTable() {
         }
         tr.querySelector('[data-col=acc]').textContent=m.accPct.toFixed(1);
         tr.querySelector('[data-col=comp]').textContent=m.compPct.toFixed(1);
-        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':m.rmse.toFixed(2);
+        // cm internally (every distance on the page is cm), reported in mm like the tables
+        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':(m.rmse*10).toFixed(1);
         tr.querySelector('[data-col=excl]').textContent=m.nExcluded.toLocaleString('en-US');
         tr.classList.toggle('best', key===bestKey);
         tr.querySelector('[data-col=f1]').classList.toggle('best-cell', key===bestKey);
@@ -950,60 +1028,79 @@ function renderStats() {
   renderDiffHists();
 }
 
-// ---------- pairwise-difference bootstrap histograms (4 panels: object x method) ----------
+// ---------- pairwise-difference panels (object x method) ----------
+// Ported from frame_count_study.html, which asks the same question and answers it in a
+// forest plot: one row per pair, dot at the difference, bar across its 95% CI, dashed line
+// at 0. This section used to overlay three translucent histograms per panel; on the sign the
+// distributions sit so far apart that they were three thin spikes in an empty field - a shape
+// that said nothing the number beside it did not already say.
+const SIG_COLORS = { pos: '--best', neg: '--red', ns: '--text-faint' };
+
+// Shared x domain per object, so an interval drawn twice as wide really is twice as wide.
+function sigDomain(objId) {
+  const all = DATA.sensitivity.filter(e => e.object === objId).flatMap(e => e.pairwise);
+  const lo = Math.min(0, ...all.map(r => r.ci_lo)), hi = Math.max(0, ...all.map(r => r.ci_hi));
+  const pad = Math.max((hi - lo) * 0.06, 0.4);
+  return { dLo: lo - pad, dHi: hi + pad };
+}
+
+function renderSigPanel(sv) {
+  const obj = DATA.objects.find(o => o.id === sv.object);
+  const rows = sv.pairwise;
+  const W = 452, padL = 76, padR = 112, padT = 20, padB = 30, rowH = 21;
+  const H = padT + rows.length * rowH + padB;
+  const plotW = W - padL - padR;
+  const { dLo, dHi } = sigDomain(sv.object);
+  const ownSpan = Math.max(...rows.map(r => r.ci_hi)) - Math.min(...rows.map(r => r.ci_lo));
+  const cramped = ownSpan / (dHi - dLo) < 0.25;
+  const X = v => padL + (v - dLo) / (dHi - dLo) * plotW;
+  const tick = cssvar('--text-faint'), dim = cssvar('--text-dim');
+
+  let s = '';
+  const x0 = X(0);
+  s += `<line x1="${x0.toFixed(1)}" y1="${padT - 6}" x2="${x0.toFixed(1)}" y2="${padT + rows.length * rowH}" stroke="${dim}" stroke-width="1.3" stroke-dasharray="3,3"/>`;
+  s += `<text x="${x0.toFixed(1)}" y="${padT - 9}" font-size="9" fill="${dim}" text-anchor="middle">0</text>`;
+
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    const sig = !r.includes_zero;
+    const col = cssvar(sig ? (r.delta > 0 ? SIG_COLORS.pos : SIG_COLORS.neg) : SIG_COLORS.ns);
+    const xa = X(r.ci_lo), xb = X(r.ci_hi);
+    s += `<line x1="${xa.toFixed(1)}" y1="${y}" x2="${xb.toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="${sig ? 2 : 1.5}" stroke-opacity="${sig ? 0.85 : 0.5}"/>`;
+    for (const xx of [xa, xb]) {
+      s += `<line x1="${xx.toFixed(1)}" y1="${y - 4}" x2="${xx.toFixed(1)}" y2="${y + 4}" stroke="${col}" stroke-width="${sig ? 1.8 : 1.3}" stroke-opacity="${sig ? 0.85 : 0.5}"/>`;
+    }
+    s += `<circle cx="${X(r.delta).toFixed(1)}" cy="${y}" r="3.4" fill="${col}" fill-opacity="${sig ? 1 : 0.6}">`
+      + `<title>${r.label}: ${r.delta > 0 ? '+' : ''}${r.delta.toFixed(2)} pp, 95% CI [${r.ci_lo.toFixed(2)}, ${r.ci_hi.toFixed(2)}]</title></circle>`;
+    s += `<text x="${padL - 8}" y="${y + 3.2}" font-size="9.5" fill="${dim}" text-anchor="end">${r.label}</text>`;
+    s += `<text x="${padL + plotW + 8}" y="${y + 3.2}" font-size="9.5" fill="${sig ? cssvar('--text') : tick}"`
+      + ` font-weight="${sig ? 650 : 400}">${r.delta > 0 ? '+' : ''}${r.delta.toFixed(1)} [${r.ci_lo.toFixed(1)}, ${r.ci_hi.toFixed(1)}]${sig ? ' *' : ''}</text>`;
+  });
+
+  const yAxis = padT + rows.length * rowH + 12;
+  s += `<line x1="${padL}" y1="${yAxis - 6}" x2="${padL + plotW}" y2="${yAxis - 6}" stroke="${tick}" stroke-opacity="0.3"/>`;
+  const dec = (dHi - dLo) >= 20 ? 0 : 1;
+  for (let k = 0; k <= 4; k++) {
+    const v = dLo + (dHi - dLo) * k / 4;
+    s += `<text x="${X(v).toFixed(1)}" y="${yAxis + 4}" font-size="9" fill="${tick}" text-anchor="middle">${v.toFixed(dec)}</text>`;
+  }
+  s += `<text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 3}" font-size="8.5" fill="${tick}" text-anchor="middle">`
+    + `&Delta; F1@3cm (pp) &middot; ${DATA.bootstrap.n_draws} bootstrap draws</text>`;
+
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.innerHTML = `<div style="font-weight:650; font-size:12.5px;">${obj.title} &middot; ${DATA.method_label[sv.method]}</div>`
+    + (cramped ? `<div style="font-size:10px; color:var(--text-faint); margin-top:-3px;">`
+        + `everything here falls within &plusmn;${(ownSpan / 2).toFixed(1)}&nbsp;pp — drawn on the object's shared axis</div>` : '')
+    + `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${s}</svg>`;
+  return panel;
+}
+
 function renderDiffHists() {
   const grid = document.getElementById('diff-hist-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  const tick = cssvar('--text-faint'), axis = cssvar('--text-dim');
-  const PAIR_COLORS = ['#4c8dff', '#c86bd6', '#38b58a'];
-  for (const sv of DATA.sensitivity) {
-    const obj = DATA.objects.find(o => o.id === sv.object);
-    const edges = sv.hist.edges, counts = sv.hist.counts, nb = edges.length - 1;
-    const maxc = Math.max(1, ...counts.flat());
-    const W = 340, H = 200, padL = 8, padR = 8, padT = 12, padB = 34;
-    const plotW = W - padL - padR, plotH = H - padT - padB;
-    const lo = edges[0], hi = edges[nb];
-    const X = v => padL + (v - lo) / (hi - lo) * plotW;
-    const YB = c => padT + plotH - (c / maxc) * plotH;
-    let s = '';
-    if (lo <= 0 && hi >= 0) {
-      const x0 = X(0);
-      s += `<line x1="${x0.toFixed(1)}" y1="${padT}" x2="${x0.toFixed(1)}" y2="${padT + plotH}" stroke="${axis}" stroke-width="1.4" stroke-dasharray="3,3"/>`;
-      s += `<text x="${x0.toFixed(1)}" y="${padT - 3}" font-size="9" fill="${axis}" text-anchor="middle">0</text>`;
-    }
-    sv.pairwise.forEach((p, pi) => {
-      const col = PAIR_COLORS[pi];
-      for (let b = 0; b < nb; b++) {
-        const c = counts[pi][b]; if (!c) continue;
-        const x0 = X(edges[b]), x1 = X(edges[b + 1]);
-        s += `<rect x="${x0.toFixed(1)}" y="${YB(c).toFixed(1)}" width="${Math.max(x1 - x0 - 0.4, 0.6).toFixed(1)}" height="${(padT + plotH - YB(c)).toFixed(1)}" fill="${col}" fill-opacity="0.5"/>`;
-      }
-    });
-    for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4;
-      s += `<text x="${X(v).toFixed(1)}" y="${H - 18}" font-size="9" fill="${tick}" text-anchor="middle">${v.toFixed(0)}</text>`; }
-    s += `<text x="${W / 2}" y="${H - 5}" font-size="8.5" fill="${tick}" text-anchor="middle">&Delta; F1@3cm (%) &middot; ${DATA.bootstrap.n_draws} bootstrap draws</text>`;
-    // One centred block above the plot instead of a legend above and figures below: the two
-    // carried the same three labels, and at ~300px per panel the figures wrapped into a
-    // cramped three-line run under the chart. Each row is now swatch + pair + delta + CI.
-    const rows = sv.pairwise.map((p, pi) => {
-      const sig = !p.includes_zero;
-      return `<div style="white-space:nowrap; font-weight:${sig ? '650' : '400'}; color:${sig ? 'var(--text)' : 'var(--text-dim)'};">`
-        + `<span style="display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:0;`
-        + ` background:${PAIR_COLORS[pi]}; opacity:${sig ? '1' : '.65'};"></span>&nbsp;`
-        + `${p.label}: ${p.delta > 0 ? '+' : ''}${p.delta.toFixed(1)} [${p.ci_lo.toFixed(1)}, ${p.ci_hi.toFixed(1)}]`
-        + `${sig ? '&nbsp;*' : ''}</div>`;
-    }).join('');
-    const panel = document.createElement('div');
-    panel.className = 'panel';
-    // title on its own line, pair legend centred directly above the plot - at ~300px wide
-    // the two competed for the same row and wrapped awkwardly
-    panel.innerHTML = `<div style="font-weight:650; font-size:12.5px;">${obj.title} &middot; ${DATA.method_label[sv.method]}</div>`
-      + `<div style="font-size:10.5px; line-height:1.5; text-align:center; margin:4px 0 2px;">${rows}`
-      + `<div style="color:var(--text-faint); font-size:9.5px; margin-top:1px;">* = 95% CI excludes 0</div></div>`
-      + `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${s}</svg>`;
-    grid.appendChild(panel);
-  }
+  for (const sv of DATA.sensitivity) grid.appendChild(renderSigPanel(sv));
 }
 
 // ---------- init ----------
