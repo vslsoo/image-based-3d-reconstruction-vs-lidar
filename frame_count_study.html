@@ -104,16 +104,17 @@
   .grouprule td { border-top:2px solid var(--panel-border); }
 
 
-  /* aside + significance grid - same treatment as capture_comparison.html, so the two
-     study pages read as one family. */
-  .with-aside { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; align-items:start; }
-  @media (max-width:1100px) { .with-aside { grid-template-columns:minmax(0,1fr); } }
-  .aside { background:var(--code-bg); border:1px solid var(--panel-border); border-left:3px solid var(--text-faint);
-           border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--text-dim); }
-  .aside b { color:var(--text); }
-  .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
-              color:var(--text-faint); margin-bottom:5px; }
+  /* Significance grid. The verdict card sits in the grid rather than in a side column - it
+     carries capture_comparison.html's aside styling so the two study pages still read as one
+     family, but it can no longer outgrow the panels next to it. */
+  /* 5 panels + the verdict card = exactly 3x2 on a desktop width, so the section is two even
+     rows with no hole in it; below that it falls back to as many columns as fit. */
   .sig-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(310px,1fr)); gap:12px; }
+  @media (min-width:1040px) { .sig-grid { grid-template-columns:repeat(3, minmax(0,1fr)); } }
+  .sig-verdict { background:var(--code-bg); border-left:3px solid var(--text-faint); font-size:12px; color:var(--text-dim); gap:0; }
+  .sig-verdict b { color:var(--text); }
+  .sig-verdict .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+                    color:var(--text-faint); margin-bottom:6px; }
   .sig-grid svg { width:100%; height:auto; }
   .ci-cell { color:var(--text-faint); font-size:11px; }
 
@@ -196,20 +197,15 @@
       counts genuinely differ. <b>If it straddles 0</b>, the extra photos bought nothing measurable. Computed at
       3&nbsp;cm, at default gap-detection settings.
     </div>
-    <div class="with-aside">
-      <div>
-        <div id="sig-grid" class="sig-grid"></div>
-        <div style="font-size:10.5px; color:var(--text-faint); text-align:center; margin-top:8px;">
-          <span class="swatch" style="background:var(--best)"></span>more photos helped&nbsp;&nbsp;
-          <span class="swatch" style="background:var(--red)"></span>more photos hurt&nbsp;&nbsp;
-          <span class="swatch" style="background:var(--text-faint)"></span>within noise (95% CI spans 0)
-          &nbsp;&middot;&nbsp; * = 95% CI excludes 0
-        </div>
-      </div>
-      <div class="aside">
-        <span class="k">Where you can stop</span>
-        <div id="sig-aside"></div>
-      </div>
+    <!-- The verdict rides in the grid as its last cell (5 panels + 1 card = a full 3x2), rather
+         than in a side column: as an aside it was half again as tall as the panels beside it and
+         hung off the bottom of the section. In the grid the row simply sizes to it. -->
+    <div id="sig-grid" class="sig-grid"></div>
+    <div style="font-size:10.5px; color:var(--text-faint); text-align:center; margin-top:8px;">
+      <span class="swatch" style="background:var(--best)"></span>more photos helped&nbsp;&nbsp;
+      <span class="swatch" style="background:var(--red)"></span>more photos hurt&nbsp;&nbsp;
+      <span class="swatch" style="background:var(--text-faint)"></span>within noise (95% CI spans 0)
+      &nbsp;&middot;&nbsp; * = 95% CI excludes 0
     </div>
   </section>
 
@@ -944,12 +940,14 @@ function plateauN(objId, method) {
 }
 
 function buildSigNarrative() {
-  // One line per (object, method): the smallest N you could have shot instead. Written from
-  // the pairwise CIs, not from where the curve happens to look flat.
+  // One line per (object, method): the smallest N you could have shot instead. Read off the
+  // pairwise CIs, not off where the curve happens to look flat. Kept to one line each so the
+  // card stays the height of a panel.
   const short = { colmap: 'COLMAP', mast3r_ga: 'MASt3R-GA', mast3r_ga_logwin7: 'MASt3R-GA logwin-7' };
   let rowsHtml = '';
   for (const obj of DATA.objects) {
-    const objName = obj.title.replace(/ \(.*\)$/, '').replace('information_sign_002', 'sign').replace('bollard_003', 'bollard');
+    const objName = obj.title.replace(/ \(.*\)$/, '')
+      .replace('information_sign_002', 'sign').replace('bollard_003', 'bollard');
     const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
     for (const method of methods) {
       const rows = sigRows(obj.id, method);
@@ -959,36 +957,33 @@ function buildSigNarrative() {
       const lastStep = rows.find(r => r.n_lo === obj.sizes[obj.sizes.length - 2] && r.n_hi === last);
       let verdict, detail;
       if (plateau === first) {
-        verdict = `<b>N=${first}</b>`;
-        detail = 'already enough — nothing above it is resolvable';
+        verdict = `N=${first}`;
+        detail = 'nothing above it is resolvable';
       } else if (plateau) {
         const gain = rows.filter(r => r.n_lo === first && r.n_hi === plateau).map(r => r.delta)[0];
-        verdict = `<b>N=${plateau}</b>`;
-        detail = `worth ${gain > 0 ? '+' : ''}${gain.toFixed(0)}&nbsp;pts to get there, nothing after`;
+        verdict = `N=${plateau}`;
+        detail = `${gain > 0 ? '+' : ''}${gain.toFixed(0)}&nbsp;pts to get there, then nothing`;
       } else if (drops.length) {
-        // best count is the one the last resolvable DROP starts from: it gained up to there
-        // (sometimes only a little), and going past it measurably loses.
+        // the count the last resolvable DROP starts from: it gained up to there, and past it loses
         const stopN = drops[drops.length - 1].n_lo;
         const up = rows.find(r => r.n_lo === first && r.n_hi === stopN);
-        verdict = `<b>N=${stopN}</b>`;
-        detail = (up && !up.includes_zero ? `+${up.delta.toFixed(1)}&nbsp;pts over N=${first}, and ` : '')
-          + `going further costs ${Math.abs(drops[drops.length - 1].delta).toFixed(1)}&nbsp;pts`;
+        verdict = `N=${stopN}`;
+        detail = (up && !up.includes_zero ? `+${up.delta.toFixed(1)} over N=${first}, past it ` : 'past it ')
+          + `&minus;${Math.abs(drops[drops.length - 1].delta).toFixed(1)}&nbsp;pts`;
       } else {
-        verdict = `<b>&gt;${last}</b>`;
-        detail = `still gaining at the largest tested (+${(lastStep ? lastStep.delta : 0).toFixed(0)}&nbsp;pts on the last step)`;
+        verdict = `&gt;${last}`;
+        detail = `still gaining (+${(lastStep ? lastStep.delta : 0).toFixed(0)}&nbsp;pts on the last step)`;
       }
-      rowsHtml += `<div style="margin-bottom:7px;">${short[method] || method} · ${objName}: ${verdict}`
-        + `<div style="color:var(--text-faint); font-size:11.5px;">${detail}</div></div>`;
+      rowsHtml += `<div style="margin-bottom:5px; line-height:1.35;">`
+        + `${short[method] || method} &middot; ${objName}: <b>${verdict}</b>`
+        + `<span style="color:var(--text-faint);"> — ${detail}</span></div>`;
     }
   }
-  return rowsHtml
-    + `<div style="border-top:1px solid var(--panel-border); padding-top:7px; margin-top:2px;">`
-    + `<b>The photos are for COLMAP.</b> It starts low and every batch buys real points — `
-    + `+11 on the sign from 25 to 50, +39 on the bollard from 15 to 30, and on the bollard it has `
-    + `still not finished at 60. MASt3R-GA is near its ceiling from the smallest count tested and `
-    + `moves in single points after that: nothing above N=15 on the bollard, a peak at N=75 on the `
-    + `sign (+2.5, logwin-7 +5.3) and then <b>2–3 points lost</b> at N=100, where the extra frames `
-    + `add low-overlap pairs rather than coverage.</div>`;
+  return `<span class="k">Where you can stop</span>` + rowsHtml
+    + `<div style="border-top:1px solid var(--panel-border); padding-top:6px; margin-top:6px;">`
+    + `<b>The photos are for COLMAP.</b> It starts low and keeps buying points — +11 on the sign, `
+    + `+39 on the bollard, and there it is still gaining at 60. MASt3R-GA is near its ceiling from the `
+    + `smallest count tested and then <b>loses 2–3 points</b> at N=100 on low-overlap pairs.</div>`;
 }
 
 function renderSig() {
@@ -1002,8 +997,10 @@ function renderSig() {
       if (panel) grid.appendChild(panel);
     }
   }
-  const aside = document.getElementById('sig-aside');
-  if (aside) aside.innerHTML = buildSigNarrative();
+  const card = document.createElement('div');
+  card.className = 'panel sig-verdict';
+  card.innerHTML = buildSigNarrative();
+  grid.appendChild(card);
 }
 
 // ---------- interpretation (auto from the live numbers) ----------
