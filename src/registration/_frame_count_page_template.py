@@ -1251,7 +1251,7 @@ function renderCost() {
 
   let h = '<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Method</th><th>N</th><th>time</th><th>× time vs smallest</th>'
-    + '<th>peak RAM (GiB)</th><th>F1@3cm</th><th>ΔF1 vs smallest</th><th>ΔF1 vs previous</th></tr></thead><tbody>';
+    + '<th>peak RAM (GiB)</th><th>peak VRAM (GiB)</th><th>F1@3cm</th><th>ΔF1 vs smallest</th><th>ΔF1 vs previous</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
     for (const method of methods) {
@@ -1267,6 +1267,7 @@ function renderCost() {
           + `<td>${n}</td><td>${fmtTime(r.time_s)}</td>`
           + `<td>${i === 0 ? '—' : ratio.toFixed(1) + '×'}</td>`
           + `<td>${(r.ram_mib / 1024).toFixed(1)}</td>`
+          + `<td>${r.vram_mib == null ? '—' : (r.vram_mib / 1024).toFixed(1)}</td>`
           + `<td class="f1cell">${r.f1_3cm.toFixed(1)}</td>`
           + (i === 0 ? '<td>—</td>' : deltaCell(sigFor(obj.id, method, sizes[0], n)))
           + (i === 0 ? '<td>—</td>' : deltaCell(sigFor(obj.id, method, sizes[i - 1], n)))
@@ -1277,8 +1278,41 @@ function renderCost() {
   h += '</tbody></table>';
   document.getElementById('cost-table-wrap').innerHTML = h;
 
+  // Name the expensive-and-pointless steps outright. Reading them off the table means adding
+  // two steps by eye, which is also the wrong way to do it - the interval belongs to the pair,
+  // not to the sum of the steps, so this quotes the paired test for exactly that pair.
+  const wasted = [];
+  for (const obj of DATA.objects) {
+    const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
+    for (const method of methods) {
+      const sizes = obj.sizes.filter(n => byKey[`${obj.id}__${method}__${n}`]);
+      for (let i = 0; i < sizes.length; i++) for (let j = i + 1; j < sizes.length; j++) {
+        const r = sigFor(obj.id, method, sizes[i], sizes[j]);
+        const a = byKey[`${obj.id}__${method}__${sizes[i]}`], b = byKey[`${obj.id}__${method}__${sizes[j]}`];
+        if (!r || !r.includes_zero || !a || !b || !(a.time_s > 0)) continue;
+        wasted.push({ obj, method, lo: sizes[i], hi: sizes[j], ratio: b.time_s / a.time_s, r, a, b });
+      }
+    }
+  }
+  // one entry per (object, method) - its worst buy - so the line does not spend all three
+  // slots on the same panel's overlapping pairs
+  const bestPerGroup = new Map();
+  for (const w of wasted) {
+    const k = `${w.obj.id}__${w.method}`;
+    if (!bestPerGroup.has(k) || bestPerGroup.get(k).ratio < w.ratio) bestPerGroup.set(k, w);
+  }
+  const worst = [...bestPerGroup.values()].sort((x, y) => y.ratio - x.ratio);
+  const say = w => `<b>${w.obj.title.replace(/ \(.*\)$/, '')} · ${DATA.method_label[w.method]}</b>, `
+    + `N=${w.lo}&nbsp;→&nbsp;${w.hi}: <b>${w.ratio.toFixed(1)}× the time</b> (${fmtTime(w.a.time_s)} → ${fmtTime(w.b.time_s)}) `
+    + `for ${w.r.delta > 0 ? '+' : ''}${w.r.delta.toFixed(1)}&nbsp;pts, CI [${w.r.ci_lo.toFixed(1)}, ${w.r.ci_hi.toFixed(1)}] — not resolvable`;
+  const headline = worst.length
+    ? `<div style="margin-bottom:6px;"><b>The expensive steps that buy nothing measurable:</b> `
+      + worst.slice(0, 3).map(say).join('; ') + `. Each interval is the paired test for that exact pair, `
+      + `from the section above — adding two steps of the table together would not give it.</div>`
+    : '';
+
   const hw = COST.hardware || {};
-  document.getElementById('cost-note').innerHTML =
+  document.getElementById('cost-note').innerHTML = headline +
     `* = 95% CI excludes 0. Every run is timed on the same pod (one NVIDIA L40S, `
     + `${hw.ram_mib ? '' : ''}${hw.ram_gib ?? '?'}&nbsp;GiB RAM, ${(hw.vram_mib ?? 0).toLocaleString('en-US')}&nbsp;MiB VRAM), `
     + `so the columns are comparable across methods — but the methods work at different input resolutions, `

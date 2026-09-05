@@ -311,7 +311,7 @@ function dbscan(pos, eps, minPts) {
 const objectTabs = document.getElementById('object-tabs');
 const methodTabs = document.getElementById('method-tabs');
 const OBJECT_IDS = Object.keys(DATA);
-const METHOD_IDS = ['mast3r_ga', 'vggt', 'colmap', 'hloc_colmap'];
+const METHOD_IDS = ['colmap', 'hloc_colmap', 'mast3r_ga', 'vggt'];   // keep in sync with build_object_page.METHOD_ORDER
 let currentObject = OBJECT_IDS[0];
 let currentMethod = 'mast3r_ga';
 let viewer = null;

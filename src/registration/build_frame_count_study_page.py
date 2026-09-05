@@ -619,12 +619,16 @@ def cost_block() -> str:
         print(f"  ! {PERF_JSON.name} or {SUMMARY_JSON.name} missing - the cost table is left out")
         return ""
     perf = json.loads(PERF_JSON.read_text())
-    time_by_exp, ram_by_exp = {}, {}
+    # RAM alone tells half the story: MASt3R-GA's peak RAM barely moves with N while its VRAM
+    # climbs 4.4 -> 7.9 GiB, and COLMAP is the other way round (RAM 12.9 -> 33.6 GiB, VRAM flat).
+    # A single memory column would show exactly the half where feed-forward looks free.
+    time_by_exp, ram_by_exp, vram_by_exp = {}, {}, {}
     for obj in perf["objects"]:
         for series in obj["series"].values():
-            for exp, t, ram in zip(series["exp_ids"], series["time_s"], series["ram_mib"]):
+            for exp, t, ram, vram in zip(series["exp_ids"], series["time_s"], series["ram_mib"], series["vram_mib"]):
                 time_by_exp[exp] = t
                 ram_by_exp[exp] = ram
+                vram_by_exp[exp] = vram
     rows = []
     for r in json.loads(SUMMARY_JSON.read_text()):
         if r["exp_id"] not in time_by_exp:
@@ -632,6 +636,7 @@ def cost_block() -> str:
             continue
         rows.append({"object": r["object"], "method": r["method"], "size": r["size"], "exp_id": r["exp_id"],
                      "time_s": time_by_exp[r["exp_id"]], "ram_mib": ram_by_exp[r["exp_id"]],
+                     "vram_mib": vram_by_exp[r["exp_id"]],
                      "f1_3cm": r["f1_3cm"], "f1_ci_lo": r["f1_ci_lo"], "f1_ci_hi": r["f1_ci_hi"]})
     data = {"rows": rows, "hardware": {"ram_gib": perf.get("ram_total_gib"), "vram_mib": perf.get("vram_total_mib")}}
     payload = json.dumps(data).replace("</", "<\\/")

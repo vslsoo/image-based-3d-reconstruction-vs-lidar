@@ -65,7 +65,8 @@ EMBED_FLOOR_CM = 1.0
 CONTEXT_CAP = 10000
 CANDIDATE_CAP = 20000
 LIDAR_REF_CAP = 20000
-METHOD_ORDER = ["mast3r_ga", "vggt", "colmap", "hloc_colmap"]
+# Same order as build_object_page.METHOD_ORDER - correspondence first.
+METHOD_ORDER = ["colmap", "hloc_colmap", "mast3r_ga", "vggt"]
 
 rng = np.random.default_rng(42)
 

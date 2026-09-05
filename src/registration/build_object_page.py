@@ -61,7 +61,11 @@ VOXEL_M = 0.01
 
 FLOOR_CM = 5.0
 EMBED_CAP = 60000
-METHOD_ORDER = ["mast3r_ga", "vggt", "colmap", "hloc_colmap"]
+# Correspondence pipelines first, then the feed-forward models - the order the index's
+# introduction, both study pages and the thesis text all use. This list drives the panel order
+# on every object page, in tuner.html, and the row order of the summary workbook (and through
+# it results.html), so it is the one place that order is decided.
+METHOD_ORDER = ["colmap", "hloc_colmap", "mast3r_ga", "vggt"]
 
 # Standard DBSCAN tuner slider config (ft/eps/mp), used by every page unless overridden via a
 # "dbscan" key in its MERGED_OBJECTS entry (e.g. information_sign needs a much wider
@@ -436,6 +440,11 @@ def relayout(page_id: str) -> None:
         sys.exit(f"no embedded payload in {path} - run a full build instead")
     payload = m.group(1)
     panel_keys = json.loads(re.search(r"const METHOD_IDS = (\[.*?\]);", html).group(1))
+    # re-sort by the current METHOD_ORDER: a relayout after that constant changes should move
+    # the panels, not preserve the order the page happened to be built with
+    panel_keys.sort(key=lambda k: (k.rsplit("__", 1)[0],
+                                   METHOD_ORDER.index(k.rsplit("__", 1)[1])
+                                   if k.rsplit("__", 1)[1] in METHOD_ORDER else len(METHOD_ORDER)))
     write_page(page_id, MERGED_OBJECTS[page_id], payload, panel_keys)
 
 
