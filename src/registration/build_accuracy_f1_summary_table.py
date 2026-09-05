@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 import open3d as o3d
 
+from _block_bootstrap import bootstrap_draws, ci95, diff_ci95
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_object_page import MERGED_OBJECTS, METHOD_ORDER, DEFAULT_DBSCAN_SLIDERS  # noqa: E402
 
@@ -53,6 +55,16 @@ VOXEL_M = 0.01
 
 FLOOR_CM = 3.0
 THRESHOLDS_CM = [3.0, 5.0, 10.0]
+
+# Spatial block bootstrap for the 95% CIs, at 3 cm only - the threshold the text quotes; 5 and
+# 10 cm are there as a bias check and do not need intervals. Same B and block size as the two
+# ablations, so an interval here and an interval on capture_comparison.html mean the same
+# thing. BLOCK_CM was picked for the bollard and the sign; re-checked here on the two largest
+# objects (bus_stop 4.3 m, flashlight 5.8 m), where error correlation could plausibly run
+# longer - see the note next to BLOCK_CM.
+B_BOOT = 2000
+BLOCK_CM = 5.0
+BOOT_SEED = 123
 # Accuracy/completeness/F1 are reported at all three thresholds now, not just 3cm - 3cm is
 # still what the DBSCAN gap-mask itself is built against (FLOOR_CM/the live tuner's floor),
 # so it stays the "primary" bolded-winner column; 5cm/10cm are additional, looser cuts over
@@ -174,8 +186,12 @@ def load_icp_rmse_mm(exp_id: str) -> tuple[float | None, float | None]:
     return entry.get("rmse_inlier_mm"), entry.get("inlier_share_pct")
 
 
-def compute_rows() -> list[dict]:
+def compute_rows() -> tuple[list[dict], list[dict]]:
+    """(rows, significance) - one row per object x method, plus every pairwise method
+    comparison within an object."""
     rows = []
+    boot_rng = np.random.default_rng(BOOT_SEED)
+    f1_draws: dict[tuple[str, str], np.ndarray] = {}
     for page_id, cfg in MERGED_OBJECTS.items():
         ref_path = PROJECT_ROOT / cfg["ref"]
         print(f"[ref] {page_id}: loading {ref_path.name}", flush=True)
@@ -258,6 +274,21 @@ def compute_rows() -> list[dict]:
             # first place, made explicit instead of left for the reader to compute themselves.
             row["f1_delta_10_3_pct"] = round(row["f1_10cm_pct"] - row["f1_3cm_pct"], 1)
 
+            # 95% CIs at 3 cm, over exactly the point sets the numbers above were computed on:
+            # the KEPT source points (after this object's own gap exclusion, or none at all
+            # where the object's honest default is "no DBSCAN") and the full reference cloud.
+            # An interval computed over a different set would not describe the number beside it.
+            acc_b, comp_b, f1_b, n_blk_acc, n_blk_comp = bootstrap_draws(
+                mpts[kept_mask], d_kept_cm <= 3.0, rpts, d_t2s_cm <= 3.0,
+                BLOCK_CM / 100.0, B_BOOT, boot_rng,
+            )
+            f1_draws[(capture["id"], method_id)] = f1_b
+            for name, draws in (("accuracy", acc_b), ("completeness", comp_b), ("f1", f1_b)):
+                lo, hi = ci95(draws)
+                row[f"{name}_3cm_ci_lo"] = round(lo, 1)
+                row[f"{name}_3cm_ci_hi"] = round(hi, 1)
+            row["n_blocks_acc"], row["n_blocks_comp"] = int(n_blk_acc), int(n_blk_comp)
+
             rmse_str = f"{icp_rmse_mm:.1f}mm/{icp_inlier_pct:.0f}%" if icp_rmse_mm is not None else "N/A"
             print(f"          acc_med={acc_median:.2f}cm comp_med={comp_median:.2f}cm  " + " ".join(metrics_log) +
                   f"  ΔF1(10-3)={row['f1_delta_10_3_pct']:+.1f}pp  ICP_RMSE={rmse_str}  "
@@ -265,7 +296,33 @@ def compute_rows() -> list[dict]:
                   f"L={length_cm:.0f}cm W={width_cm:.0f}cm H={height_cm:.0f}cm", flush=True)
 
             rows.append(row)
-    return rows
+
+    # --- pairwise: is method A actually ahead of method B on this object? ---------------
+    # Not the overlap of their two individual intervals - that eyeball test is far too
+    # conservative. The difference of the draws is the test, and it is UNPAIRED here: four
+    # reconstructions of one object are four independent clouds with no frames in common,
+    # exactly as on capture_comparison.html (the nested frame sets of the frame-count study
+    # are the one place where pairing is available, and there it is used).
+    point = {(r["object_id"], r["method"]): r["f1_3cm_pct"] for r in rows}
+    significance = []
+    for page_id, cfg in MERGED_OBJECTS.items():
+        obj_id = cfg["captures"][0]["id"]
+        methods = [m for m in METHOD_ORDER if (obj_id, m) in f1_draws and f1_draws[(obj_id, m)] is not None]
+        for i, a in enumerate(methods):
+            for b in methods[i + 1:]:
+                lo, hi, includes_zero = diff_ci95(f1_draws[(obj_id, a)], f1_draws[(obj_id, b)])
+                significance.append({
+                    "object_id": obj_id, "method_a": a, "method_b": b,
+                    "delta": round(point[(obj_id, a)] - point[(obj_id, b)], 1),
+                    "ci_lo": round(lo, 1), "ci_hi": round(hi, 1),
+                    "includes_zero": includes_zero,
+                })
+    print("\nPairwise F1@3cm between methods (unpaired block bootstrap):", flush=True)
+    for r in significance:
+        verdict = "not resolvable" if r["includes_zero"] else "RESOLVABLE"
+        print(f"  {r['object_id']:<22}{r['method_a']:>12} - {r['method_b']:<12} "
+              f"Δ={r['delta']:+6.1f}  95% CI=[{r['ci_lo']:+.1f},{r['ci_hi']:+.1f}]  {verdict}", flush=True)
+    return rows, significance
 
 
 def fmt_rmse(r: dict):
@@ -274,7 +331,7 @@ def fmt_rmse(r: dict):
     return "N/A" if v is None else v
 
 
-def write_xlsx(rows: list[dict], path: Path, lang: str) -> None:
+def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str) -> None:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -287,7 +344,10 @@ def write_xlsx(rows: list[dict], path: Path, lang: str) -> None:
         for k in thresh_keys:
             headers += [f"accuracy@{k}, %", f"completeness@{k}, %", f"F1@{k}, %"]
             f1_cols.append(len(headers))
-        headers += ["ΔF1@10-3см, п.п.", "точек до вокселя", "точек после 1см", "raw/matched, ×",
+        headers += ["ΔF1@10-3см, п.п.",
+                    "F1@3cm CI low", "F1@3cm CI high", "accuracy@3cm CI low", "accuracy@3cm CI high",
+                    "completeness@3cm CI low", "completeness@3cm CI high",
+                    "точек до вокселя", "точек после 1см", "raw/matched, ×",
                     "режим DBSCAN", "примечание по эталону"]
         shape_key, note_key = "shape_ru", "ref_note_ru"
     else:
@@ -298,7 +358,10 @@ def write_xlsx(rows: list[dict], path: Path, lang: str) -> None:
         for k in thresh_keys:
             headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
             f1_cols.append(len(headers))
-        headers += ["ΔF1@10-3cm (pp)", "raw points", "matched points (1cm voxel)", "raw/matched ratio",
+        headers += ["ΔF1@10-3cm (pp)",
+                    "F1@3cm CI low", "F1@3cm CI high", "accuracy@3cm CI low", "accuracy@3cm CI high",
+                    "completeness@3cm CI low", "completeness@3cm CI high",
+                    "raw points", "matched points (1cm voxel)", "raw/matched ratio",
                     "DBSCAN mode", "reference note"]
         shape_key, note_key = "shape_en", "ref_note_en"
     n_cols = len(headers)
@@ -340,7 +403,11 @@ def write_xlsx(rows: list[dict], path: Path, lang: str) -> None:
         ]
         for k in thresh_keys:
             vals += [r[f"accuracy_{k}_pct"], r[f"completeness_{k}_pct"], r[f"f1_{k}_pct"]]
-        vals += [r["f1_delta_10_3_pct"], r["raw_points"], r["matched_points"], r["raw_to_matched_ratio"],
+        vals += [r["f1_delta_10_3_pct"],
+                 r["f1_3cm_ci_lo"], r["f1_3cm_ci_hi"],
+                 r["accuracy_3cm_ci_lo"], r["accuracy_3cm_ci_hi"],
+                 r["completeness_3cm_ci_lo"], r["completeness_3cm_ci_hi"],
+                 r["raw_points"], r["matched_points"], r["raw_to_matched_ratio"],
                  r["dbscan_mode"], r[note_key]]
         ws.append(vals)
 
@@ -363,18 +430,43 @@ def write_xlsx(rows: list[dict], path: Path, lang: str) -> None:
         for col in range(1, n_cols + 1):
             ws.cell(row=first_row, column=col).border = top_border
 
-    widths = [20, 14, 12, 11, 11, 11, 12, 15, 17, 15, 13] + [13, 16, 10] * len(thresh_keys) + [14, 12, 15, 13, 14, 60]
+    widths = ([20, 14, 12, 11, 11, 11, 12, 15, 17, 15, 13] + [13, 16, 10] * len(thresh_keys)
+              + [14] + [12] * 6 + [12, 15, 13, 14, 60])
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
     ws.freeze_panes = "A2"
     ws.row_dimensions[1].height = 32
+
+    # --- sheet 2: which method differences are real ------------------------------------
+    ws2 = wb.create_sheet("significance")
+    ws2.append([f"Pairwise F1@3cm differences between methods on the same object, "
+                f"{B_BOOT} spatial block-bootstrap draws, {BLOCK_CM:g} cm blocks. Unpaired: the four "
+                f"reconstructions of an object are independent clouds with no frames in common. "
+                f"A CI spanning 0 means the two methods are not distinguishable on that object."])
+    ws2["A1"].font = Font(italic=True, color="585D54")
+    ws2.append([])
+    ws2.append(["object_id", "method A", "method B", "ΔF1@3cm (pp)", "95% CI low", "95% CI high", "resolvable?"])
+    for c in ws2[3]:
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for r in significance:
+        ws2.append([r["object_id"], r["method_a"], r["method_b"], r["delta"], r["ci_lo"], r["ci_hi"],
+                    "no - CI spans 0" if r["includes_zero"] else "yes"])
+    for row in ws2.iter_rows(min_row=4, min_col=7, max_col=7):
+        for c in row:
+            if c.value == "yes":
+                c.font = Font(bold=True, color="0D8054")
+    for col, w in zip("ABCDEFG", (22, 14, 14, 15, 13, 13, 17)):
+        ws2.column_dimensions[col].width = w
+    ws2.freeze_panes = "A4"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
     print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 
-def write_json(rows: list[dict], path: Path) -> None:
+def write_json(rows: list[dict], significance: list[dict], path: Path) -> None:
     """Per-page, per-panel exact metrics for the site to display verbatim."""
     pages: dict[str, dict] = {}
     for r in rows:
@@ -386,16 +478,26 @@ def write_json(rows: list[dict], path: Path) -> None:
             "acc_median_cm": r["accuracy_median_cm"],
             "comp_median_cm": r["completeness_median_cm"],
             "n_excluded": r["n_excluded"],
+            # 95% block-bootstrap CIs at 3 cm, computed over the same kept points
+            **{f"{m}_3cm_ci_{end}": r[f"{name}_3cm_ci_{end}"]
+               for m, name in (("acc", "accuracy"), ("comp", "completeness"), ("f1", "f1"))
+               for end in ("lo", "hi")},
+            "n_blocks_acc": r["n_blocks_acc"], "n_blocks_comp": r["n_blocks_comp"],
         }
-    path.write_text(json.dumps({"source": "build_accuracy_f1_summary_table.py", "pages": pages}, indent=2))
+    path.write_text(json.dumps({
+        "source": "build_accuracy_f1_summary_table.py",
+        "bootstrap": {"n_draws": B_BOOT, "block_cm": BLOCK_CM, "threshold_cm": 3.0, "paired": False},
+        "significance": significance,
+        "pages": pages,
+    }, indent=2))
     print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 
 def main() -> None:
-    rows = compute_rows()
-    write_xlsx(rows, OUT_XLSX, "ru")
-    write_xlsx(rows, OUT_XLSX_EN, "en")
-    write_json(rows, OUT_JSON)
+    rows, significance = compute_rows()
+    write_xlsx(rows, significance, OUT_XLSX, "ru")
+    write_xlsx(rows, significance, OUT_XLSX_EN, "en")
+    write_json(rows, significance, OUT_JSON)
 
 
 if __name__ == "__main__":

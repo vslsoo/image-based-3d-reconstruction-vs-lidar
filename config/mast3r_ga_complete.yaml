@@ -1,0 +1,43 @@
+# Variant of mast3r_ga.yaml with scenegraph: complete instead of swin-8, for
+# information_sign_002_test_1's manual_n25/50/75/100 objects: these are
+# individually-shot photos (no capture-order/pose correlation with viewing
+# angle - same reasoning as config/reconstruction_busstop.yaml's switch to
+# exhaustive COLMAP matching), so "complete" (every O(n^2) image pair) is the
+# MASt3R-GA equivalent of that exhaustive pairing, instead of swin-8's
+# windowed near-neighbors-in-capture-order matching.
+#
+# KNOWN RISK (see matching.scenegraph comment in mast3r_ga.yaml): "complete"
+# blew the pod's real container memory limit (cgroup memory.max, NOT what
+# `free -h` reports) at 50 images/2450 directed pairs in a past run - a
+# silent OOM-kill with no traceback. n=50/75/100 here are all at or above
+# that failure point, so expect this to need watching (check the real
+# cgroup limit on whatever pod this runs on before/while running) and
+# possibly fail at the larger sizes.
+
+image_selection:
+  num_images: 50
+  method: even
+  seed: 42
+
+model:
+  weights: naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric
+  device: auto
+  image_size: 512
+
+matching:
+  scenegraph: complete   # only change from mast3r_ga.yaml
+  shared_intrinsics: true
+  matching_conf_thr: 0.0
+  subsample: 8
+
+optimization:
+  lr1: 0.07
+  niter1: 300
+  lr2: 0.01
+  niter2: 300
+  opt_depth: true
+
+export:
+  min_conf_thr: 1.5
+  clean_depth: true
+  tsdf_thresh: 0

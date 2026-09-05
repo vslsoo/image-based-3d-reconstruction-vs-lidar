@@ -61,6 +61,13 @@ VOXEL_M = 0.01
 
 FLOOR_CM = 5.0
 EMBED_CAP = 60000
+M3C2_EMBED_CAP = 20000
+# Core points are already thinned to 3 cm, but that still leaves 224k of them on bus_stop's
+# vggt cloud - 6 MB of base64 on a page that is 10 MB before it. The panel never draws more
+# than RENDER_CAP anyway, and nothing in the browser recomputes an M3C2 number (unlike the
+# accuracy pools, which DBSCAN re-runs over), so a uniform sample of this size is all the
+# colouring can use. Every figure in the M3C2 caption comes from the full run, not from this
+# sample.
 # Correspondence pipelines first, then the feed-forward models - the order the index's
 # introduction, both study pages and the thesis text all use. This list drives the panel order
 # on every object page, in tuner.html, and the row order of the summary workbook (and through
@@ -388,6 +395,71 @@ def exact_block(page_id: str) -> str:
     return f'<script type="application/json" id="exact-data">{payload}</script>\n'
 
 
+M3C2_DIR_SUFFIX = "_m3c2_final"
+
+
+def m3c2_block(page_id: str, panel_keys: list[str]) -> str:
+    """The <script id="m3c2-data"> the M3C2 tab reads, or "" if the run hasn't happened.
+
+    Deliberately a block of its own rather than part of part1-data: M3C2 is computed by
+    run_m3c2_final_six.py from the same aligned clouds but shares none of the Chamfer
+    pipeline, so keeping it separate means re-running M3C2 needs only --relayout, not a
+    full (open3d, minutes-long) rebuild of every panel.
+
+    Signed distances arrive in centimetres with their NaNs intact - a core point that found
+    no reference inside its cylinder is drawn as such, not dropped - alongside each point's
+    own LoD95, so the browser can grey out what is indistinguishable from noise without
+    re-deriving the threshold.
+    """
+    panels, missing = {}, []
+    for panel_key in panel_keys:
+        method_id = panel_key.rsplit("__", 1)[1]
+        report_path = PROJECT_ROOT / "outputs" / "metrics" / f"{page_id}{M3C2_DIR_SUFFIX}" / f"{method_id}.json"
+        if not report_path.exists():
+            missing.append(method_id)
+            continue
+        rep = json.loads(report_path.read_text())
+        npz_path = PROJECT_ROOT / rep["per_point_distances_file"]
+        if not npz_path.exists():
+            missing.append(method_id)
+            continue
+        with np.load(npz_path) as z:
+            core, dist, lod = z["corepoints"], z["distances"], z["lodetection"]
+        valid = np.isfinite(dist)
+        sel = subsample(len(core), M3C2_EMBED_CAP)
+        stats = rep["distance_stats"] or {}
+        panels[panel_key] = {
+            "pos": b64f(core[sel]),
+            "dist_cm": b64f(dist[sel] * 100.0),
+            "lod_cm": b64f(lod[sel] * 100.0),
+            "n_corepoints": int(len(core)),
+            "n_valid": int(valid.sum()),
+            "n_unpaired": int(len(core) - valid.sum()),
+            "n_significant": rep["num_significant_at_lod95"],
+            "n_with_lod": rep["num_with_defined_lod"],
+            "significant_pct": (100.0 * rep["fraction_significant_at_lod95"]
+                                if rep["fraction_significant_at_lod95"] is not None else None),
+            "median_abs_cm": 100.0 * stats["median_abs"] if stats else None,
+            # share of the paired core points sitting OUTSIDE the reference surface: the one
+            # thing Accuracy cannot say at all, since it has no sign
+            "outside_pct": float(100.0 * (dist[valid] < 0).mean()) if valid.any() else None,
+            "reg_err_cm": 100.0 * rep["registration_error"],
+            "D_cm": 100.0 * rep["normal_scale_D"],
+            "d_cm": 100.0 * rep["projection_scale_d"],
+            "voxel_cm": 100.0 * rep["corepoint_voxel_size"],
+            "approx": bool(len(sel) < len(core)),
+        }
+        print(f"  [m3c2] {method_id}: {len(core)} core points ({panels[panel_key]['n_unpaired']} unpaired), "
+              f"{len(sel)} embedded", flush=True)
+    if missing:
+        print(f"  ! no M3C2 run for {page_id}: {', '.join(missing)} - the tab is left off those panels "
+              f"(run src/registration/run_m3c2_final_six.py)")
+    if not panels:
+        return ""
+    payload = json.dumps(panels).replace("</", "<\\/")
+    return f'<script type="application/json" id="m3c2-data">{payload}</script>\n'
+
+
 def write_page(page_id: str, cfg: dict, part1: dict, panel_keys: list[str]) -> None:
     display_name = cfg.get("display_name", page_id)
     # ----- assemble HTML -----
@@ -414,6 +486,7 @@ def write_page(page_id: str, cfg: dict, part1: dict, panel_keys: list[str]) -> N
         + body + "\n"
         + f'<script type="application/json" id="part1-data">{part1_json}</script>\n'
         + exact_block(page_id)
+        + m3c2_block(page_id, panel_keys)
         + main_js
     )
 
@@ -427,9 +500,10 @@ def relayout(page_id: str) -> None:
     """Re-render site/<page_id>.html from the payload it already carries.
 
     The point clouds are the only expensive part, and they are already in the file. A change
-    to the template, or a refreshed docs/tables/summary_all_objects_accuracy_f1.json, needs
-    nothing recomputed - so this reuses the embedded blob verbatim. Use it ONLY when that
-    blob is unchanged: any new field the template reads has to come from a full build.
+    to the template, a refreshed docs/tables/summary_all_objects_accuracy_f1.json, or a new
+    M3C2 run needs nothing recomputed - so this reuses the embedded blob verbatim and rebuilds
+    everything around it. Use it ONLY when that blob is unchanged: any new field the template
+    reads *out of part1-data* has to come from a full build.
     """
     import re
 

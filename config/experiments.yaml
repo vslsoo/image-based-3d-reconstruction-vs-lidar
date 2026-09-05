@@ -1267,3 +1267,2109 @@ experiments:
       - Mean reprojection error: 1.440432px
       - Dense fused point cloud: 1336469 points
       - Point cloud: outputs/experiments/exp_080_hloc_colmap_bus_stop_sign_001/dense/exp_080_hloc_colmap_bus_stop_sign_001.ply
+
+  exp_081:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1
+    method: colmap
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_1/jpg
+    output_dir: outputs/experiments/exp_081_colmap_information_sign_002_test_1
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 48/48
+      - Points in sparse reconstruction: 27039
+      - Observations: 111103
+      - Mean track length: 4.108991
+      - Mean observations per image: 2314.645833
+      - Mean reprojection error: 1.214007px
+      - Dense fused point cloud: 1243730 points
+      - Point cloud: outputs/experiments/exp_081_colmap_information_sign_002_test_1/dense/exp_081_colmap_information_sign_002_test_1.ply
+
+  exp_082:
+    date: 2026-08-18
+    object_id: information_sign_002_test_2
+    method: colmap
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_2/jpg
+    output_dir: outputs/experiments/exp_082_colmap_information_sign_002_test_2
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 46/48
+      - Points in sparse reconstruction: 29705
+      - Observations: 150083
+      - Mean track length: 5.052449
+      - Mean observations per image: 3262.673913
+      - Mean reprojection error: 1.186682px
+      - Dense fused point cloud: 1678184 points
+      - Point cloud: outputs/experiments/exp_082_colmap_information_sign_002_test_2/dense/exp_082_colmap_information_sign_002_test_2.ply
+
+  exp_083:
+    date: 2026-08-18
+    object_id: information_sign_002_test_3
+    method: colmap
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_3/jpg
+    output_dir: outputs/experiments/exp_083_colmap_information_sign_002_test_3
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 48/48
+      - Points in sparse reconstruction: 33223
+      - Observations: 158936
+      - Mean track length: 4.783915
+      - Mean observations per image: 3311.166667
+      - Mean reprojection error: 1.173239px
+      - Dense fused point cloud: 2287160 points
+      - Point cloud: outputs/experiments/exp_083_colmap_information_sign_002_test_3/dense/exp_083_colmap_information_sign_002_test_3.ply
+
+  exp_084:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1
+    method: mast3r_ga
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_1/jpg
+    output_dir: outputs/experiments/exp_084_mast3r_ga_information_sign_002_test_1
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 48/48
+      - Points in dense point cloud: 1653935
+      - Point cloud: outputs/experiments/exp_084_mast3r_ga_information_sign_002_test_1/exp_084_mast3r_ga_information_sign_002_test_1.ply
+
+  exp_085:
+    date: 2026-08-18
+    object_id: information_sign_002_test_2
+    method: mast3r_ga
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_2/jpg
+    output_dir: outputs/experiments/exp_085_mast3r_ga_information_sign_002_test_2
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 48/48
+      - Points in dense point cloud: 2322663
+      - Point cloud: outputs/experiments/exp_085_mast3r_ga_information_sign_002_test_2/exp_085_mast3r_ga_information_sign_002_test_2.ply
+
+  exp_086:
+    date: 2026-08-18
+    object_id: information_sign_002_test_3
+    method: mast3r_ga
+    image_subset: 48 selected (even)
+    image_dir: data/images/information_sign_002_test_3/jpg
+    output_dir: outputs/experiments/exp_086_mast3r_ga_information_sign_002_test_3
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 48/48
+      - Points in dense point cloud: 1537670
+      - Point cloud: outputs/experiments/exp_086_mast3r_ga_information_sign_002_test_3/exp_086_mast3r_ga_information_sign_002_test_3.ply
+
+  exp_087:
+    date: 2026-08-18
+    object_id: bollard_003_test_1
+    method: colmap
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_1/jpg
+    output_dir: outputs/experiments/exp_087_colmap_bollard_003_test_1
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 44/44
+      - Points in sparse reconstruction: 34036
+      - Observations: 179731
+      - Mean track length: 5.280615
+      - Mean observations per image: 4084.795455
+      - Mean reprojection error: 1.273982px
+      - Dense fused point cloud: 1982323 points
+      - Point cloud: outputs/experiments/exp_087_colmap_bollard_003_test_1/dense/exp_087_colmap_bollard_003_test_1.ply
+
+  exp_088:
+    date: 2026-08-18
+    object_id: bollard_003_test_2
+    method: colmap
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_2/jpg
+    output_dir: outputs/experiments/exp_088_colmap_bollard_003_test_2
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 44/44
+      - Points in sparse reconstruction: 35774
+      - Observations: 168156
+      - Mean track length: 4.700509
+      - Mean observations per image: 3821.727273
+      - Mean reprojection error: 1.336555px
+      - Dense fused point cloud: 1294558 points
+      - Point cloud: outputs/experiments/exp_088_colmap_bollard_003_test_2/dense/exp_088_colmap_bollard_003_test_2.ply
+
+  exp_089:
+    date: 2026-08-18
+    object_id: bollard_003_test_3
+    method: colmap
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_3/jpg
+    output_dir: outputs/experiments/exp_089_colmap_bollard_003_test_3
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 44/44
+      - Points in sparse reconstruction: 39381
+      - Observations: 228883
+      - Mean track length: 5.812016
+      - Mean observations per image: 5201.886364
+      - Mean reprojection error: 1.248747px
+      - Dense fused point cloud: 2589191 points
+      - Point cloud: outputs/experiments/exp_089_colmap_bollard_003_test_3/dense/exp_089_colmap_bollard_003_test_3.ply
+
+  exp_090:
+    date: 2026-08-18
+    object_id: bollard_003_test_1
+    method: mast3r_ga
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_1/jpg
+    output_dir: outputs/experiments/exp_090_mast3r_ga_bollard_003_test_1
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 44/44
+      - Points in dense point cloud: 2582880
+      - Point cloud: outputs/experiments/exp_090_mast3r_ga_bollard_003_test_1/exp_090_mast3r_ga_bollard_003_test_1.ply
+
+  exp_091:
+    date: 2026-08-18
+    object_id: bollard_003_test_2
+    method: mast3r_ga
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_2/jpg
+    output_dir: outputs/experiments/exp_091_mast3r_ga_bollard_003_test_2
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 44/44
+      - Points in dense point cloud: 2685811
+      - Point cloud: outputs/experiments/exp_091_mast3r_ga_bollard_003_test_2/exp_091_mast3r_ga_bollard_003_test_2.ply
+
+  exp_092:
+    date: 2026-08-18
+    object_id: bollard_003_test_3
+    method: mast3r_ga
+    image_subset: 44 selected (even)
+    image_dir: data/images/bollard_003_test_3/jpg
+    output_dir: outputs/experiments/exp_092_mast3r_ga_bollard_003_test_3
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 44/44
+      - Points in dense point cloud: 2505006
+      - Point cloud: outputs/experiments/exp_092_mast3r_ga_bollard_003_test_3/exp_092_mast3r_ga_bollard_003_test_3.ply
+
+  exp_093:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n25
+    method: colmap
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_25/jpg
+    output_dir: outputs/experiments/exp_093_colmap_information_sign_002_test_1_n25
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 25/25
+      - Points in sparse reconstruction: 3837
+      - Observations: 12279
+      - Mean track length: 3.200156
+      - Mean observations per image: 491.160000
+      - Mean reprojection error: 1.083208px
+      - Dense fused point cloud: 170624 points
+      - Point cloud: outputs/experiments/exp_093_colmap_information_sign_002_test_1_n25/dense/exp_093_colmap_information_sign_002_test_1_n25.ply
+
+  exp_094:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n50
+    method: colmap
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_50/jpg
+    output_dir: outputs/experiments/exp_094_colmap_information_sign_002_test_1_n50
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 27003
+      - Observations: 95353
+      - Mean track length: 3.531200
+      - Mean observations per image: 1907.060000
+      - Mean reprojection error: 1.154435px
+      - Dense fused point cloud: 987011 points
+      - Point cloud: outputs/experiments/exp_094_colmap_information_sign_002_test_1_n50/dense/exp_094_colmap_information_sign_002_test_1_n50.ply
+
+  exp_095:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n75
+    method: colmap
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_75/jpg
+    output_dir: outputs/experiments/exp_095_colmap_information_sign_002_test_1_n75
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 75/75
+      - Points in sparse reconstruction: 51174
+      - Observations: 228110
+      - Mean track length: 4.457537
+      - Mean observations per image: 3041.466667
+      - Mean reprojection error: 1.259600px
+      - Dense fused point cloud: 3068990 points
+      - Point cloud: outputs/experiments/exp_095_colmap_information_sign_002_test_1_n75/dense/exp_095_colmap_information_sign_002_test_1_n75.ply
+
+  exp_096:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n100
+    method: colmap
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_100/jpg
+    output_dir: outputs/experiments/exp_096_colmap_information_sign_002_test_1_n100
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 100/100
+      - Points in sparse reconstruction: 72909
+      - Observations: 360604
+      - Mean track length: 4.945946
+      - Mean observations per image: 3606.040000
+      - Mean reprojection error: 1.287644px
+      - Dense fused point cloud: 4476470 points
+      - Point cloud: outputs/experiments/exp_096_colmap_information_sign_002_test_1_n100/dense/exp_096_colmap_information_sign_002_test_1_n100.ply
+
+  exp_097:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n25
+    method: mast3r_ga
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_25/jpg
+    output_dir: outputs/experiments/exp_097_mast3r_ga_information_sign_002_test_1_n25
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 25/25
+      - Points in dense point cloud: 952177
+      - Point cloud: outputs/experiments/exp_097_mast3r_ga_information_sign_002_test_1_n25/exp_097_mast3r_ga_information_sign_002_test_1_n25.ply
+
+  exp_098:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n50
+    method: mast3r_ga
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_50/jpg
+    output_dir: outputs/experiments/exp_098_mast3r_ga_information_sign_002_test_1_n50
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 1620067
+      - Point cloud: outputs/experiments/exp_098_mast3r_ga_information_sign_002_test_1_n50/exp_098_mast3r_ga_information_sign_002_test_1_n50.ply
+
+  exp_099:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n75
+    method: mast3r_ga
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_75/jpg
+    output_dir: outputs/experiments/exp_099_mast3r_ga_information_sign_002_test_1_n75
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 75/75
+      - Points in dense point cloud: 1961777
+      - Point cloud: outputs/experiments/exp_099_mast3r_ga_information_sign_002_test_1_n75/exp_099_mast3r_ga_information_sign_002_test_1_n75.ply
+
+  exp_100:
+    date: 2026-08-18
+    object_id: information_sign_002_test_1_n100
+    method: mast3r_ga
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested/selected_100/jpg
+    output_dir: outputs/experiments/exp_100_mast3r_ga_information_sign_002_test_1_n100
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 100/100
+      - Points in dense point cloud: 3053650
+      - Point cloud: outputs/experiments/exp_100_mast3r_ga_information_sign_002_test_1_n100/exp_100_mast3r_ga_information_sign_002_test_1_n100.ply
+
+  exp_101:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n15
+    method: colmap
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_15/jpg
+    output_dir: outputs/experiments/exp_101_colmap_bollard_003_test_1_n15
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 15/15
+      - Points in sparse reconstruction: 5059
+      - Observations: 20939
+      - Mean track length: 4.138960
+      - Mean observations per image: 1395.933333
+      - Mean reprojection error: 1.175110px
+      - Dense fused point cloud: 448452 points
+      - Point cloud: outputs/experiments/exp_101_colmap_bollard_003_test_1_n15/dense/exp_101_colmap_bollard_003_test_1_n15.ply
+
+  exp_102:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n30
+    method: colmap
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_30/jpg
+    output_dir: outputs/experiments/exp_102_colmap_bollard_003_test_1_n30
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 30/30
+      - Points in sparse reconstruction: 17114
+      - Observations: 82323
+      - Mean track length: 4.810272
+      - Mean observations per image: 2744.100000
+      - Mean reprojection error: 1.184657px
+      - Dense fused point cloud: 1234148 points
+      - Point cloud: outputs/experiments/exp_102_colmap_bollard_003_test_1_n30/dense/exp_102_colmap_bollard_003_test_1_n30.ply
+
+  exp_103:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n45
+    method: colmap
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_45/jpg
+    output_dir: outputs/experiments/exp_103_colmap_bollard_003_test_1_n45
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 45/45
+      - Points in sparse reconstruction: 31495
+      - Observations: 168257
+      - Mean track length: 5.342340
+      - Mean observations per image: 3739.044444
+      - Mean reprojection error: 1.254754px
+      - Dense fused point cloud: 1990393 points
+      - Point cloud: outputs/experiments/exp_103_colmap_bollard_003_test_1_n45/dense/exp_103_colmap_bollard_003_test_1_n45.ply
+
+  exp_104:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n60
+    method: colmap
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_60/jpg
+    output_dir: outputs/experiments/exp_104_colmap_bollard_003_test_1_n60
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 60/60
+      - Points in sparse reconstruction: 51065
+      - Observations: 291051
+      - Mean track length: 5.699618
+      - Mean observations per image: 4850.850000
+      - Mean reprojection error: 1.293754px
+      - Dense fused point cloud: 3050839 points
+      - Point cloud: outputs/experiments/exp_104_colmap_bollard_003_test_1_n60/dense/exp_104_colmap_bollard_003_test_1_n60.ply
+
+  exp_105:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n15
+    method: mast3r_ga
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_15/jpg
+    output_dir: outputs/experiments/exp_105_mast3r_ga_bollard_003_test_1_n15
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 15/15
+      - Points in dense point cloud: 1174784
+      - Point cloud: outputs/experiments/exp_105_mast3r_ga_bollard_003_test_1_n15/exp_105_mast3r_ga_bollard_003_test_1_n15.ply
+
+  exp_106:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n30
+    method: mast3r_ga
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_30/jpg
+    output_dir: outputs/experiments/exp_106_mast3r_ga_bollard_003_test_1_n30
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 30/30
+      - Points in dense point cloud: 1734276
+      - Point cloud: outputs/experiments/exp_106_mast3r_ga_bollard_003_test_1_n30/exp_106_mast3r_ga_bollard_003_test_1_n30.ply
+
+  exp_107:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n45
+    method: mast3r_ga
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_45/jpg
+    output_dir: outputs/experiments/exp_107_mast3r_ga_bollard_003_test_1_n45
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 45/45
+      - Points in dense point cloud: 2313613
+      - Point cloud: outputs/experiments/exp_107_mast3r_ga_bollard_003_test_1_n45/exp_107_mast3r_ga_bollard_003_test_1_n45.ply
+
+  exp_108:
+    date: 2026-08-18
+    object_id: bollard_003_test_1_n60
+    method: mast3r_ga
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested/selected_60/jpg
+    output_dir: outputs/experiments/exp_108_mast3r_ga_bollard_003_test_1_n60
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 60/60
+      - Points in dense point cloud: 2428912
+      - Point cloud: outputs/experiments/exp_108_mast3r_ga_bollard_003_test_1_n60/exp_108_mast3r_ga_bollard_003_test_1_n60.ply
+
+  exp_109:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n25
+    method: colmap
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_25/jpg
+    output_dir: outputs/experiments/exp_109_colmap_information_sign_002_test_1_manual_n25
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 25/25
+      - Points in sparse reconstruction: 12357
+      - Observations: 46818
+      - Mean track length: 3.788784
+      - Mean observations per image: 1872.720000
+      - Mean reprojection error: 1.024009px
+      - Dense fused point cloud: 835318 points
+      - Point cloud: outputs/experiments/exp_109_colmap_information_sign_002_test_1_manual_n25/dense/exp_109_colmap_information_sign_002_test_1_manual_n25.ply
+
+  exp_110:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n50
+    method: colmap
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_50/jpg
+    output_dir: outputs/experiments/exp_110_colmap_information_sign_002_test_1_manual_n50
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 32675
+      - Observations: 155750
+      - Mean track length: 4.766641
+      - Mean observations per image: 3115.000000
+      - Mean reprojection error: 1.150164px
+      - Dense fused point cloud: 2365595 points
+      - Point cloud: outputs/experiments/exp_110_colmap_information_sign_002_test_1_manual_n50/dense/exp_110_colmap_information_sign_002_test_1_manual_n50.ply
+
+  exp_111:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n75
+    method: colmap
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_75/jpg
+    output_dir: outputs/experiments/exp_111_colmap_information_sign_002_test_1_manual_n75
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 75/75
+      - Points in sparse reconstruction: 45315
+      - Observations: 223339
+      - Mean track length: 4.928589
+      - Mean observations per image: 2977.853333
+      - Mean reprojection error: 1.225526px
+      - Dense fused point cloud: 2744244 points
+      - Point cloud: outputs/experiments/exp_111_colmap_information_sign_002_test_1_manual_n75/dense/exp_111_colmap_information_sign_002_test_1_manual_n75.ply
+
+  exp_112:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n25
+    method: mast3r_ga
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_25/jpg
+    output_dir: outputs/experiments/exp_112_mast3r_ga_information_sign_002_test_1_manual_n25
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 25/25
+      - Points in dense point cloud: 905904
+      - Point cloud: outputs/experiments/exp_112_mast3r_ga_information_sign_002_test_1_manual_n25/exp_112_mast3r_ga_information_sign_002_test_1_manual_n25.ply
+
+  exp_113:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n50
+    method: mast3r_ga
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_50/jpg
+    output_dir: outputs/experiments/exp_113_mast3r_ga_information_sign_002_test_1_manual_n50
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 1676537
+      - Point cloud: outputs/experiments/exp_113_mast3r_ga_information_sign_002_test_1_manual_n50/exp_113_mast3r_ga_information_sign_002_test_1_manual_n50.ply
+
+  exp_114:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n75
+    method: mast3r_ga
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_75/jpg
+    output_dir: outputs/experiments/exp_114_mast3r_ga_information_sign_002_test_1_manual_n75
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 75/75
+      - Points in dense point cloud: 1942971
+      - Point cloud: outputs/experiments/exp_114_mast3r_ga_information_sign_002_test_1_manual_n75/exp_114_mast3r_ga_information_sign_002_test_1_manual_n75.ply
+
+  exp_115:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n15
+    method: colmap
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_15/jpg
+    output_dir: outputs/experiments/exp_115_colmap_bollard_003_test_1_manual_n15
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 15/15
+      - Points in sparse reconstruction: 11812
+      - Observations: 52397
+      - Mean track length: 4.435913
+      - Mean observations per image: 3493.133333
+      - Mean reprojection error: 1.098068px
+      - Dense fused point cloud: 684825 points
+      - Point cloud: outputs/experiments/exp_115_colmap_bollard_003_test_1_manual_n15/dense/exp_115_colmap_bollard_003_test_1_manual_n15.ply
+
+  exp_116:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n30
+    method: colmap
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_30/jpg
+    output_dir: outputs/experiments/exp_116_colmap_bollard_003_test_1_manual_n30
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 30/30
+      - Points in sparse reconstruction: 31392
+      - Observations: 158032
+      - Mean track length: 5.034149
+      - Mean observations per image: 5267.733333
+      - Mean reprojection error: 1.287846px
+      - Dense fused point cloud: 1423889 points
+      - Point cloud: outputs/experiments/exp_116_colmap_bollard_003_test_1_manual_n30/dense/exp_116_colmap_bollard_003_test_1_manual_n30.ply
+
+  exp_117:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n45
+    method: colmap
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_45/jpg
+    output_dir: outputs/experiments/exp_117_colmap_bollard_003_test_1_manual_n45
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 45/45
+      - Points in sparse reconstruction: 39131
+      - Observations: 211946
+      - Mean track length: 5.416320
+      - Mean observations per image: 4709.911111
+      - Mean reprojection error: 1.294338px
+      - Dense fused point cloud: 2144681 points
+      - Point cloud: outputs/experiments/exp_117_colmap_bollard_003_test_1_manual_n45/dense/exp_117_colmap_bollard_003_test_1_manual_n45.ply
+
+  exp_118:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n60
+    method: colmap
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_60/jpg
+    output_dir: outputs/experiments/exp_118_colmap_bollard_003_test_1_manual_n60
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 60/60
+      - Points in sparse reconstruction: 52450
+      - Observations: 301462
+      - Mean track length: 5.747607
+      - Mean observations per image: 5024.366667
+      - Mean reprojection error: 1.325465px
+      - Dense fused point cloud: 3086023 points
+      - Point cloud: outputs/experiments/exp_118_colmap_bollard_003_test_1_manual_n60/dense/exp_118_colmap_bollard_003_test_1_manual_n60.ply
+
+  exp_119:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n15
+    method: mast3r_ga
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_15/jpg
+    output_dir: outputs/experiments/exp_119_mast3r_ga_bollard_003_test_1_manual_n15
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 15/15
+      - Points in dense point cloud: 1616302
+      - Point cloud: outputs/experiments/exp_119_mast3r_ga_bollard_003_test_1_manual_n15/exp_119_mast3r_ga_bollard_003_test_1_manual_n15.ply
+
+  exp_120:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n30
+    method: mast3r_ga
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_30/jpg
+    output_dir: outputs/experiments/exp_120_mast3r_ga_bollard_003_test_1_manual_n30
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 30/30
+      - Points in dense point cloud: 2270640
+      - Point cloud: outputs/experiments/exp_120_mast3r_ga_bollard_003_test_1_manual_n30/exp_120_mast3r_ga_bollard_003_test_1_manual_n30.ply
+
+  exp_121:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n45
+    method: mast3r_ga
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_45/jpg
+    output_dir: outputs/experiments/exp_121_mast3r_ga_bollard_003_test_1_manual_n45
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 45/45
+      - Points in dense point cloud: 2552508
+      - Point cloud: outputs/experiments/exp_121_mast3r_ga_bollard_003_test_1_manual_n45/exp_121_mast3r_ga_bollard_003_test_1_manual_n45.ply
+
+  exp_122:
+    date: 2026-08-19
+    object_id: bollard_003_test_1_manual_n60
+    method: mast3r_ga
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_60/jpg
+    output_dir: outputs/experiments/exp_122_mast3r_ga_bollard_003_test_1_manual_n60
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 60/60
+      - Points in dense point cloud: 3257744
+      - Point cloud: outputs/experiments/exp_122_mast3r_ga_bollard_003_test_1_manual_n60/exp_122_mast3r_ga_bollard_003_test_1_manual_n60.ply
+
+  exp_123:
+    date: 2026-08-19
+    object_id: information_sign_002_test_1_manual_n100
+    method: colmap
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_123_colmap_information_sign_002_test_1_manual_n100
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 100/100
+      - Points in sparse reconstruction: 72793
+      - Observations: 356168
+      - Mean track length: 4.892888
+      - Mean observations per image: 3561.680000
+      - Mean reprojection error: 1.286080px
+      - Dense fused point cloud: 4453382 points
+      - Point cloud: outputs/experiments/exp_123_colmap_information_sign_002_test_1_manual_n100/dense/exp_123_colmap_information_sign_002_test_1_manual_n100.ply
+
+  exp_124:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n100
+    method: mast3r_ga
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_124_mast3r_ga_information_sign_002_test_1_manual_n100
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: swin-8
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 100/100
+      - Points in dense point cloud: 2355902
+      - Point cloud: outputs/experiments/exp_124_mast3r_ga_information_sign_002_test_1_manual_n100/exp_124_mast3r_ga_information_sign_002_test_1_manual_n100.ply
+
+  exp_125:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n100
+    method: mast3r_ga
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_125_mast3r_ga_information_sign_002_test_1_manual_n100
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 100/100
+      - Points in dense point cloud: 1832098
+      - Point cloud: outputs/experiments/exp_125_mast3r_ga_information_sign_002_test_1_manual_n100/exp_125_mast3r_ga_information_sign_002_test_1_manual_n100.ply
+
+  exp_126:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n75
+    method: mast3r_ga
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_75/jpg
+    output_dir: outputs/experiments/exp_126_mast3r_ga_information_sign_002_test_1_manual_n75
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 75/75
+      - Points in dense point cloud: 1724657
+      - Point cloud: outputs/experiments/exp_126_mast3r_ga_information_sign_002_test_1_manual_n75/exp_126_mast3r_ga_information_sign_002_test_1_manual_n75.ply
+
+  exp_127:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n50
+    method: mast3r_ga
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_50/jpg
+    output_dir: outputs/experiments/exp_127_mast3r_ga_information_sign_002_test_1_manual_n50
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 1040121
+      - Point cloud: outputs/experiments/exp_127_mast3r_ga_information_sign_002_test_1_manual_n50/exp_127_mast3r_ga_information_sign_002_test_1_manual_n50.ply
+
+  exp_128:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n25
+    method: mast3r_ga
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_25/jpg
+    output_dir: outputs/experiments/exp_128_mast3r_ga_information_sign_002_test_1_manual_n25
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 25/25
+      - Points in dense point cloud: 964301
+      - Point cloud: outputs/experiments/exp_128_mast3r_ga_information_sign_002_test_1_manual_n25/exp_128_mast3r_ga_information_sign_002_test_1_manual_n25.ply
+
+  exp_129:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n75
+    method: hloc_colmap
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_75/jpg
+    output_dir: outputs/experiments/exp_129_hloc_colmap_information_sign_002_test_1_manual_n75
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 75/75
+      - Points in sparse reconstruction: 26437
+      - Observations: 103474
+      - Mean track length: 3.913984
+      - Mean reprojection error: 1.485208px
+      - Dense fused point cloud: 2291562 points
+      - Point cloud: outputs/experiments/exp_129_hloc_colmap_information_sign_002_test_1_manual_n75/dense/exp_129_hloc_colmap_information_sign_002_test_1_manual_n75.ply
+
+  exp_130:
+    date: 2026-08-20
+    object_id: information_sign_002_test_1_manual_n75
+    method: vggt
+    image_subset: 75 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_75/jpg
+    output_dir: outputs/experiments/exp_130_vggt_information_sign_002_test_1_manual_n75
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 75/75
+      - Points in dense point cloud: 20124300
+      - Point cloud: outputs/experiments/exp_130_vggt_information_sign_002_test_1_manual_n75/exp_130_vggt_information_sign_002_test_1_manual_n75.ply
+
+  exp_131:
+    date: 2026-08-20
+    object_id: bench_004
+    method: colmap
+    image_subset: 94 selected (even)
+    image_dir: data/images/bench_004/jpg
+    output_dir: outputs/experiments/exp_131_colmap_bench_004
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 94/94
+      - Points in sparse reconstruction: 62425
+      - Observations: 258282
+      - Mean track length: 4.137477
+      - Mean observations per image: 2747.680851
+      - Mean reprojection error: 1.330919px
+      - Dense fused point cloud: 4942618 points
+      - Point cloud: outputs/experiments/exp_131_colmap_bench_004/dense/exp_131_colmap_bench_004.ply
+
+  exp_132:
+    date: 2026-08-20
+    object_id: bench_004
+    method: hloc_colmap
+    image_subset: 94 selected (even)
+    image_dir: data/images/bench_004/jpg
+    output_dir: outputs/experiments/exp_132_hloc_colmap_bench_004
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 94/94
+      - Points in sparse reconstruction: 22660
+      - Observations: 79208
+      - Mean track length: 3.495499
+      - Mean reprojection error: 1.466966px
+      - Dense fused point cloud: 3324324 points
+      - Point cloud: outputs/experiments/exp_132_hloc_colmap_bench_004/dense/exp_132_hloc_colmap_bench_004.ply
+
+  exp_133:
+    date: 2026-08-20
+    object_id: bench_004
+    method: vggt
+    image_subset: 94 selected (even)
+    image_dir: data/images/bench_004/jpg
+    output_dir: outputs/experiments/exp_133_vggt_bench_004
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 94/94
+      - Points in dense point cloud: 18916842
+      - Point cloud: outputs/experiments/exp_133_vggt_bench_004/exp_133_vggt_bench_004.ply
+
+  exp_134:
+    date: 2026-08-20
+    object_id: bench_004
+    method: mast3r_ga
+    image_subset: 94 selected (even)
+    image_dir: data/images/bench_004/jpg
+    output_dir: outputs/experiments/exp_134_mast3r_ga_bench_004
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 94/94
+      - Points in dense point cloud: 3875932
+      - Point cloud: outputs/experiments/exp_134_mast3r_ga_bench_004/exp_134_mast3r_ga_bench_004.ply
+
+  exp_135:
+    date: 2026-08-20
+    object_id: bus_stop_sign_002
+    method: colmap
+    image_subset: 79 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images/jpg
+    output_dir: outputs/experiments/exp_135_colmap_bus_stop_sign_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 79/79
+      - Points in sparse reconstruction: 25434
+      - Observations: 95204
+      - Mean track length: 3.743178
+      - Mean observations per image: 1205.113924
+      - Mean reprojection error: 1.256073px
+      - Dense fused point cloud: 1510026 points
+      - Point cloud: outputs/experiments/exp_135_colmap_bus_stop_sign_002/dense/exp_135_colmap_bus_stop_sign_002.ply
+
+  exp_136:
+    date: 2026-08-20
+    object_id: bus_stop_sign_002
+    method: hloc_colmap
+    image_subset: 79 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images/jpg
+    output_dir: outputs/experiments/exp_136_hloc_colmap_bus_stop_sign_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 79/79
+      - Points in sparse reconstruction: 9450
+      - Observations: 30853
+      - Mean track length: 3.264868
+      - Mean reprojection error: 1.393776px
+      - Dense fused point cloud: 647022 points
+      - Point cloud: outputs/experiments/exp_136_hloc_colmap_bus_stop_sign_002/dense/exp_136_hloc_colmap_bus_stop_sign_002.ply
+
+  exp_137:
+    date: 2026-08-20
+    object_id: bus_stop_sign_002
+    method: vggt
+    image_subset: 79 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images/jpg
+    output_dir: outputs/experiments/exp_137_vggt_bus_stop_sign_002
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 79/79
+      - Points in dense point cloud: 16041424
+      - Point cloud: outputs/experiments/exp_137_vggt_bus_stop_sign_002/exp_137_vggt_bus_stop_sign_002.ply
+
+  exp_138:
+    date: 2026-08-20
+    object_id: bus_stop_sign_002
+    method: mast3r_ga
+    image_subset: 79 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images/jpg
+    output_dir: outputs/experiments/exp_138_mast3r_ga_bus_stop_sign_002
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 79/79
+      - Points in dense point cloud: 2027794
+      - Point cloud: outputs/experiments/exp_138_mast3r_ga_bus_stop_sign_002/exp_138_mast3r_ga_bus_stop_sign_002.ply
+
+  exp_139:
+    date: 2026-08-20
+    object_id: bus_stop_002
+    method: colmap
+    image_subset: 96 selected (even)
+    image_dir: data/images/bus_stop_002/images/jpg
+    output_dir: outputs/experiments/exp_139_colmap_bus_stop_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 96/96
+      - Points in sparse reconstruction: 21898
+      - Observations: 90062
+      - Mean track length: 4.112796
+      - Mean observations per image: 938.145833
+      - Mean reprojection error: 1.246453px
+      - Dense fused point cloud: 1872304 points
+      - Point cloud: outputs/experiments/exp_139_colmap_bus_stop_002/dense/exp_139_colmap_bus_stop_002.ply
+
+  exp_140:
+    date: 2026-08-21
+    object_id: bus_stop_002
+    method: hloc_colmap
+    image_subset: 96 selected (even)
+    image_dir: data/images/bus_stop_002/images/jpg
+    output_dir: outputs/experiments/exp_140_hloc_colmap_bus_stop_002
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 96/96
+      - Points in sparse reconstruction: 30232
+      - Observations: 95512
+      - Mean track length: 3.159301
+      - Mean reprojection error: 1.394235px
+      - Dense fused point cloud: 1276242 points
+      - Point cloud: outputs/experiments/exp_140_hloc_colmap_bus_stop_002/dense/exp_140_hloc_colmap_bus_stop_002.ply
+
+  exp_141:
+    date: 2026-08-21
+    object_id: bus_stop_002
+    method: vggt
+    image_subset: 96 selected (even)
+    image_dir: data/images/bus_stop_002/images/jpg
+    output_dir: outputs/experiments/exp_141_vggt_bus_stop_002
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 96/96
+      - Points in dense point cloud: 19493376
+      - Point cloud: outputs/experiments/exp_141_vggt_bus_stop_002/exp_141_vggt_bus_stop_002.ply
+
+  exp_142:
+    date: 2026-08-21
+    object_id: bus_stop_002
+    method: mast3r_ga
+    image_subset: 96 selected (even)
+    image_dir: data/images/bus_stop_002/images/jpg
+    output_dir: outputs/experiments/exp_142_mast3r_ga_bus_stop_002
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 96/96
+      - Points in dense point cloud: 3021077
+      - Point cloud: outputs/experiments/exp_142_mast3r_ga_bus_stop_002/exp_142_mast3r_ga_bus_stop_002.ply
+
+  exp_143:
+    date: 2026-08-21
+    object_id: bollard_003_test_1_pool69
+    method: colmap
+    image_subset: 69 selected (even)
+    image_dir: data/images/bollard_003_test_1/pool_69/jpg
+    output_dir: outputs/experiments/exp_143_colmap_bollard_003_test_1_pool69
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 69/69
+      - Points in sparse reconstruction: 60252
+      - Observations: 350607
+      - Mean track length: 5.819010
+      - Mean observations per image: 5081.260870
+      - Mean reprojection error: 1.317742px
+      - Dense fused point cloud: 3507008 points
+      - Point cloud: outputs/experiments/exp_143_colmap_bollard_003_test_1_pool69/dense/exp_143_colmap_bollard_003_test_1_pool69.ply
+
+  exp_144:
+    date: 2026-08-21
+    object_id: bollard_003_test_1_pool69
+    method: hloc_colmap
+    image_subset: 69 selected (even)
+    image_dir: data/images/bollard_003_test_1/pool_69/jpg
+    output_dir: outputs/experiments/exp_144_hloc_colmap_bollard_003_test_1_pool69
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 69/69
+      - Points in sparse reconstruction: 15436
+      - Observations: 58277
+      - Mean track length: 3.775395
+      - Mean reprojection error: 1.462785px
+      - Dense fused point cloud: 2892240 points
+      - Point cloud: outputs/experiments/exp_144_hloc_colmap_bollard_003_test_1_pool69/dense/exp_144_hloc_colmap_bollard_003_test_1_pool69.ply
+
+  exp_145:
+    date: 2026-08-21
+    object_id: bollard_003_test_1_pool69
+    method: vggt
+    image_subset: 69 selected (even)
+    image_dir: data/images/bollard_003_test_1/pool_69/jpg
+    output_dir: outputs/experiments/exp_145_vggt_bollard_003_test_1_pool69
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 69/69
+      - Points in dense point cloud: 13885767
+      - Point cloud: outputs/experiments/exp_145_vggt_bollard_003_test_1_pool69/exp_145_vggt_bollard_003_test_1_pool69.ply
+
+  exp_146:
+    date: 2026-08-21
+    object_id: bollard_003_test_1_pool69
+    method: mast3r_ga
+    image_subset: 69 selected (even)
+    image_dir: data/images/bollard_003_test_1/pool_69/jpg
+    output_dir: outputs/experiments/exp_146_mast3r_ga_bollard_003_test_1_pool69
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 69/69
+      - Points in dense point cloud: 2897415
+      - Point cloud: outputs/experiments/exp_146_mast3r_ga_bollard_003_test_1_pool69/exp_146_mast3r_ga_bollard_003_test_1_pool69.ply
+
+  exp_147:
+    date: 2026-08-21
+    object_id: flashlight_004
+    method: colmap
+    image_subset: 105 selected (even)
+    image_dir: data/images/flashlight_004/images/jpg
+    output_dir: outputs/experiments/exp_147_colmap_flashlight_004
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      feature: SIFT
+      matching: exhaustive
+      mapper: INCREMENTAL
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 105/105
+      - Points in sparse reconstruction: 48293
+      - Observations: 192340
+      - Mean track length: 3.982772
+      - Mean observations per image: 1831.809524
+      - Mean reprojection error: 1.391744px
+      - Dense fused point cloud: 1743045 points
+      - Point cloud: outputs/experiments/exp_147_colmap_flashlight_004/dense/exp_147_colmap_flashlight_004.ply
+
+  exp_148:
+    date: 2026-08-21
+    object_id: flashlight_004
+    method: hloc_colmap
+    image_subset: 105 selected (even)
+    image_dir: data/images/flashlight_004/images/jpg
+    output_dir: outputs/experiments/exp_148_hloc_colmap_flashlight_004
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 105/105
+      - Points in sparse reconstruction: 31323
+      - Observations: 114994
+      - Mean track length: 3.671232
+      - Mean reprojection error: 1.510080px
+      - Dense fused point cloud: 1066637 points
+      - Point cloud: outputs/experiments/exp_148_hloc_colmap_flashlight_004/dense/exp_148_hloc_colmap_flashlight_004.ply
+
+  exp_149:
+    date: 2026-08-21
+    object_id: flashlight_004
+    method: vggt
+    image_subset: 105 selected (even)
+    image_dir: data/images/flashlight_004/images/jpg
+    output_dir: outputs/experiments/exp_149_vggt_flashlight_004
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 105/105
+      - Points in dense point cloud: 21320880
+      - Point cloud: outputs/experiments/exp_149_vggt_flashlight_004/exp_149_vggt_flashlight_004.ply
+
+  exp_150:
+    date: 2026-08-21
+    object_id: flashlight_004
+    method: mast3r_ga
+    image_subset: 105 selected (even)
+    image_dir: data/images/flashlight_004/images/jpg
+    output_dir: outputs/experiments/exp_150_mast3r_ga_flashlight_004
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 105/105
+      - Points in dense point cloud: 3058537
+      - Point cloud: outputs/experiments/exp_150_mast3r_ga_flashlight_004/exp_150_mast3r_ga_flashlight_004.ply
+
+  exp_151:
+    date: 2026-08-22
+    object_id: bus_stop_sign_002_master
+    method: mast3r_ga
+    image_subset: 42 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images_master/jpg
+    output_dir: outputs/experiments/exp_151_mast3r_ga_bus_stop_sign_002_master
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 42/42
+      - Points in dense point cloud: 990893
+      - Point cloud: outputs/experiments/exp_151_mast3r_ga_bus_stop_sign_002_master/exp_151_mast3r_ga_bus_stop_sign_002_master.ply
+
+  exp_152:
+    date: 2026-08-22
+    object_id: bus_stop_sign_002_master
+    method: vggt
+    image_subset: 42 selected (even)
+    image_dir: data/images/bus_stop_sign_002/images_master/jpg
+    output_dir: outputs/experiments/exp_152_vggt_bus_stop_sign_002_master
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 42/42
+      - Points in dense point cloud: 8528352
+      - Point cloud: outputs/experiments/exp_152_vggt_bus_stop_sign_002_master/exp_152_vggt_bus_stop_sign_002_master.ply
+
+  exp_153:
+    date: 2026-08-22
+    object_id: bus_stop_002_master
+    method: mast3r_ga
+    image_subset: 81 selected (even)
+    image_dir: data/images/bus_stop_002/images_master/jpg
+    output_dir: outputs/experiments/exp_153_mast3r_ga_bus_stop_002_master
+    parameters:
+      device: cuda
+      image_size: 512
+      scenegraph: logwin-7
+      shared_intrinsics: true
+      matching_conf_thr: 0.0
+      lr1: 0.07
+      niter1: 300
+      lr2: 0.01
+      niter2: 300
+      opt_depth: true
+      min_conf_thr: 1.5
+    log:
+      - Registered images: 81/81
+      - Points in dense point cloud: 2829886
+      - Point cloud: outputs/experiments/exp_153_mast3r_ga_bus_stop_002_master/exp_153_mast3r_ga_bus_stop_002_master.ply
+
+  exp_154:
+    date: 2026-08-22
+    object_id: bus_stop_002_master
+    method: vggt
+    image_subset: 81 selected (even)
+    image_dir: data/images/bus_stop_002/images_master/jpg
+    output_dir: outputs/experiments/exp_154_vggt_bus_stop_002_master
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 81/81
+      - Points in dense point cloud: 12338531
+      - Point cloud: outputs/experiments/exp_154_vggt_bus_stop_002_master/exp_154_vggt_bus_stop_002_master.ply
+
+  exp_155:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n25
+    method: hloc_colmap
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_25/jpg
+    output_dir: outputs/experiments/exp_155_hloc_colmap_information_sign_002_test_1_manual_n25
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 25/25
+      - Points in sparse reconstruction: 5603
+      - Observations: 18896
+      - Mean track length: 3.372479
+      - Mean reprojection error: 1.379282px
+      - Dense fused point cloud: 374511 points
+      - Point cloud: outputs/experiments/exp_155_hloc_colmap_information_sign_002_test_1_manual_n25/dense/exp_155_hloc_colmap_information_sign_002_test_1_manual_n25.ply
+
+  exp_156:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n50
+    method: hloc_colmap
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_50/jpg
+    output_dir: outputs/experiments/exp_156_hloc_colmap_information_sign_002_test_1_manual_n50
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 14053
+      - Observations: 56150
+      - Mean track length: 3.995588
+      - Mean reprojection error: 1.469045px
+      - Dense fused point cloud: 1549918 points
+      - Point cloud: outputs/experiments/exp_156_hloc_colmap_information_sign_002_test_1_manual_n50/dense/exp_156_hloc_colmap_information_sign_002_test_1_manual_n50.ply
+
+  exp_157:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n100
+    method: hloc_colmap
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_157_hloc_colmap_information_sign_002_test_1_manual_n100
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 50/50
+      - Points in sparse reconstruction: 13275
+      - Observations: 44263
+      - Mean track length: 3.334313
+      - Mean reprojection error: 1.389189px
+      - Dense fused point cloud: 576565 points
+      - Point cloud: outputs/experiments/exp_157_hloc_colmap_information_sign_002_test_1_manual_n100/dense/exp_157_hloc_colmap_information_sign_002_test_1_manual_n100.ply
+
+  exp_158:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n100
+    method: hloc_colmap
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_158_hloc_colmap_information_sign_002_test_1_manual_n100
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 100/100
+      - Points in sparse reconstruction: 36002
+      - Observations: 142576
+      - Mean track length: 3.960224
+      - Mean reprojection error: 1.477725px
+      - Dense fused point cloud: 3282786 points
+      - Point cloud: outputs/experiments/exp_158_hloc_colmap_information_sign_002_test_1_manual_n100/dense/exp_158_hloc_colmap_information_sign_002_test_1_manual_n100.ply
+
+  exp_159:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n15
+    method: hloc_colmap
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_15/jpg
+    output_dir: outputs/experiments/exp_159_hloc_colmap_bollard_003_test_1_manual_n15
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 15/15
+      - Points in sparse reconstruction: 2309
+      - Observations: 7160
+      - Mean track length: 3.100909
+      - Mean reprojection error: 1.342272px
+      - Dense fused point cloud: 558357 points
+      - Point cloud: outputs/experiments/exp_159_hloc_colmap_bollard_003_test_1_manual_n15/dense/exp_159_hloc_colmap_bollard_003_test_1_manual_n15.ply
+
+  exp_160:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n30
+    method: hloc_colmap
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_30/jpg
+    output_dir: outputs/experiments/exp_160_hloc_colmap_bollard_003_test_1_manual_n30
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 30/30
+      - Points in sparse reconstruction: 6035
+      - Observations: 21393
+      - Mean track length: 3.544822
+      - Mean reprojection error: 1.388825px
+      - Dense fused point cloud: 1139869 points
+      - Point cloud: outputs/experiments/exp_160_hloc_colmap_bollard_003_test_1_manual_n30/dense/exp_160_hloc_colmap_bollard_003_test_1_manual_n30.ply
+
+  exp_161:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n45
+    method: hloc_colmap
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_45/jpg
+    output_dir: outputs/experiments/exp_161_hloc_colmap_bollard_003_test_1_manual_n45
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 45/45
+      - Points in sparse reconstruction: 8671
+      - Observations: 32048
+      - Mean track length: 3.695998
+      - Mean reprojection error: 1.421447px
+      - Dense fused point cloud: 1904437 points
+      - Point cloud: outputs/experiments/exp_161_hloc_colmap_bollard_003_test_1_manual_n45/dense/exp_161_hloc_colmap_bollard_003_test_1_manual_n45.ply
+
+  exp_162:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n25
+    method: vggt
+    image_subset: 25 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_25/jpg
+    output_dir: outputs/experiments/exp_162_vggt_information_sign_002_test_1_manual_n25
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 25/25
+      - Points in dense point cloud: 6708100
+      - Point cloud: outputs/experiments/exp_162_vggt_information_sign_002_test_1_manual_n25/exp_162_vggt_information_sign_002_test_1_manual_n25.ply
+
+  exp_163:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n50
+    method: vggt
+    image_subset: 50 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_50/jpg
+    output_dir: outputs/experiments/exp_163_vggt_information_sign_002_test_1_manual_n50
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 50/50
+      - Points in dense point cloud: 13416200
+      - Point cloud: outputs/experiments/exp_163_vggt_information_sign_002_test_1_manual_n50/exp_163_vggt_information_sign_002_test_1_manual_n50.ply
+
+  exp_164:
+    date: 2026-08-24
+    object_id: information_sign_002_test_1_manual_n100
+    method: vggt
+    image_subset: 100 selected (even)
+    image_dir: data/images/information_sign_002_test_1/nested_manual/selected_100/jpg
+    output_dir: outputs/experiments/exp_164_vggt_information_sign_002_test_1_manual_n100
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 100/100
+      - Points in dense point cloud: 26832400
+      - Point cloud: outputs/experiments/exp_164_vggt_information_sign_002_test_1_manual_n100/exp_164_vggt_information_sign_002_test_1_manual_n100.ply
+
+  exp_165:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n15
+    method: vggt
+    image_subset: 15 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_15/jpg
+    output_dir: outputs/experiments/exp_165_vggt_bollard_003_test_1_manual_n15
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 15/15
+      - Points in dense point cloud: 3018645
+      - Point cloud: outputs/experiments/exp_165_vggt_bollard_003_test_1_manual_n15/exp_165_vggt_bollard_003_test_1_manual_n15.ply
+
+  exp_166:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n30
+    method: vggt
+    image_subset: 30 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_30/jpg
+    output_dir: outputs/experiments/exp_166_vggt_bollard_003_test_1_manual_n30
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 30/30
+      - Points in dense point cloud: 6037290
+      - Point cloud: outputs/experiments/exp_166_vggt_bollard_003_test_1_manual_n30/exp_166_vggt_bollard_003_test_1_manual_n30.ply
+
+  exp_167:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n45
+    method: vggt
+    image_subset: 45 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_45/jpg
+    output_dir: outputs/experiments/exp_167_vggt_bollard_003_test_1_manual_n45
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 45/45
+      - Points in dense point cloud: 9055935
+      - Point cloud: outputs/experiments/exp_167_vggt_bollard_003_test_1_manual_n45/exp_167_vggt_bollard_003_test_1_manual_n45.ply
+
+  exp_168:
+    date: 2026-08-24
+    object_id: bollard_003_test_1_manual_n60
+    method: vggt
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_60/jpg
+    output_dir: outputs/experiments/exp_168_vggt_bollard_003_test_1_manual_n60
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: crop
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 60/60
+      - Points in dense point cloud: 12074580
+      - Point cloud: outputs/experiments/exp_168_vggt_bollard_003_test_1_manual_n60/exp_168_vggt_bollard_003_test_1_manual_n60.ply
+
+  exp_169:
+    date: 2026-08-31
+    object_id: bollard_003_test_1_manual_n60
+    method: hloc_colmap
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_60/jpg
+    output_dir: outputs/experiments/exp_169_hloc_colmap_bollard_003_test_1_manual_n60
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 60/60
+      - Points in sparse reconstruction: 13286
+      - Observations: 49581
+      - Mean track length: 3.731823
+      - Mean reprojection error: 1.463132px
+      - Dense fused point cloud: 2484477 points
+      - Point cloud: outputs/experiments/exp_169_hloc_colmap_bollard_003_test_1_manual_n60/dense/exp_169_hloc_colmap_bollard_003_test_1_manual_n60.ply
+
+  exp_170:
+    date: 2026-08-31
+    object_id: bollard_003_test_1_manual_n60
+    method: hloc_colmap
+    image_subset: 60 selected (even)
+    image_dir: data/images/bollard_003_test_1/nested_manual/selected_60/jpg
+    output_dir: outputs/experiments/exp_170_hloc_colmap_bollard_003_test_1_manual_n60
+    parameters:
+      camera_model: SIMPLE_RADIAL
+      single_camera: true
+      features: superpoint_aachen
+      matching: superpoint+lightglue
+      pairing: exhaustive
+      window_size: 8
+      dense_max_image_size: 3024
+    log:
+      - Registered images: 60/60
+      - Points in sparse reconstruction: 13475
+      - Observations: 49841
+      - Mean track length: 3.698776
+      - Mean reprojection error: 1.446765px
+      - Dense fused point cloud: 2531305 points
+      - Point cloud: outputs/experiments/exp_170_hloc_colmap_bollard_003_test_1_manual_n60/dense/exp_170_hloc_colmap_bollard_003_test_1_manual_n60.ply
+
+  exp_171:
+    date: 2026-09-02
+    object_id: bollard_003_test_1_pool69
+    method: vggt
+    image_subset: 69 selected (even)
+    image_dir: data/images/bollard_003_test_1/pool_69/jpg
+    output_dir: outputs/experiments/exp_171_vggt_bollard_003_test_1_pool69
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: pad
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 69/69
+      - Points in dense point cloud: 18514356
+      - Point cloud: outputs/experiments/exp_171_vggt_bollard_003_test_1_pool69/exp_171_vggt_bollard_003_test_1_pool69.ply
+
+  exp_172:
+    date: 2026-09-02
+    object_id: flashlight_004
+    method: vggt
+    image_subset: 105 selected (even)
+    image_dir: data/images/flashlight_004/images/jpg
+    output_dir: outputs/experiments/exp_172_vggt_flashlight_004
+    parameters:
+      device: cuda
+      dtype: bfloat16
+      image_mode: pad
+      use_point_map: true
+      conf_percentile: 25.0
+    log:
+      - Registered images: 105/105
+      - Points in dense point cloud: 28174020
+      - Point cloud: outputs/experiments/exp_172_vggt_flashlight_004/exp_172_vggt_flashlight_004.ply

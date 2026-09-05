@@ -10,6 +10,7 @@ builder already wrote, so this file can never disagree with the site:
   Frame count         <- frame_count_study_summary.xlsx            (build_frame_count_study_page.py)
   Frame significance  <- frame_count_study_summary.xlsx sheet 2
   Compute cost        <- performance_study_summary.xlsx            (build_performance_study_page.py)
+  M3C2                <- m3c2_final_six.xlsx                     (run_m3c2_final_six.py)
   Experiment index    <- config/experiments.yaml (every exp_id cited above, with its
                          object, method, image count and registration rate)
 
@@ -50,6 +51,14 @@ SOURCES = [
     ("Frame significance", "frame_count_study_summary.xlsx", "significance",
      "Paired differences between frame counts, for F1 and accuracy. Paired: the same resampled "
      "blocks feed both sides, so block-to-block variation cancels."),
+    ("M3C2", "m3c2_final_six.xlsx", "m3c2",
+     "The same 6 objects x 4 methods, measured along the local surface normal instead of to the "
+     "nearest point in any direction, and with no gap exclusion. Each row's registration error is "
+     "its own alignment RMSE, not a constant. Read both halves: \"recon\" puts the core points on "
+     "the reconstruction, so no pair = reconstruction surface where the reference's is not (the "
+     "accuracy side); \"ref\" puts them on the LiDAR, so no pair = reference the reconstruction "
+     "never covered (the completeness side). Outside = the reconstruction's surface sits further "
+     "from the object's centre than the reference's."),
     ("Compute cost", "performance_study_summary.xlsx", "performance_vs_N",
      "Wall-clock time and peak RAM/VRAM vs frame count, all runs on one NVIDIA L40S. "
      "Note the methods work at different resolutions - COLMAP 3200 px, hloc 1024 px, "

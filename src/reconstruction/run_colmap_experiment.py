@@ -28,13 +28,22 @@ from common import (
     resolve_path,
     select_image_subset,
 )
+from metrics import (
+    METRICS_PATH,
+    GPUMemorySampler,
+    RunTimer,
+    build_metrics_row,
+    classify_failure,
+    peak_rss_mib,
+    write_metrics_row,
+)
 
 
 # ---------------------------------------------------------------------------
 # 1. Sparse reconstruction
 # ---------------------------------------------------------------------------
 
-def run_sparse_reconstruction(image_path: Path, workspace_path: Path, config: dict) -> tuple[Path, dict]:
+def run_sparse_reconstruction(image_path: Path, workspace_path: Path, config: dict, timer: RunTimer) -> tuple[Path, dict]:
     database_path = workspace_path / "database.db"
     sparse_path = workspace_path / "sparse"
     sparse_path.mkdir(parents=True, exist_ok=True)
@@ -47,26 +56,29 @@ def run_sparse_reconstruction(image_path: Path, workspace_path: Path, config: di
         else pycolmap.CameraMode.AUTO
     )
 
-    pycolmap.extract_features(
-        database_path=str(database_path),
-        image_path=str(image_path),
-        camera_mode=camera_mode,
-        reader_options=reader_options,
-    )
+    with timer.stage("feature_extraction"):
+        pycolmap.extract_features(
+            database_path=str(database_path),
+            image_path=str(image_path),
+            camera_mode=camera_mode,
+            reader_options=reader_options,
+        )
 
     matching_method = config["matching"]["method"]
-    if matching_method == "sequential":
-        pycolmap.match_sequential(database_path=str(database_path))
-    elif matching_method == "exhaustive":
-        pycolmap.match_exhaustive(database_path=str(database_path))
-    else:
-        raise ValueError(f"Unknown matching method: {matching_method}")
+    with timer.stage("matching"):
+        if matching_method == "sequential":
+            pycolmap.match_sequential(database_path=str(database_path))
+        elif matching_method == "exhaustive":
+            pycolmap.match_exhaustive(database_path=str(database_path))
+        else:
+            raise ValueError(f"Unknown matching method: {matching_method}")
 
-    maps = pycolmap.incremental_mapping(
-        database_path=str(database_path),
-        image_path=str(image_path),
-        output_path=str(sparse_path),
-    )
+    with timer.stage("sparse_mapping"):
+        maps = pycolmap.incremental_mapping(
+            database_path=str(database_path),
+            image_path=str(image_path),
+            output_path=str(sparse_path),
+        )
     if not maps:
         raise RuntimeError("Incremental mapping registered no images - check image overlap/quality.")
 
@@ -100,7 +112,7 @@ def count_ply_vertices(ply_path: Path) -> int:
     return -1
 
 
-def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path: Path, config: dict) -> tuple[Path, dict]:
+def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path: Path, config: dict, timer: RunTimer) -> tuple[Path, dict]:
     if not pycolmap.has_cuda:
         raise RuntimeError("Dense reconstruction requires a CUDA-enabled COLMAP/pycolmap build.")
 
@@ -108,12 +120,13 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     dense_path.mkdir(parents=True, exist_ok=True)
     fused_path = dense_path / "fused.ply"
 
-    pycolmap.undistort_images(
-        output_path=str(dense_path),
-        input_path=str(model_path),
-        image_path=str(image_path),
-        output_type="COLMAP",
-    )
+    with timer.stage("dense_undistort"):
+        pycolmap.undistort_images(
+            output_path=str(dense_path),
+            input_path=str(model_path),
+            image_path=str(image_path),
+            output_type="COLMAP",
+        )
 
     patch_options = pycolmap.PatchMatchOptions()
     patch_options.gpu_index = config["dense"].get("gpu_index", "0")
@@ -121,24 +134,26 @@ def run_dense_reconstruction(model_path: Path, image_path: Path, workspace_path:
     patch_options.cache_size = config["dense"]["cache_size"]
     patch_options.num_threads = config["dense"]["num_threads"]
     patch_options.allow_missing_files = True
-    pycolmap.patch_match_stereo(
-        workspace_path=str(dense_path),
-        workspace_format="COLMAP",
-        options=patch_options,
-    )
+    with timer.stage("dense_patchmatch"):
+        pycolmap.patch_match_stereo(
+            workspace_path=str(dense_path),
+            workspace_format="COLMAP",
+            options=patch_options,
+        )
 
     fusion_options = pycolmap.StereoFusionOptions()
     fusion_options.cache_size = config["dense"]["cache_size"]
     fusion_options.num_threads = config["dense"]["num_threads"]
     fusion_options.max_image_size = config["dense"]["max_image_size"]
-    pycolmap.stereo_fusion(
-        output_path=str(fused_path),
-        workspace_path=str(dense_path),
-        workspace_format="COLMAP",
-        input_type="geometric" if config["dense"]["geom_consistency"] else "photometric",
-        options=fusion_options,
-        output_type="PLY",
-    )
+    with timer.stage("dense_fusion"):
+        pycolmap.stereo_fusion(
+            output_path=str(fused_path),
+            workspace_path=str(dense_path),
+            workspace_format="COLMAP",
+            input_type="geometric" if config["dense"]["geom_consistency"] else "photometric",
+            options=fusion_options,
+            output_type="PLY",
+        )
 
     stats = {"fused_points": count_ply_vertices(fused_path)}
     return fused_path, stats
@@ -194,35 +209,77 @@ def main() -> None:
     subset_dir = copy_image_subset(selected, output_dir / "images")
     print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir}")
 
-    print(f"[{exp_id}] Running sparse reconstruction...")
-    model_path, sparse_stats = run_sparse_reconstruction(subset_dir, output_dir, config)
-    print(
-        f"[{exp_id}] Sparse done: {sparse_stats['registered_images']}/{len(selected)} images registered, "
-        f"{sparse_stats['points3D']} points, mean reprojection error "
-        f"{sparse_stats['mean_reprojection_error']:.3f}px"
-    )
+    timer = RunTimer()
+    gpu_sampler = GPUMemorySampler().start()
+    status, failure_reason = "success", None
+    sparse_stats = {"registered_images": None}
+    output_stats: dict = {}
+    parameters = {
+        "camera_model": config["camera"]["camera_model"],
+        "single_camera": config["camera"]["single_camera"],
+        "feature": config["features"]["type"],
+        "matching": config["matching"]["method"],
+        "mapper": config["mapper"]["type"],
+        "dense_max_image_size": config["dense"]["max_image_size"],
+    }
 
-    log_lines = [
-        f"Registered images: {sparse_stats['registered_images']}/{len(selected)}",
-        f"Points in sparse reconstruction: {sparse_stats['points3D']}",
-        f"Observations: {sparse_stats['observations']}",
-        f"Mean track length: {sparse_stats['mean_track_length']:.6f}",
-        f"Mean observations per image: {sparse_stats['mean_observations_per_image']:.6f}",
-        f"Mean reprojection error: {sparse_stats['mean_reprojection_error']:.6f}px",
-    ]
+    try:
+        print(f"[{exp_id}] Running sparse reconstruction...")
+        model_path, sparse_stats = run_sparse_reconstruction(subset_dir, output_dir, config, timer)
+        print(
+            f"[{exp_id}] Sparse done: {sparse_stats['registered_images']}/{len(selected)} images registered, "
+            f"{sparse_stats['points3D']} points, mean reprojection error "
+            f"{sparse_stats['mean_reprojection_error']:.3f}px"
+        )
 
-    if args.skip_dense:
-        print(f"[{exp_id}] Dense reconstruction skipped: debug run via --skip-dense")
-        log_lines.append("Dense reconstruction skipped: debug run via --skip-dense (not a full experiment)")
-    else:
-        print(f"[{exp_id}] Running dense reconstruction...")
-        fused_path, dense_stats = run_dense_reconstruction(model_path, subset_dir, output_dir, config)
-        renamed_path = fused_path.with_name(f"{exp_id}_colmap_{args.object_id}.ply")
-        fused_path.rename(renamed_path)
-        fused_path = renamed_path
-        print(f"[{exp_id}] Dense done: {dense_stats['fused_points']} points -> {fused_path}")
-        log_lines.append(f"Dense fused point cloud: {dense_stats['fused_points']} points")
-        log_lines.append(f"Point cloud: {fused_path.relative_to(resolve_path('.'))}")
+        log_lines = [
+            f"Registered images: {sparse_stats['registered_images']}/{len(selected)}",
+            f"Points in sparse reconstruction: {sparse_stats['points3D']}",
+            f"Observations: {sparse_stats['observations']}",
+            f"Mean track length: {sparse_stats['mean_track_length']:.6f}",
+            f"Mean observations per image: {sparse_stats['mean_observations_per_image']:.6f}",
+            f"Mean reprojection error: {sparse_stats['mean_reprojection_error']:.6f}px",
+        ]
+        output_stats = {
+            "num_points": sparse_stats["points3D"],
+            "mean_reprojection_error_px": round(sparse_stats["mean_reprojection_error"], 6),
+            "mean_track_length": round(sparse_stats["mean_track_length"], 6),
+        }
+
+        if args.skip_dense:
+            print(f"[{exp_id}] Dense reconstruction skipped: debug run via --skip-dense")
+            log_lines.append("Dense reconstruction skipped: debug run via --skip-dense (not a full experiment)")
+            status = "partial"
+            failure_reason = "dense_skipped_debug_run"
+        else:
+            print(f"[{exp_id}] Running dense reconstruction...")
+            fused_path, dense_stats = run_dense_reconstruction(model_path, subset_dir, output_dir, config, timer)
+            renamed_path = fused_path.with_name(f"{exp_id}_colmap_{args.object_id}.ply")
+            fused_path.rename(renamed_path)
+            fused_path = renamed_path
+            print(f"[{exp_id}] Dense done: {dense_stats['fused_points']} points -> {fused_path}")
+            log_lines.append(f"Dense fused point cloud: {dense_stats['fused_points']} points")
+            log_lines.append(f"Point cloud: {fused_path.relative_to(resolve_path('.'))}")
+            output_stats["num_points_dense"] = dense_stats["fused_points"]
+    except Exception as exc:
+        status = "failed"
+        failure_reason = classify_failure(exc)
+        log_lines = [f"FAILED: {failure_reason}"]
+        raise
+    finally:
+        peak_vram_mib = gpu_sampler.stop()
+        metrics_row = build_metrics_row(
+            exp_id=exp_id, object_id=args.object_id, method="colmap",
+            status=status, failure_reason=failure_reason,
+            num_images_input=len(selected),
+            num_images_registered=sparse_stats.get("registered_images"),
+            timer=timer, peak_ram_mib=peak_rss_mib(), peak_vram_mib=peak_vram_mib,
+            output_stats=output_stats, config_file=args.config,
+            selection_method=selection_method, seed=config["image_selection"]["seed"],
+            parameters=parameters,
+        )
+        write_metrics_row(metrics_row)
+        print(f"[{exp_id}] Logged metrics to {METRICS_PATH}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,
@@ -232,14 +289,7 @@ def main() -> None:
         output_dir_rel=output_dir_rel,
         total_images=len(selected),
         selection_method=selection_method,
-        parameters={
-            "camera_model": config["camera"]["camera_model"],
-            "single_camera": config["camera"]["single_camera"],
-            "feature": config["features"]["type"],
-            "matching": config["matching"]["method"],
-            "mapper": config["mapper"]["type"],
-            "dense_max_image_size": config["dense"]["max_image_size"],
-        },
+        parameters=parameters,
         log_lines=log_lines,
     )
     append_experiment_entry(experiments_path, entry)

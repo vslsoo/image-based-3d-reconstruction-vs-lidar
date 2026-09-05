@@ -24,12 +24,15 @@ density is an artifact of the reconstruction pipeline (denser in
 well-textured regions, sparser elsewhere) that has nothing to do with
 geometric accuracy.
 
-Resolution used for matching: the median nearest-neighbor distance within
-the reference cloud (its characteristic point spacing). The source cloud is
-voxel-downsampled with that spacing as voxel size, so post-downsampling it
-has roughly the same local point density as the reference. Voxel
-downsampling only ever thins points (never invents new ones), so if the
-source is already sparser than the reference this is a no-op.
+Resolution used for matching: a fixed 1 cm voxel (DEFAULT_VOXEL_M), the grid
+the LiDAR references are delivered thinned onto. This replaces the earlier
+per-object "median nearest-neighbor distance of the reference" rule, which
+read *below* the true grid pitch wherever overlapping scan passes left exact-
+duplicate points at zero distance, and so thinned the source too finely. The
+reference's median NN-spacing is still computed and reported for context, and
+`--voxel 0` restores the old behaviour. Voxel downsampling only ever thins
+points (never invents new ones), so if the source is already sparser than the
+grid this is a no-op.
 
 Usage:
     python src/registration/downsample_to_reference_density.py \\
@@ -54,6 +57,14 @@ import open3d as o3d
 from scipy.spatial import cKDTree
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+DEFAULT_VOXEL_M = 0.01
+# The LiDAR references are delivered thinned onto a 1 cm grid, so that pitch - not each
+# cloud's measured median NN-spacing - is the reference's real sampling limit. The measured
+# median actually reads *below* the pitch, because overlapping scan passes leave exact-
+# duplicate points at zero distance (bus_stop_001: 1.00 cm as delivered vs 1.41 cm once
+# duplicates are dropped), which would thin the source too finely. Keep the same value as
+# VOXEL_M in the page/table builders so every number in the reports is comparable.
 
 
 def resolve_path(path_str: str) -> Path:
@@ -102,9 +113,15 @@ def main() -> None:
     parser.add_argument("--target", required=True, help="reference point cloud (LiDAR) - read-only, never modified")
     parser.add_argument("--output", required=True, help="path to write the density-matched source .ply to")
     parser.add_argument(
+        "--voxel", type=float, default=DEFAULT_VOXEL_M,
+        help=f"voxel size in metres (default: {DEFAULT_VOXEL_M}, the grid the LiDAR references are "
+        "delivered on). Pass --voxel 0 to fall back to the reference's own median nearest-neighbor "
+        "spacing instead of the fixed grid.",
+    )
+    parser.add_argument(
         "--spacing-multiplier", type=float, default=1.0,
-        help="multiply the reference's median nearest-neighbor spacing by this before using it as the "
-        "voxel size (default: 1.0, i.e. match the reference spacing 1:1; use >1 to thin more aggressively)",
+        help="multiply the voxel size by this before use (default: 1.0; >1 thins more aggressively). "
+        "Applies to whichever voxel size was chosen above.",
     )
     args = parser.parse_args()
 
@@ -117,13 +134,24 @@ def main() -> None:
     source = o3d.io.read_point_cloud(str(source_path))
     print(f"Loading target (reference, read-only): {target_path}")
     target = o3d.io.read_point_cloud(str(target_path))
+    # Exact-duplicate points (overlapping scan passes, byte-identical coordinates) sit at
+    # zero nearest-neighbour distance and drag the reported median below the true grid
+    # pitch, so drop them before measuring - even though nothing here writes the reference.
+    _tp = np.asarray(target.points)
+    _, _uniq_idx = np.unique(_tp, axis=0, return_index=True)
+    if len(_uniq_idx) < len(_tp):
+        target = target.select_by_index(np.sort(_uniq_idx).tolist())
+        print(f"Deduplicated reference for measurement: {len(_tp)} -> {len(_uniq_idx)} points")
     print(f"Source points: {len(source.points)}, target points: {len(target.points)}")
 
     target_points = np.asarray(target.points)
     reference_spacing = median_nearest_neighbor_spacing(target_points)
-    voxel_size = reference_spacing * args.spacing_multiplier
-    print(f"\nReference median nearest-neighbor spacing: {reference_spacing:.5f} m")
-    print(f"Voxel size used for source downsampling: {voxel_size:.5f} m (x{args.spacing_multiplier})")
+    base_voxel = args.voxel if args.voxel > 0 else reference_spacing
+    basis = "fixed reference grid" if args.voxel > 0 else "reference median NN-spacing"
+    voxel_size = base_voxel * args.spacing_multiplier
+    print(f"\nReference median nearest-neighbor spacing: {reference_spacing:.5f} m (reported, not necessarily used)")
+    print(f"Voxel size used for source downsampling: {voxel_size:.5f} m "
+          f"({basis} {base_voxel:.5f} m x{args.spacing_multiplier})")
 
     matched = downsample_to_spacing(source, voxel_size)
     print(f"Source: {len(source.points)} -> {len(matched.points)} points")
@@ -140,6 +168,8 @@ def main() -> None:
         "source_points_matched": len(matched.points),
         "target_points": len(target_points),
         "reference_median_nn_spacing_m": reference_spacing,
+        "voxel_basis": basis,
+        "base_voxel_m": base_voxel,
         "spacing_multiplier": args.spacing_multiplier,
         "voxel_size_m": voxel_size,
     }

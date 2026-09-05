@@ -65,6 +65,26 @@ def display_path(path: Path) -> str:
 # 1. Distances and metrics
 # ---------------------------------------------------------------------------
 
+def load_reference(path) -> o3d.geometry.PointCloud:
+    """Read the reference (target) cloud and drop exact-duplicate points first.
+
+    The delivered LiDAR clouds carry 10-26% duplicate points on these objects, left
+    where overlapping scan passes cover the same surface twice at byte-identical
+    coordinates. Completeness is a mean over target points, so every duplicate is
+    counted again and the score drifts toward whatever the scanner passed twice. The
+    distances themselves do not change (a duplicate is its own nearest neighbour) -
+    this only removes the double-counting.
+    """
+    pcd = o3d.io.read_point_cloud(str(path))
+    pts = np.asarray(pcd.points)
+    _, first_idx = np.unique(pts, axis=0, return_index=True)
+    if len(first_idx) < len(pts):
+        pcd = pcd.select_by_index(np.sort(first_idx).tolist())
+        print(f"Deduplicated target: {len(pts)} -> {len(first_idx)} points "
+              f"({100 * (1 - len(first_idx) / len(pts)):.1f}% exact duplicates removed)")
+    return pcd
+
+
 def compute_directional_distances(
     source: o3d.geometry.PointCloud, target: o3d.geometry.PointCloud
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -137,7 +157,7 @@ def main() -> None:
     print(f"Loading source: {source_path}")
     source = o3d.io.read_point_cloud(str(source_path))
     print(f"Loading target: {target_path}")
-    target = o3d.io.read_point_cloud(str(target_path))
+    target = load_reference(target_path)
     print(f"Source points: {len(source.points)}, target points: {len(target.points)}")
 
     source_to_target, target_to_source = compute_directional_distances(source, target)

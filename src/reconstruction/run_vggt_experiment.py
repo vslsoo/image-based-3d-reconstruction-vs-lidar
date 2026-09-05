@@ -47,6 +47,15 @@ from common import (
     resolve_path,
     select_image_subset,
 )
+from metrics import (
+    METRICS_PATH,
+    GPUMemorySampler,
+    RunTimer,
+    build_metrics_row,
+    classify_failure,
+    peak_rss_mib,
+    write_metrics_row,
+)
 
 VGGT_ROOT = resolve_path("external/vggt")
 sys.path.insert(0, str(VGGT_ROOT))
@@ -73,11 +82,12 @@ def resolve_dtype(device: str) -> torch.dtype:
 # 1. VGGT feed-forward inference
 # ---------------------------------------------------------------------------
 
-def run_vggt_inference(model, device: str, dtype: torch.dtype, image_paths: list[str], config: dict) -> dict:
-    images = load_and_preprocess_images(image_paths, mode=config["model"]["image_mode"]).to(device)
+def run_vggt_inference(model, device: str, dtype: torch.dtype, image_paths: list[str], image_mode: str, timer: RunTimer) -> dict:
+    with timer.stage("preprocess"):
+        images = load_and_preprocess_images(image_paths, mode=image_mode).to(device)
 
     autocast_ctx = torch.cuda.amp.autocast(dtype=dtype) if device == "cuda" else nullcontext()
-    with torch.no_grad(), autocast_ctx:
+    with timer.stage("inference"), torch.no_grad(), autocast_ctx:
         predictions = model(images)
 
     predictions["extrinsic"], predictions["intrinsic"] = pose_encoding_to_extri_intri(
@@ -141,6 +151,11 @@ def main() -> None:
         "--weights", default=None,
         help="overrides model.weights - a HuggingFace hub id (e.g. facebook/VGGT-1B)",
     )
+    parser.add_argument(
+        "--image-mode", choices=["crop", "pad"], default=None,
+        help="overrides model.image_mode - 'pad' letterboxes the whole frame to 518x518, "
+             "'crop' (upstream default) center-crops ~25%% of the height off a portrait photo",
+    )
     args = parser.parse_args()
 
     config = yaml.safe_load(resolve_path(args.config).read_text())
@@ -152,6 +167,7 @@ def main() -> None:
     dtype = resolve_dtype(device)
     num_images = args.num_images or config["image_selection"]["num_images"]
     selection_method = args.selection_method or config["image_selection"]["method"]
+    image_mode = args.image_mode or config["model"]["image_mode"]
 
     image_dir_rel = f"{objects[args.object_id]['images_dir']}/jpg"
     image_dir = resolve_path(image_dir_rel)
@@ -167,24 +183,59 @@ def main() -> None:
     selected = select_image_subset(all_images, num_images, selection_method, config["image_selection"]["seed"])
     subset_dir = copy_image_subset(selected, output_dir / "images")
     image_paths = [str(subset_dir / p.name) for p in selected]
-    print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir} (device={device}, dtype={dtype})")
+    print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir} (device={device}, dtype={dtype}, image_mode={image_mode})")
 
-    print(f"[{exp_id}] Loading VGGT model...")
-    weights = args.weights or config["model"]["weights"]
-    model = VGGT.from_pretrained(weights).to(device).eval()
+    timer = RunTimer()
+    gpu_sampler = GPUMemorySampler().start()
+    status, failure_reason = "success", None
+    output_stats: dict = {}
+    parameters = {
+        "device": device,
+        "dtype": str(dtype).replace("torch.", ""),
+        "image_mode": image_mode,
+        "use_point_map": config["export"]["use_point_map"],
+        "conf_percentile": config["export"]["conf_percentile"],
+    }
 
-    print(f"[{exp_id}] Running VGGT feed-forward inference...")
-    predictions = run_vggt_inference(model, device, dtype, image_paths, config)
+    try:
+        print(f"[{exp_id}] Loading VGGT model...")
+        weights = args.weights or config["model"]["weights"]
+        with timer.stage("model_load"):
+            model = VGGT.from_pretrained(weights).to(device).eval()
 
-    ply_path = output_dir / f"{exp_id}_vggt_{args.object_id}.ply"
-    export_stats = export_dense_point_cloud(predictions, config, ply_path)
-    print(f"[{exp_id}] Done: {export_stats['points']} points -> {ply_path}")
+        print(f"[{exp_id}] Running VGGT feed-forward inference...")
+        predictions = run_vggt_inference(model, device, dtype, image_paths, image_mode, timer)
 
-    log_lines = [
-        f"Registered images: {len(selected)}/{len(selected)}",
-        f"Points in dense point cloud: {export_stats['points']}",
-        f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
-    ]
+        ply_path = output_dir / f"{exp_id}_vggt_{args.object_id}.ply"
+        with timer.stage("export"):
+            export_stats = export_dense_point_cloud(predictions, config, ply_path)
+        print(f"[{exp_id}] Done: {export_stats['points']} points -> {ply_path}")
+        output_stats = {"num_points": export_stats["points"]}
+
+        log_lines = [
+            f"Registered images: {len(selected)}/{len(selected)}",
+            f"Points in dense point cloud: {export_stats['points']}",
+            f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
+        ]
+    except Exception as exc:
+        status = "failed"
+        failure_reason = classify_failure(exc)
+        log_lines = [f"FAILED: {failure_reason}"]
+        raise
+    finally:
+        peak_vram_mib = gpu_sampler.stop()
+        metrics_row = build_metrics_row(
+            exp_id=exp_id, object_id=args.object_id, method="vggt",
+            status=status, failure_reason=failure_reason,
+            num_images_input=len(selected),
+            num_images_registered=len(selected),  # VGGT has no registration-failure mode - every input image gets a pose
+            timer=timer, peak_ram_mib=peak_rss_mib(), peak_vram_mib=peak_vram_mib,
+            output_stats=output_stats, config_file=args.config,
+            selection_method=selection_method, seed=config["image_selection"]["seed"],
+            parameters=parameters,
+        )
+        write_metrics_row(metrics_row)
+        print(f"[{exp_id}] Logged metrics to {METRICS_PATH}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,
@@ -194,13 +245,7 @@ def main() -> None:
         output_dir_rel=output_dir_rel,
         total_images=len(selected),
         selection_method=selection_method,
-        parameters={
-            "device": device,
-            "dtype": str(dtype).replace("torch.", ""),
-            "image_mode": config["model"]["image_mode"],
-            "use_point_map": config["export"]["use_point_map"],
-            "conf_percentile": config["export"]["conf_percentile"],
-        },
+        parameters=parameters,
         log_lines=log_lines,
     )
     append_experiment_entry(experiments_path, entry)

@@ -406,3 +406,116 @@ from these density-matched clouds against the cleaned reference:
   hloc_colmap ~48min) - not used in the table since they can't be
   disentangled from sync/idle overhead, but noted here in case a more
   precise source turns up later.
+
+## M3C2 on the final six objects (`run_m3c2_final_six.py`, 2026-09-05)
+
+The M3C2 numbers quoted in the results chapter come from one run over the
+final six objects x four methods (exp_111/126/129-150) - the same aligned
+clouds and the same references as `summary_all_objects_accuracy_f1.xlsx`.
+Reports land in `outputs/metrics/<object>_m3c2_final/<method>.json` (with
+the per-point distances beside them as `.distances.npz`); the aggregate the
+site and the thesis read is `docs/tables/m3c2_final_six.json`. The earlier
+`outputs/metrics/*_m3c2*` directories are from August and predate the final
+six - they are a different set of clouds and should not be mixed in.
+
+**`registration_error` is per row, not a constant.** It feeds the Level of
+Detection (LoD95 = 1.96 * sqrt(spread1^2/n1 + spread2^2/n2) +
+registration_error), i.e. it sets how large a difference has to be before
+M3C2 calls it real, so a flat 1 cm - what every earlier run assumed - was
+optimistic for all 24 of these. Each row now gets its own measured
+alignment error from
+`docs/tables/registration_rmse_from_aligned_clouds.json`
+(`rows[exp_id].rmse_inlier_mm`, 11.6-21.7 mm), the same inlier RMSE the
+results table reports. Deliberately *not* the `inlier_rmse` inside each
+registration's own `report.json`: those describe a cloud that was
+overwritten after the report was written, and 9 of the 24 report files are
+empty anyway.
+
+Worth one sentence in the text: that inlier RMSE is not a pure registration
+error in the strict M3C2 sense - it also contains part of the
+reconstruction's own noise near the surface, which LoD95 already accounts
+for separately through spread1/spread2. The threshold is therefore slightly
+conservative (too high), never too low, so "significant beyond LoD95" is if
+anything an under-count.
+
+**Parameters**, identical for all 24 so that neither the object nor the
+method axis is confounded by the metric's own settings: D = 10 cm, d = 6 cm
+(derived from the LiDAR point spacing - see `compute_m3c2.py`'s docstring),
+core points voxel-downsampled to 3 cm, `max_distance` = 15 cm.
+Exact-duplicate points are dropped from the reference first (10-26% of the
+delivered scans): M3C2 averages the points inside each cylinder, so a
+duplicate would be weighted twice and would also shrink the spread, and so
+the LoD.
+
+**Both directions are computed** (`--corepoints source` and
+`--corepoints target`), because "no pair in the cylinder" means opposite
+things on the two sides:
+- core points on the *reconstruction* - the headline direction, the one the
+  site and the results table use. Unpaired here = reconstruction surface
+  sitting where the reference's surface is not, the M3C2 counterpart of an
+  accuracy failure. Core point counts vary 15x between methods on the same
+  object, because they are that method's own cloud.
+- core points on the *reference* - unpaired here = reference surface the
+  reconstruction never covered, the counterpart of a completeness failure.
+  This is also the direction whose core points are identical across the four
+  methods of an object, so the four numbers are strictly comparable.
+The sign flips between them: with core points on the reconstruction, epoch2
+is the reference, so a positive distance means the reference is further out
+(the reconstruction sits inside it); with core points on the reference the
+roles swap. Each report states its own convention and carries
+`reconstruction_outside_when`; the summary's `outside_pct` already accounts
+for it, so the two directions can be read side by side. The target-direction
+figures live under `rows[exp_id].corepoints_target` in
+`docs/tables/m3c2_final_six.json` and in
+`<method>_corepoints_target.json`; the site shows only the source
+direction.
+
+**Normals are oriented outward from each object's LiDAR centre, not towards
++Z.** py4dgeo's default `orientation_vector` is [0,0,1], which makes the
+*sign* of the distance mean "the reference is above/below the
+reconstruction's local surface". That reads correctly on a bench seat and
+means nothing on a pole or a sign face, where the normal is horizontal, its
+dot product with [0,0,1] is ~0, and which of the two opposite directions a
+core point gets is decided by numerical noise. Facing each normal away from
+the object's centre instead makes the sign say something the unsigned
+Accuracy median cannot say at all: negative = the reconstruction's surface
+sits OUTSIDE the reference, positive = inside it. Magnitudes, spreads and
+the LoD are unchanged by the choice - the comparison cylinder is symmetric
+about the normal axis, verified directly (flipping every normal negates the
+distances to 1e-16 and moves nothing else).
+
+Across all 24 rows, 41-89% of the paired core points sit outside the
+reference (bollard/colmap and bollard/hloc_colmap highest at 85% and 89%),
+i.e. these reconstructions systematically inflate the surface slightly
+rather than eat into it.
+
+**"No pair" is the diagnostic column.** A core point whose search cylinder
+contains no reference point at all gets no distance and leaves the
+statistics - which is also why M3C2 needs no DBSCAN gap exclusion: a hole in
+the reference removes itself. The share runs 2-3% (colmap/hloc_colmap on the
+lamppost, whose reference is complete) up to 56-62% (vggt on the bus shelter
+and the lamppost), and that spread is the point: a reconstruction whose
+surface is largely somewhere the reference's surface is not shows up here
+and in no other column - its median |M3C2| only describes the part that did
+find a counterpart.
+
+**Reproducibility.** py4dgeo's multiscale normal estimation is not
+bit-reproducible on this data: repeating the identical computation
+re-orients ~2.7% of the core points' normals (648 of 23768 on
+bus_stop/colmap, by more than 10 degrees). Those are the core points whose
+neighbourhood has no well-defined plane - the two smallest covariance
+eigenvalues are nearly equal and the normal is genuinely ambiguous - so it
+is a property of the geometry, not of a setting. Re-running moves the
+medians by up to ~0.04 cm and the significant share by up to ~0.2 pp: read
+these figures to the precision they are printed at, not beyond it. The
+outward orientation is unaffected (a wobbling normal still points away from
+the centre).
+
+On the site, M3C2 appears in two places and nowhere else: three columns on
+`results.html` (median |d|, share beyond LoD95, share with no pair), and a
+fourth tab on each object page that colours the core points by sign, greys
+out everything below its own LoD95, and draws the unpaired points in a
+third neutral tone rather than hiding them. It is deliberately absent from
+the capture-comparison and frame-count pages: those ask what changes when a
+capture condition changes, and a second metric there would double the
+surface without answering that question.

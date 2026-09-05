@@ -52,6 +52,15 @@ from common import (
     resolve_path,
     select_image_subset,
 )
+from metrics import (
+    METRICS_PATH,
+    GPUMemorySampler,
+    RunTimer,
+    build_metrics_row,
+    classify_failure,
+    peak_rss_mib,
+    write_metrics_row,
+)
 
 MAST3R_ROOT = resolve_path("external/mast3r")
 sys.path.insert(0, str(MAST3R_ROOT))
@@ -172,26 +181,68 @@ def main() -> None:
     image_paths = [str(subset_dir / p.name) for p in selected]
     print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir} (device={device})")
 
-    print(f"[{exp_id}] Loading MASt3R model...")
-    weights_setting = args.weights or config["model"]["weights"]
-    weights = str(resolve_path(weights_setting)) if weights_setting.endswith(".pth") else weights_setting
-    model = AsymmetricMASt3R.from_pretrained(weights).to(device)
+    timer = RunTimer()
+    gpu_sampler = GPUMemorySampler().start()
+    status, failure_reason = "success", None
+    output_stats: dict = {}
+    parameters = {
+        "device": device,
+        "image_size": config["model"]["image_size"],
+        "scenegraph": config["matching"]["scenegraph"],
+        "shared_intrinsics": config["matching"]["shared_intrinsics"],
+        "matching_conf_thr": config["matching"]["matching_conf_thr"],
+        "lr1": config["optimization"]["lr1"],
+        "niter1": config["optimization"]["niter1"],
+        "lr2": config["optimization"]["lr2"],
+        "niter2": config["optimization"]["niter2"],
+        "opt_depth": config["optimization"]["opt_depth"],
+        "min_conf_thr": config["export"]["min_conf_thr"],
+    }
 
-    print(f"[{exp_id}] Running MASt3R matching + sparse global alignment...")
-    cache_dir = resolve_path(args.cache_dir) if args.cache_dir else output_dir / "cache"
-    scene = run_sparse_global_alignment(model, device, image_paths, cache_dir, config)
+    try:
+        print(f"[{exp_id}] Loading MASt3R model...")
+        weights_setting = args.weights or config["model"]["weights"]
+        weights = str(resolve_path(weights_setting)) if weights_setting.endswith(".pth") else weights_setting
+        with timer.stage("model_load"):
+            model = AsymmetricMASt3R.from_pretrained(weights).to(device)
 
-    ply_path = output_dir / f"{exp_id}_mast3r_ga_{args.object_id}.ply"
-    export_stats = export_dense_point_cloud(
-        scene, config["export"]["min_conf_thr"], config["export"]["clean_depth"], ply_path,
-    )
-    print(f"[{exp_id}] Done: {export_stats['points']} points -> {ply_path}")
+        print(f"[{exp_id}] Running MASt3R matching + sparse global alignment...")
+        cache_dir = resolve_path(args.cache_dir) if args.cache_dir else output_dir / "cache"
+        with timer.stage("matching_and_optimization"):
+            scene = run_sparse_global_alignment(model, device, image_paths, cache_dir, config)
 
-    log_lines = [
-        f"Registered images: {len(selected)}/{len(selected)}",
-        f"Points in dense point cloud: {export_stats['points']}",
-        f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
-    ]
+        ply_path = output_dir / f"{exp_id}_mast3r_ga_{args.object_id}.ply"
+        with timer.stage("export"):
+            export_stats = export_dense_point_cloud(
+                scene, config["export"]["min_conf_thr"], config["export"]["clean_depth"], ply_path,
+            )
+        print(f"[{exp_id}] Done: {export_stats['points']} points -> {ply_path}")
+
+        log_lines = [
+            f"Registered images: {len(selected)}/{len(selected)}",
+            f"Points in dense point cloud: {export_stats['points']}",
+            f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
+        ]
+        output_stats = {"num_points": export_stats["points"]}
+    except Exception as exc:
+        status = "failed"
+        failure_reason = classify_failure(exc)
+        log_lines = [f"FAILED: {failure_reason}"]
+        raise
+    finally:
+        peak_vram_mib = gpu_sampler.stop()
+        metrics_row = build_metrics_row(
+            exp_id=exp_id, object_id=args.object_id, method="mast3r_ga",
+            status=status, failure_reason=failure_reason,
+            num_images_input=len(selected),
+            num_images_registered=len(selected) if status == "success" else None,
+            timer=timer, peak_ram_mib=peak_rss_mib(), peak_vram_mib=peak_vram_mib,
+            output_stats=output_stats, config_file=args.config,
+            selection_method=selection_method, seed=config["image_selection"]["seed"],
+            parameters=parameters,
+        )
+        write_metrics_row(metrics_row)
+        print(f"[{exp_id}] Logged metrics to {METRICS_PATH}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,
@@ -201,19 +252,7 @@ def main() -> None:
         output_dir_rel=output_dir_rel,
         total_images=len(selected),
         selection_method=selection_method,
-        parameters={
-            "device": device,
-            "image_size": config["model"]["image_size"],
-            "scenegraph": config["matching"]["scenegraph"],
-            "shared_intrinsics": config["matching"]["shared_intrinsics"],
-            "matching_conf_thr": config["matching"]["matching_conf_thr"],
-            "lr1": config["optimization"]["lr1"],
-            "niter1": config["optimization"]["niter1"],
-            "lr2": config["optimization"]["lr2"],
-            "niter2": config["optimization"]["niter2"],
-            "opt_depth": config["optimization"]["opt_depth"],
-            "min_conf_thr": config["export"]["min_conf_thr"],
-        },
+        parameters=parameters,
         log_lines=log_lines,
     )
     append_experiment_entry(experiments_path, entry)

@@ -11,6 +11,12 @@ build_accuracy_f1_summary_table.py, which computes them over the full clouds), s
 cannot drift from the workbook the thesis cites - and it needs no open3d, so it rebuilds in
 under a second.
 
+The three M3C2 columns come the same way, from docs/tables/m3c2_final_six.json
+(run_m3c2_final_six.py). M3C2 lives on this page and nowhere else on the site: it is
+computed only on these six final objects, and on the two study pages - capture comparison,
+frame count - a second metric would double the surface without answering the question those
+pages ask. Missing file = the columns are simply left out.
+
 Usage:
     python src/registration/build_results_page.py
 """
@@ -25,9 +31,11 @@ from openpyxl import load_workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _site_nav import NAV_CSS, nav_html  # noqa: E402
+from build_object_page import METHOD_ORDER  # noqa: E402  (the one place method order is decided)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_XLSX = PROJECT_ROOT / "docs" / "tables" / "summary_all_objects_accuracy_f1_EN.xlsx"
+M3C2_JSON = PROJECT_ROOT / "docs" / "tables" / "m3c2_final_six.json"
 OUT_HTML = PROJECT_ROOT / "site" / "results.html"
 
 THRESHOLDS = ["3cm", "5cm", "10cm"]
@@ -63,7 +71,21 @@ def read_rows() -> list[dict]:
     return rows
 
 
+def read_m3c2() -> tuple[dict, dict]:
+    """(object_id, method) -> that row's M3C2 figures, plus the run's parameters.
+
+    Keyed on the capture id (bus_stop_002, ...) and the internal method id, which is what
+    the workbook rows carry too. An absent file is not an error: the page then renders
+    without the M3C2 columns rather than with empty ones."""
+    if not M3C2_JSON.exists():
+        print(f"  ! {M3C2_JSON.name} not found - building the page without the M3C2 columns")
+        return {}, {}
+    data = json.loads(M3C2_JSON.read_text())
+    return {(r["capture_id"], r["method"]): r for r in data["rows"].values()}, data.get("params", {})
+
+
 def page_data(rows: list[dict]) -> dict:
+    m3c2, m3c2_params = read_m3c2()
     objects: dict[str, dict] = {}
     for r in rows:
         obj = objects.setdefault(r["object_id"], {
@@ -76,8 +98,16 @@ def page_data(rows: list[dict]) -> dict:
             "ref_note": r["reference note"],
             "methods": [],
         })
+        m = m3c2.get((r["object_id"], r["method"]), {})
         obj["methods"].append({
             "method": METHOD_LABEL.get(r["method"], r["method"]),
+            # M3C2, from docs/tables/m3c2_final_six.json - see read_m3c2()
+            "m3c2_median_cm": m.get("median_abs_cm"),
+            "m3c2_signif_pct": m.get("significant_pct"),
+            "m3c2_unpaired_pct": m.get("unpaired_pct"),
+            "m3c2_outside_pct": m.get("outside_pct"),
+            "m3c2_reg_err_mm": m.get("rmse_inlier_mm"),
+            "m3c2_corepoints": m.get("num_corepoints"),
             "acc_median_cm": r["accuracy median (cm)"],
             "comp_median_cm": r["completeness median (cm)"],
             "rmse_mm": r["alignment RMSE (mm)"],
@@ -88,7 +118,13 @@ def page_data(rows: list[dict]) -> dict:
                for t in THRESHOLDS
                for m, name in (("acc", "accuracy"), ("comp", "completeness"), ("f1", "F1"))},
         })
-    return {"objects": list(objects.values()), "thresholds": THRESHOLDS}
+    # the workbook's rows already follow METHOD_ORDER, but sorting here keeps the page right
+    # even when it is rebuilt against a workbook written before that order changed
+    order = {METHOD_LABEL.get(m, m): i for i, m in enumerate(METHOD_ORDER)}
+    for obj in objects.values():
+        obj["methods"].sort(key=lambda m: order.get(m["method"], len(order)))
+    return {"objects": list(objects.values()), "thresholds": THRESHOLDS,
+            "has_m3c2": bool(m3c2), "m3c2_params": m3c2_params}
 
 
 HTML = """<!doctype html>
@@ -128,8 +164,8 @@ HTML = """<!doctype html>
   .tab-btn:hover { border-color:var(--accent); color:var(--text); }
   .tab-btn.active { background:var(--accent-soft); border-color:var(--accent); color:var(--text); font-weight:600; }
   .grid-wrap { overflow-x:auto; }
-  table.summary { border-collapse:collapse; font-size:12px; min-width:1080px; }
-  table.summary th, table.summary td { padding:6px 10px; border-bottom:1px solid var(--panel-border); text-align:right; white-space:nowrap; }
+  table.summary { border-collapse:collapse; font-size:11.5px; min-width:1340px; }  /* 14 columns incl. M3C2 */
+  table.summary th, table.summary td { padding:6px 8px; border-bottom:1px solid var(--panel-border); text-align:right; white-space:nowrap; }
   table.summary th { font-weight:650; color:var(--text-dim); position:sticky; top:0; background:var(--panel); }
   table.summary td.txt, table.summary th.txt { text-align:left; }
   table.summary td.f1cell { font-weight:700; font-variant-numeric:tabular-nums; }
@@ -139,6 +175,13 @@ HTML = """<!doctype html>
   .grouprule td { border-top:2px solid var(--panel-border); }
   .note { font-size:11.5px; color:var(--text-faint); }
   .bar { display:inline-block; height:7px; border-radius:3px; background:var(--accent); opacity:.75; vertical-align:1px; }
+  .chip { display:inline-block; font-size:11px; color:var(--text-dim); background:var(--code-bg);
+          border:1px solid var(--panel-border); border-radius:20px; padding:2px 10px; }
+  /* the M3C2 block: separated because, unlike everything to its left, it does not move with t */
+  table.summary th.colsep, table.summary td.colsep { border-left:1px solid var(--panel-border); }
+  table.summary th.m3c2, table.summary td.m3c2 { background:color-mix(in srgb, var(--code-bg) 60%, transparent); }
+  table.summary td.warn { color:var(--red); font-weight:600; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 16px; align-items:baseline; }
 __NAV_CSS__
 </style>
 
@@ -173,6 +216,22 @@ __NAV_CSS__
     </div>
     <div class="grid-wrap"><div id="table-wrap"></div></div>
     <div class="note" id="table-note"></div>
+    <div class="note" id="m3c2-note" hidden>
+      <span class="chip" id="m3c2-chip"></span>
+      <div style="margin-top:7px; max-width:104ch;">
+        <b>The three M3C2 columns do not follow the 3/5/10&nbsp;cm toggle</b> — M3C2 has no threshold.
+        It measures the distance along each core point's own local surface normal, not to the nearest point
+        in any direction, and it runs with no DBSCAN gap exclusion: a core point beside a hole in the
+        reference simply finds nothing inside its search cylinder and leaves the statistics instead of being
+        scored. That is the <b>no pair</b> column, and it is the diagnostic one — it is where a method that
+        put its points somewhere off the reference surface shows up, and nowhere else in this table.
+        <span class="mono">registration_error</span> is not one constant for all rows: each row is given its
+        own alignment RMSE, the column immediately to the left of them. These three read the comparison from
+        the reconstruction's side; the mirror run — core points on the LiDAR, where “no pair” instead means
+        reference surface the reconstruction never covered — is in
+        <span class="mono">docs/tables/m3c2_final_six.json</span>.
+      </div>
+    </div>
   </section>
 </div>
 
@@ -183,12 +242,32 @@ let thr = '3cm';
 
 function fmt(v, d = 1) { return v == null ? '—' : (+v).toFixed(d); }
 
+// The three M3C2 cells. "no pair" is flagged once it passes half the core points: at that
+// point the row is no longer "off by x cm", it is a cloud whose surface is largely somewhere
+// the reference's surface is not, and the median beside it only describes the half that did
+// find a counterpart.
+function m3c2Cells(m) {
+  const unpaired = m.m3c2_unpaired_pct;
+  return `<td class="m3c2 colsep">${fmt(m.m3c2_median_cm, 2)}</td>`
+    + `<td class="m3c2">${fmt(m.m3c2_signif_pct)}</td>`
+    + `<td class="m3c2${unpaired != null && unpaired >= 50 ? ' warn' : ''}" title="${
+        m.m3c2_corepoints ? Math.round(m.m3c2_corepoints * (unpaired ?? 0) / 100).toLocaleString('en-US')
+          + ' of ' + m.m3c2_corepoints.toLocaleString('en-US') + ' core points' : ''}">${fmt(unpaired)}</td>`;
+}
+
 function buildTable() {
   let h = '<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Method</th>'
     + `<th id="th-f1">F1@${thr}</th><th></th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
-    + '<th>ΔF1@10−3</th><th>Acc median (cm)</th><th>Comp median (cm)</th><th>align. RMSE (mm)</th>'
-    + '<th>#pts (raw→matched)</th></tr></thead><tbody>';
+    + '<th>ΔF1@10−3</th><th>Acc med (cm)</th><th>Comp med (cm)</th><th>align RMSE (mm)</th>'
+    + (DATA.has_m3c2
+        ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d| med (cm)</th>'
+        + '<th class="m3c2" title="core points whose |M3C2| exceeds their own LoD95 — a difference larger than '
+        + 'the local roughness of both clouds plus the alignment error of that row">&gt; LoD95 (%)</th>'
+        + '<th class="m3c2" title="core points with no reference point inside their search cylinder at all — '
+        + 'reconstruction surface that is not where the reference surface is">no pair (%)</th>'
+        : '')
+    + '<th class="colsep">#pts raw→matched</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const best = Math.max(...obj.methods.map(m => m[`f1_${thr}`] ?? 0));
     obj.methods.forEach((m, i) => {
@@ -199,11 +278,12 @@ function buildTable() {
              + `<div class="note">${obj.size_cm.map(v => (v / 100).toFixed(2)).join(' × ')} m · ${obj.dbscan_mode}</div>` : ''}</td>`
         + `<td class="txt">${m.method}</td>`
         + `<td class="f1cell${isBest ? ' best-cell' : ''}">${fmt(f1)}</td>`
-        + `<td style="width:110px; text-align:left;"><span class="bar" style="width:${Math.max(0, (f1 ?? 0)) }px"></span></td>`
+        + `<td style="width:78px; text-align:left;"><span class="bar" style="width:${Math.max(0, (f1 ?? 0)) * 0.7}px"></span></td>`
         + `<td>${fmt(m[`acc_${thr}`])}</td><td>${fmt(m[`comp_${thr}`])}</td>`
         + `<td>${fmt(m.delta_10_3)}</td>`
         + `<td>${fmt(m.acc_median_cm, 2)}</td><td>${fmt(m.comp_median_cm, 2)}</td><td>${fmt(m.rmse_mm)}</td>`
-        + `<td class="mono">${(m.raw_points ?? 0).toLocaleString('en-US')}→${(m.matched_points ?? 0).toLocaleString('en-US')}</td>`
+        + (DATA.has_m3c2 ? m3c2Cells(m) : '')
+        + `<td class="mono colsep">${(m.raw_points ?? 0).toLocaleString('en-US')}→${(m.matched_points ?? 0).toLocaleString('en-US')}</td>`
         + '</tr>';
     });
   }
@@ -230,6 +310,15 @@ document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListene
   thr = b.dataset.thr;
   buildTable();
 }));
+
+// the parameters the M3C2 columns were computed at, in the same chip style the study pages use
+if (DATA.has_m3c2) {
+  const p = DATA.m3c2_params || {};
+  document.getElementById('m3c2-chip').textContent =
+    `M3C2: D=${((p.normal_scale_D_m ?? 0) * 100).toFixed(0)} cm · d=${((p.projection_scale_d_m ?? 0) * 100).toFixed(0)} cm`
+    + ` · core points ${((p.corepoint_voxel_m ?? 0) * 100).toFixed(0)} cm · reg.err = each row's own alignment RMSE`;
+  document.getElementById('m3c2-note').hidden = false;
+}
 
 buildTable();
 </script>

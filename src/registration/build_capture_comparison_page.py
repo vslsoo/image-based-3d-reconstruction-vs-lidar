@@ -48,6 +48,8 @@ def _load_open3d() -> None:
 
 from scipy.spatial import cKDTree
 
+from _block_bootstrap import bootstrap_f1_draws  # the spatial block bootstrap, shared
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUT_HTML = PROJECT_ROOT / "site" / "capture_comparison.html"
 METRICS_JSONL = PROJECT_ROOT / "docs" / "tables" / "experiment_metrics.jsonl"
@@ -201,38 +203,6 @@ def reg_rates_from_metrics() -> dict[str, float]:
 
 def f_score(p: float, r: float) -> float:
     return 0.0 if (p + r) == 0 else 2 * p * r / (p + r)
-
-
-# --- spatial block bootstrap ----------------------------------------------------
-
-def _block_parts(points_m: np.ndarray, indicator: np.ndarray, block_m: float):
-    """Per spatial block (a `block_m`-sized voxel): how many points fall in it and how
-    many of those satisfy `indicator` (e.g. distance <= 3cm). These per-block sums are
-    what the bootstrap resamples, so within-block correlation is preserved."""
-    if len(points_m) == 0:
-        return np.array([]), np.array([]), 0
-    q = np.floor(points_m / block_m).astype(np.int64)
-    _, inv = np.unique(q, axis=0, return_inverse=True)
-    nb = int(inv.max()) + 1
-    within = np.bincount(inv, weights=indicator.astype(float), minlength=nb)
-    total = np.bincount(inv, minlength=nb).astype(float)
-    return within, total, nb
-
-
-def bootstrap_f1_draws(acc_pts, acc_ind, comp_pts, comp_ind, block_m, B, rng):
-    """B block-bootstrap draws of F1@3cm (%). Accuracy blocks (kept source points) and
-    completeness blocks (target points) are resampled independently each iteration."""
-    aw, at, anb = _block_parts(acc_pts, acc_ind, block_m)
-    cw, ct, cnb = _block_parts(comp_pts, comp_ind, block_m)
-    if anb == 0 or cnb == 0:
-        return None, anb, cnb
-    ai = rng.integers(0, anb, size=(B, anb))
-    acc_b = aw[ai].sum(1) / at[ai].sum(1)
-    ci = rng.integers(0, cnb, size=(B, cnb))
-    comp_b = cw[ci].sum(1) / ct[ci].sum(1)
-    denom = acc_b + comp_b
-    f1_b = np.where(denom > 0, 2 * acc_b * comp_b / denom, 0.0) * 100.0
-    return f1_b, anb, cnb
 
 
 # --- main ------------------------------------------------------------------------

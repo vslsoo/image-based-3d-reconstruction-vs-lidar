@@ -1,0 +1,60 @@
+# Variant of mast3r_ga.yaml with scenegraph: logwin-7 instead of swin-8, for
+# information_sign_002_test_1's manual_n25/50/75/100 objects.
+#
+# WHY NOT "complete" (see config/mast3r_ga_complete.yaml): two blockers.
+#   1. Memory. "complete" is 2450 directed pairs at n=50 - exactly the
+#      documented silent-OOM point (cgroup memory.max, not `free -h`) - and
+#      5550 / 9900 at n=75 / n=100. Only n=25 fits.
+#   2. n=25 is uninformative. In a 25-image cyclic ring swin-8 ALREADY covers
+#      200 of the 300 possible pairs (67%); "complete" adds only 100 pairs at
+#      offsets 9-12 and is byte-identical to swin-24 there. So the one size
+#      that fits in memory is a near-null intervention, at the size where
+#      MASt3R accuracy was already highest (63.6%).
+#
+# WHAT logwin-7 DOES: offsets [1,2,4,8,16,32,64], both directions, cyclic
+# (mast3r/image_pairs.py::make_pairs). Pair count stays ~linear in n while
+# the graph's REACH grows with n:
+#
+#   n=100  swin-8    1600 directed pairs, max offset  8, median overlap 2.40%
+#   n=100  logwin-7  1400 directed pairs, max offset 36, median overlap 1.47%
+#
+# It is strictly CHEAPER than the swin-8 baseline that already ran (exp_124,
+# 1600 directed pairs), so there is no OOM exposure at any n.
+#
+# WHY THIS IS THE BETTER TEST, not just the affordable one: "complete"
+# changes reach AND multiplies pair mass 6x, so a result confounds the two.
+# logwin-7 raises reach 8 -> 36 while pair count goes DOWN (1600 -> 1400).
+# If accuracy improves on FEWER pairs, long-range constraints are the only
+# available explanation. If it degrades, the added pairs are low-overlap
+# (median 2.40% -> 1.47%, share below 0.5% overlap 19.9% -> 34.6%) and the
+# "low overlap poisons the fusion" hypothesis is supported instead.
+#
+# Everything below is identical to mast3r_ga.yaml except matching.scenegraph.
+
+image_selection:
+  num_images: 50
+  method: even
+  seed: 42
+
+model:
+  weights: naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric
+  device: auto
+  image_size: 512
+
+matching:
+  scenegraph: logwin-7   # only change from mast3r_ga.yaml
+  shared_intrinsics: true
+  matching_conf_thr: 0.0
+  subsample: 8
+
+optimization:
+  lr1: 0.07
+  niter1: 300
+  lr2: 0.01
+  niter2: 300
+  opt_depth: true
+
+export:
+  min_conf_thr: 1.5
+  clean_depth: true
+  tsdf_thresh: 0

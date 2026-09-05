@@ -119,6 +119,22 @@ def f_score(precision: float, recall: float) -> float:
 # 3. CLI
 # ---------------------------------------------------------------------------
 
+def load_reference(path) -> o3d.geometry.PointCloud:
+    """Read the reference (target) cloud and drop exact-duplicate points first - the
+    delivered LiDAR clouds carry 10-26% of them where overlapping scan passes cover the
+    same surface twice at byte-identical coordinates. Completeness is a mean over target
+    points, so duplicates are double-counted and pull the score toward whatever the
+    scanner passed twice; nearest-neighbour distances themselves do not change."""
+    pcd = o3d.io.read_point_cloud(str(path))
+    pts = np.asarray(pcd.points)
+    _, first_idx = np.unique(pts, axis=0, return_index=True)
+    if len(first_idx) < len(pts):
+        pcd = pcd.select_by_index(np.sort(first_idx).tolist())
+        print(f"Deduplicated target: {len(pts)} -> {len(first_idx)} points "
+              f"({100 * (1 - len(first_idx) / len(pts)):.1f}% exact duplicates removed)")
+    return pcd
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
@@ -140,7 +156,7 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading target: {target_path}")
-    target = o3d.io.read_point_cloud(str(target_path))
+    target = load_reference(target_path)
     print(f"Target points: {len(target.points)}")
 
     clouds = {}

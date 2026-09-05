@@ -100,6 +100,7 @@ def run_m3c2(
     projection_scale: float,
     registration_error: float,
     max_distance: float = 0.0,
+    outward_from: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """reference is epoch1 - corepoints must be drawn from it (that's what
     "core points" means: locations on epoch1 the comparison is evaluated
@@ -119,7 +120,21 @@ def run_m3c2(
     explicitly to control how large a real offset the metric can still
     report as a number rather than silently marking it undefined (too short
     and any genuine gap larger than cyl_radius just disappears into
-    "undefined" instead of being measured)."""
+    "undefined" instead of being measured).
+
+    outward_from decides what the SIGN of the returned distance means. py4dgeo
+    orients every core point normal towards its orientation_vector, which
+    defaults to [0,0,1] - so out of the box "positive" means "the comparison
+    cloud lies on the upward side of the reference surface". That reads fine on
+    a bench seat and means nothing on a pole or a sign face: there the normal is
+    horizontal, its dot product with [0,0,1] is ~0, and which of the two
+    opposite directions a given core point ends up with is decided by numerical
+    noise. Pass a point inside the object (its LiDAR centre) and each normal is
+    instead flipped to face away from it, which makes the sign say the thing
+    worth saying: negative = the reconstruction's surface sits OUTSIDE the
+    reference (the reference is further in), positive = it sits INSIDE it.
+    Magnitudes, spreads and the LoD are identical either way - the cylinder is
+    symmetric about the normal axis, so only the sign moves."""
     epoch_reference = py4dgeo.Epoch(reference_points.astype(np.float64))
     epoch_comparison = py4dgeo.Epoch(comparison_points.astype(np.float64))
     m3c2 = py4dgeo.M3C2(
@@ -130,11 +145,201 @@ def run_m3c2(
         registration_error=registration_error,
         max_distance=max_distance,
     )
+    if outward_from is not None:
+        # directions() computes the multiscale normals (oriented to +Z) and caches them
+        # on the object; re-orienting that cache is what M3C2.run() will then use.
+        normals = np.array(m3c2.directions(), dtype=np.float64, copy=True)
+        away = corepoints.astype(np.float64) - np.asarray(outward_from, dtype=np.float64)
+        normals[np.einsum("ij,ij->i", normals, away) < 0] *= -1
+        m3c2.corepoint_normals = normals
     return m3c2.run()
 
 
 # ---------------------------------------------------------------------------
-# 2. CLI
+# 2. One comparison, end to end
+# ---------------------------------------------------------------------------
+
+def compute_m3c2_report(
+    source_path: Path,
+    target_path: Path,
+    output_path: Path,
+    *,
+    corepoints_from: str = "source",
+    corepoint_voxel_size: float = 0.03,
+    normal_scale: float = 0.10,
+    projection_scale: float = 0.06,
+    registration_error: float = 0.01,
+    max_distance: float = 0.0,
+    dedupe_target: bool = False,
+    orient_normals: str = "up",
+) -> dict:
+    """Run M3C2 for one (source, target) pair, write the JSON report and the
+    per-point .distances.npz beside it, and return the report dict.
+
+    Split out of main() so a batch driver (run_m3c2_final_six.py, which needs a
+    different --registration-error per object x method) writes exactly the same
+    report schema as the CLI, instead of re-deriving the statistics itself.
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"Loading source: {source_path}")
+    source_pcd = o3d.io.read_point_cloud(str(source_path))
+    print(f"Loading target: {target_path}")
+    target_pcd = o3d.io.read_point_cloud(str(target_path))
+    print(f"Source points: {len(source_pcd.points)}, target points: {len(target_pcd.points)}")
+
+    # The delivered LiDAR clouds carry 10-26% byte-identical duplicate points where
+    # overlapping scan passes cover the same surface twice (see load_reference() in
+    # build_object_page.py). They are not extra information, but M3C2 averages the
+    # points inside each cylinder, so a duplicated point is weighted twice in that
+    # mean and counted twice in num_samples - which also shrinks the spread and so
+    # the LoD. Off by default (the CLI's historical behaviour); the final-six driver
+    # turns it on so M3C2 sees the same reference the Accuracy/F1 table does.
+    n_target_dupes = 0
+    if dedupe_target:
+        tpts = np.asarray(target_pcd.points)
+        _, first_idx = np.unique(tpts, axis=0, return_index=True)
+        n_target_dupes = len(tpts) - len(first_idx)
+        if n_target_dupes:
+            target_pcd = target_pcd.select_by_index(np.sort(first_idx).tolist())
+            print(f"Deduplicated target: {len(tpts)} -> {len(first_idx)} points "
+                  f"({100 * n_target_dupes / len(tpts):.1f}% exact duplicates removed)")
+
+    # Corepoints are drawn from - and normals estimated from - the same
+    # cloud (the "reference"); the other cloud is the "comparison" the
+    # reference is measured against. See run_m3c2()'s docstring.
+    reference_pcd = source_pcd if corepoints_from == "source" else target_pcd
+    comparison_pcd = target_pcd if corepoints_from == "source" else source_pcd
+
+    corepoint_pcd = reference_pcd.voxel_down_sample(corepoint_voxel_size) if corepoint_voxel_size else reference_pcd
+    corepoints = np.asarray(corepoint_pcd.points, dtype=np.float64)
+    print(f"Core points (from {corepoints_from}, reference cloud): {len(corepoints)}")
+
+    # "outward" needs a point inside the object to face away from: the LiDAR cloud's
+    # median coordinate, not the reconstruction's - a reconstruction with a halo of noise
+    # (vggt on the lamppost) has a centre several centimetres off the real one.
+    outward_from = np.median(np.asarray(target_pcd.points), axis=0) if orient_normals == "outward" else None
+
+    effective_depth = max_distance if max_distance > 0 else projection_scale / 2
+    print(
+        f"Running M3C2 (D={normal_scale * 100:.0f}cm, d={projection_scale * 100:.0f}cm, "
+        f"max_distance={max_distance * 100:.0f}cm [effective cylinder half-length={effective_depth * 100:.1f}cm], "
+        f"registration_error={registration_error * 100:.2f}cm)..."
+    )
+    distances, uncertainties = run_m3c2(
+        np.asarray(reference_pcd.points),
+        np.asarray(comparison_pcd.points),
+        corepoints,
+        normal_scale,
+        projection_scale,
+        registration_error,
+        max_distance,
+        outward_from,
+    )
+
+    valid = np.isfinite(distances)
+    n_total = len(distances)
+    n_valid = int(valid.sum())
+    lod95 = uncertainties["lodetection"]
+    has_lod = valid & np.isfinite(lod95)
+    significant = has_lod & (np.abs(distances) > lod95)
+
+    valid_distances = distances[valid]
+    abs_valid = np.abs(valid_distances)
+    stats = {
+        "mean_abs": float(abs_valid.mean()),
+        "median_abs": float(np.median(abs_valid)),
+        "rmse": float(np.sqrt(np.mean(valid_distances ** 2))),
+        "std": float(valid_distances.std()),
+        "p95_abs": float(np.percentile(abs_valid, 95)),
+        "max_abs": float(abs_valid.max()),
+        "mean_signed": float(valid_distances.mean()),
+    } if n_valid else None
+
+    print(
+        f"\nCore points: {n_total} ({n_valid} valid, {n_total - n_valid} undefined - too few neighbors "
+        "in one/both clouds within the cylinder)"
+    )
+    n_lod = int(has_lod.sum())
+    n_sig = int(significant.sum())
+    if stats:
+        print(
+            f"|M3C2 distance| (valid points): mean={stats['mean_abs']:.4f}  median={stats['median_abs']:.4f}  "
+            f"rmse={stats['rmse']:.4f}  p95={stats['p95_abs']:.4f}  max={stats['max_abs']:.4f}"
+        )
+        if n_lod:
+            print(
+                f"Significant at 95% LoD (|distance| > LoD95, i.e. beyond cloud roughness + "
+                f"{registration_error * 100:.2f}cm registration error): {n_sig} / {n_lod} points with a "
+                f"defined LoD ({100 * n_sig / n_lod:.2f}%)"
+            )
+        else:
+            print("No points had a defined LoD (too few neighbors everywhere - increase "
+                  "--normal-scale/--projection-scale).")
+    else:
+        print("No valid M3C2 distances - every core point had too few neighbors in at least one cloud. "
+              "Increase --normal-scale/--projection-scale.")
+
+    distances_path = output_path.with_suffix(".distances.npz")
+    np.savez(
+        distances_path,
+        corepoints=corepoints,
+        distances=distances,
+        lodetection=uncertainties["lodetection"],
+        spread1=uncertainties["spread1"],
+        num_samples1=uncertainties["num_samples1"],
+        spread2=uncertainties["spread2"],
+        num_samples2=uncertainties["num_samples2"],
+    )
+
+    report = {
+        "source": display_path(source_path),
+        "target": display_path(target_path),
+        "corepoints_from": corepoints_from,
+        "target_deduplicated": bool(dedupe_target),
+        "target_duplicates_removed": int(n_target_dupes),
+        "corepoint_voxel_size": corepoint_voxel_size,
+        "reference_cloud": "source" if corepoints_from == "source" else "target",
+        "comparison_cloud": "target" if corepoints_from == "source" else "source",
+        "normal_orientation": orient_normals,
+        "reconstruction_outside_when": (
+            ("distance < 0" if corepoints_from == "source" else "distance > 0")
+            if orient_normals == "outward" else None
+        ),
+        "distance_sign_convention": (
+            (
+                "core points on the reconstruction, normals facing away from the object's centre: "
+                "positive = the reference lies further out than the reconstruction, i.e. the "
+                "reconstruction sits INSIDE the reference; negative = outside it"
+                if corepoints_from == "source" else
+                "core points on the reference, normals facing away from the object's centre: "
+                "positive = the reconstruction lies further out than the reference, i.e. the "
+                "reconstruction sits OUTSIDE the reference; negative = inside it"
+            )
+            if orient_normals == "outward" else
+            "positive = comparison cloud is further out along the reference cloud's own surface normal "
+            "(normals oriented towards +Z, so the sign is only meaningful on near-horizontal surfaces)"
+        ),
+        "num_corepoints": n_total,
+        "num_valid": n_valid,
+        "normal_scale_D": normal_scale,
+        "projection_scale_d": projection_scale,
+        "registration_error": registration_error,
+        "max_distance": max_distance,
+        "distance_stats": stats,
+        "num_with_defined_lod": n_lod,
+        "num_significant_at_lod95": n_sig,
+        "fraction_significant_at_lod95": (n_sig / n_lod) if n_lod else None,
+        "per_point_distances_file": display_path(distances_path),
+    }
+    output_path.write_text(json.dumps(report, indent=2))
+    print(f"\nSaved report -> {output_path}")
+    print(f"Saved per-point distances/uncertainties -> {distances_path}")
+    return report
+
+
+# ---------------------------------------------------------------------------
+# 3. CLI
 # ---------------------------------------------------------------------------
 
 def main() -> None:
@@ -167,7 +372,8 @@ def main() -> None:
     parser.add_argument(
         "--registration-error", type=float, default=0.01,
         help="assumed alignment/registration error (meters), folded into the Level of Detection (LoD95) "
-        "threshold (default: 0.01m = 1cm)",
+        "threshold (default: 0.01m = 1cm). For the six final objects this is not a constant - "
+        "run_m3c2_final_six.py passes each object x method its own measured alignment RMSE.",
     )
     parser.add_argument(
         "--max-distance", type=float, default=0.0,
@@ -176,123 +382,36 @@ def main() -> None:
         "see run_m3c2()'s docstring. Set explicitly to control how large a real offset the metric can "
         "still report as a number instead of marking it undefined.)",
     )
+    parser.add_argument(
+        "--dedupe-target", action="store_true",
+        help="drop byte-identical duplicate points from the target cloud first (the delivered LiDAR "
+        "scans carry 10-26%% of them where passes overlap; M3C2 otherwise double-weights them inside "
+        "each cylinder). Off by default to keep this CLI's historical behaviour; "
+        "run_m3c2_final_six.py passes it.",
+    )
+    parser.add_argument(
+        "--orient-normals", choices=["up", "outward"], default="up",
+        help="what the SIGN of the distance means. 'up' (default, py4dgeo's own behaviour) orients every "
+        "core point normal towards +Z, so the sign only carries meaning on near-horizontal surfaces. "
+        "'outward' orients each normal away from the reference cloud's centre, so negative means the "
+        "reconstruction sits outside the reference surface and positive inside it. Magnitudes and the "
+        "LoD are identical either way - see run_m3c2().",
+    )
     args = parser.parse_args()
 
-    source_path = resolve_path(args.source)
-    target_path = resolve_path(args.target)
-    output_path = resolve_path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    print(f"Loading source: {source_path}")
-    source_pcd = o3d.io.read_point_cloud(str(source_path))
-    print(f"Loading target: {target_path}")
-    target_pcd = o3d.io.read_point_cloud(str(target_path))
-    print(f"Source points: {len(source_pcd.points)}, target points: {len(target_pcd.points)}")
-
-    # Corepoints are drawn from - and normals estimated from - the same
-    # cloud (the "reference"); the other cloud is the "comparison" the
-    # reference is measured against. See run_m3c2()'s docstring.
-    reference_pcd = source_pcd if args.corepoints == "source" else target_pcd
-    comparison_pcd = target_pcd if args.corepoints == "source" else source_pcd
-
-    corepoint_pcd = reference_pcd.voxel_down_sample(args.corepoint_voxel_size) if args.corepoint_voxel_size else reference_pcd
-    corepoints = np.asarray(corepoint_pcd.points, dtype=np.float64)
-    print(f"Core points (from {args.corepoints}, reference cloud): {len(corepoints)}")
-
-    effective_depth = args.max_distance if args.max_distance > 0 else args.projection_scale / 2
-    print(
-        f"Running M3C2 (D={args.normal_scale * 100:.0f}cm, d={args.projection_scale * 100:.0f}cm, "
-        f"max_distance={args.max_distance * 100:.0f}cm [effective cylinder half-length={effective_depth * 100:.1f}cm], "
-        f"registration_error={args.registration_error * 100:.0f}cm)..."
+    compute_m3c2_report(
+        resolve_path(args.source),
+        resolve_path(args.target),
+        resolve_path(args.output),
+        corepoints_from=args.corepoints,
+        corepoint_voxel_size=args.corepoint_voxel_size,
+        normal_scale=args.normal_scale,
+        projection_scale=args.projection_scale,
+        registration_error=args.registration_error,
+        max_distance=args.max_distance,
+        dedupe_target=args.dedupe_target,
+        orient_normals=args.orient_normals,
     )
-    distances, uncertainties = run_m3c2(
-        np.asarray(reference_pcd.points),
-        np.asarray(comparison_pcd.points),
-        corepoints,
-        args.normal_scale,
-        args.projection_scale,
-        args.registration_error,
-        args.max_distance,
-    )
-
-    valid = np.isfinite(distances)
-    n_total = len(distances)
-    n_valid = int(valid.sum())
-    lod95 = uncertainties["lodetection"]
-    has_lod = valid & np.isfinite(lod95)
-    significant = has_lod & (np.abs(distances) > lod95)
-
-    valid_distances = distances[valid]
-    abs_valid = np.abs(valid_distances)
-    stats = {
-        "mean_abs": float(abs_valid.mean()),
-        "median_abs": float(np.median(abs_valid)),
-        "rmse": float(np.sqrt(np.mean(valid_distances ** 2))),
-        "std": float(valid_distances.std()),
-        "p95_abs": float(np.percentile(abs_valid, 95)),
-        "max_abs": float(abs_valid.max()),
-        "mean_signed": float(valid_distances.mean()),
-    } if n_valid else None
-
-    print(
-        f"\nCore points: {n_total} ({n_valid} valid, {n_total - n_valid} undefined - too few neighbors "
-        "in one/both clouds within the cylinder)"
-    )
-    if stats:
-        print(
-            f"|M3C2 distance| (valid points): mean={stats['mean_abs']:.4f}  median={stats['median_abs']:.4f}  "
-            f"rmse={stats['rmse']:.4f}  p95={stats['p95_abs']:.4f}  max={stats['max_abs']:.4f}"
-        )
-        n_lod = int(has_lod.sum())
-        n_sig = int(significant.sum())
-        frac_sig = n_sig / n_lod if n_lod else None
-        print(
-            f"Significant at 95% LoD (|distance| > LoD95, i.e. beyond cloud roughness + "
-            f"{args.registration_error * 100:.0f}cm registration error): {n_sig} / {n_lod} points with a "
-            f"defined LoD ({100 * frac_sig:.2f}%)" if n_lod else "No points had a defined LoD (too few "
-            "neighbors everywhere - increase --normal-scale/--projection-scale)."
-        )
-    else:
-        print("No valid M3C2 distances - every core point had too few neighbors in at least one cloud. "
-              "Increase --normal-scale/--projection-scale.")
-
-    distances_path = output_path.with_suffix(".distances.npz")
-    np.savez(
-        distances_path,
-        corepoints=corepoints,
-        distances=distances,
-        lodetection=uncertainties["lodetection"],
-        spread1=uncertainties["spread1"],
-        num_samples1=uncertainties["num_samples1"],
-        spread2=uncertainties["spread2"],
-        num_samples2=uncertainties["num_samples2"],
-    )
-
-    report = {
-        "source": display_path(source_path),
-        "target": display_path(target_path),
-        "corepoints_from": args.corepoints,
-        "corepoint_voxel_size": args.corepoint_voxel_size,
-        "reference_cloud": "source" if args.corepoints == "source" else "target",
-        "comparison_cloud": "target" if args.corepoints == "source" else "source",
-        "distance_sign_convention": (
-            "positive = comparison cloud is further out along the reference cloud's own surface normal"
-        ),
-        "num_corepoints": n_total,
-        "num_valid": n_valid,
-        "normal_scale_D": args.normal_scale,
-        "projection_scale_d": args.projection_scale,
-        "registration_error": args.registration_error,
-        "max_distance": args.max_distance,
-        "distance_stats": stats,
-        "num_with_defined_lod": int(has_lod.sum()),
-        "num_significant_at_lod95": int(significant.sum()),
-        "fraction_significant_at_lod95": (int(significant.sum()) / int(has_lod.sum())) if has_lod.sum() else None,
-        "per_point_distances_file": display_path(distances_path),
-    }
-    output_path.write_text(json.dumps(report, indent=2))
-    print(f"\nSaved report -> {output_path}")
-    print(f"Saved per-point distances/uncertainties -> {distances_path}")
 
 
 if __name__ == "__main__":

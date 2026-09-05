@@ -38,6 +38,7 @@ HEAD_TOP2 = """\
   :root[data-theme="light"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084; --accent:#17805f; --accent-soft:#d9ece3; --green:#1aacb3; --red:#e16b3e; --ref-magenta:#2b2b28; --code-bg:#f5f4ef; }
 
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }   /* .slider-row/.legend set display:flex, which outranks it otherwise */
   body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; line-height:1.45; }
   .page { max-width:1520px; margin:0 auto; padding:28px 24px 72px; display:flex; flex-direction:column; gap:28px; }
   .eyebrow { font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); }
@@ -77,6 +78,9 @@ HEAD_TOP2 = """\
   .panel-title { font-weight:650; font-size:13px; }
 
   .swatch { width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:-1px; border:1px solid var(--panel-border); }
+  .legend { display:flex; flex-wrap:wrap; gap:2px 12px; font-size:10.5px; color:var(--text-faint); }
+  .chip { display:inline-block; font-size:10.5px; color:var(--text-dim); background:var(--code-bg);
+          border:1px solid var(--panel-border); border-radius:20px; padding:2px 9px; }
 
   .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
   .control { display:flex; flex-direction:column; gap:4px; }
@@ -135,6 +139,8 @@ __CALLOUT_BLOCK__  </div>
       <div style="font-size:11.5px; color:var(--text-faint); margin-top:4px; line-height:1.45;">
         When enabled, no far point is excluded as a “gap”: accuracy/F1 are computed over the whole cloud.
 __CHECKBOX_NOTE__      </div>
+      <div id="m3c2-tuner-note" hidden style="font-size:11.5px; color:var(--text-dim); margin-top:11px;
+           line-height:1.45; border-left:3px solid var(--panel-border); padding-left:10px;"></div>
       <div id="tuner-stats" class="panel-stats mono" style="margin-top:10px;">Loading...</div>
     </div>
   </section>
@@ -386,6 +392,35 @@ const GREEN = [0.102, 0.675, 0.702];   // #1aacb3 - teal, not green: validated f
 const RED = [0.882, 0.420, 0.243];     // #e16b3e - softened (white-blended) for a calmer look at high point density
 const MAGENTA = [0.169, 0.169, 0.157];   // #2b2b28 - dark graphite, reserved for "reference/other-cloud overlay" everywhere
 
+// M3C2's own diverging palette. Deliberately NOT the teal/orange used above for
+// "within t / beyond t": those two colours already carry a meaning on this page, and M3C2
+// answers a different question - which SIDE of the reference surface the reconstruction is
+// on - so reusing them would quietly attach a second meaning to the same two colours.
+// Blue and brick are far apart under every common colour-vision deficiency; the two greys
+// are what a reader should NOT read a magnitude into, so they are kept unsaturated.
+const M3C2_OUT_PALE = [0.898, 0.784, 0.769], M3C2_OUT_DEEP = [0.698, 0.094, 0.169];  // recon outside the ref
+const M3C2_IN_PALE  = [0.769, 0.831, 0.898], M3C2_IN_DEEP  = [0.129, 0.400, 0.675];  // recon inside the ref
+const M3C2_NOISE    = [0.588, 0.596, 0.573];   // |d| <= that point's own LoD95
+const M3C2_NOPAIR   = [0.855, 0.859, 0.839];   // nothing to compare against in the cylinder
+const M3C2_FULL_CM  = 10;                      // |d| at which the ramp reaches full saturation
+
+// Grey is the whole point of the LoD: below it, the offset is not distinguishable from the
+// roughness of the two clouds plus this row's alignment error, so it must not read as a
+// small-but-real difference. Above it the ramp starts pale (just past the threshold) and
+// deepens with the offset - a white midpoint would be invisible on a white canvas.
+function m3c2Color(distCm, lodCm) {
+  if (!Number.isFinite(distCm)) return M3C2_NOPAIR;
+  if (Number.isFinite(lodCm) && Math.abs(distCm) <= lodCm) return M3C2_NOISE;
+  const outside = distCm < 0;
+  const pale = outside ? M3C2_OUT_PALE : M3C2_IN_PALE;
+  const deep = outside ? M3C2_OUT_DEEP : M3C2_IN_DEEP;
+  const k = Math.min(1, Math.abs(distCm) / M3C2_FULL_CM);
+  return [pale[0] + (deep[0] - pale[0]) * k,
+          pale[1] + (deep[1] - pale[1]) * k,
+          pale[2] + (deep[2] - pale[2]) * k];
+}
+const rgbCss = c => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
+
 function solidColor(n, rgb) {
   const out = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { out[i*3]=rgb[0]; out[i*3+1]=rgb[1]; out[i*3+2]=rgb[2]; }
@@ -436,10 +471,25 @@ let farThreshold = FT_DEFAULT, epsCm = EPS_DEFAULT, minPts = MP_DEFAULT;
 const DBSCAN_DEFAULT_ON = !document.getElementById('no-dbscan-chk').checked;
 let applyDbscan = DBSCAN_DEFAULT_ON;
 
+// M3C2 arrives in its own <script> block (build_object_page.py: m3c2_block) - it shares no
+// pipeline with the Chamfer payload above, and an absent block just means no M3C2 tab.
+const M3C2 = (() => {
+  const el = document.getElementById('m3c2-data');
+  try { return el ? JSON.parse(el.textContent) : null; } catch { return null; }
+})();
+let panelsOnM3c2 = 0;   // how many panels currently have the M3C2 tab open (drives the tuner)
+
 const part1State = {};
 METHOD_IDS.forEach(methodId => {
   const d = PART1[methodId];
+  const m = M3C2 ? M3C2[methodId] : null;
   part1State[methodId] = {
+    m3c2: m ? {
+      ...m,
+      pos: b64ToFloat32(m.pos),
+      dist: b64ToFloat32(m.dist_cm),
+      lod: b64ToFloat32(m.lod_cm),
+    } : null,
     label: d.label,
     group: d.group,
     belowPos: b64ToFloat32(d.below_pos),
@@ -574,6 +624,56 @@ function buildAccuracyRender(methodId, t) {
   return { pos: new Float32Array(pos), color: new Float32Array(color) };
 }
 
+// The M3C2 layer is drawn straight from the embedded sample - no pool weighting to undo
+// (there is one pool), no exclusion mask to apply (M3C2 has none), so this only strides the
+// sample down to the panel's point budget.
+function buildM3c2Render(methodId) {
+  const m = part1State[methodId].m3c2;
+  const n = m.dist.length;
+  const draw = Math.min(n, RENDER_CAP);
+  const pos = new Float32Array(draw * 3), color = new Float32Array(draw * 3);
+  const step = n / draw;
+  for (let k = 0; k < draw; k++) {
+    const i = Math.min(n - 1, Math.floor(k * step));
+    pos[k*3] = m.pos[i*3]; pos[k*3+1] = m.pos[i*3+1]; pos[k*3+2] = m.pos[i*3+2];
+    const c = m3c2Color(m.dist[i], m.lod[i]);
+    color[k*3] = c[0]; color[k*3+1] = c[1]; color[k*3+2] = c[2];
+  }
+  return { pos, color };
+}
+
+// Everything under an M3C2 panel: what the four colours mean, the three figures the results
+// table also carries, how many core points had nothing to compare against, and the settings
+// the run used - including this row's own registration error, which is the natural place for
+// that assumption to become visible instead of living in a paragraph somewhere else.
+function m3c2PanelBlock(m) {
+  const num = v => (v ?? 0).toLocaleString('ru-RU');
+  const pct = v => v == null ? '—' : v.toFixed(1) + '%';
+  return `
+    <div class="m3c2-only" hidden>
+      <div class="legend">
+        <span><span class="swatch" style="background:${rgbCss(M3C2_OUT_DEEP)}"></span>outside the reference</span>
+        <span><span class="swatch" style="background:${rgbCss(M3C2_IN_DEEP)}"></span>inside it</span>
+        <span><span class="swatch" style="background:${rgbCss(M3C2_NOISE)}"></span>below its LoD95</span>
+        <span><span class="swatch" style="background:${rgbCss(M3C2_NOPAIR)}"></span>no pair</span>
+      </div>
+      <div class="panel-stats" style="margin-top:6px;">
+        median |d| = <b>${m.median_abs_cm == null ? '—' : m.median_abs_cm.toFixed(2) + ' cm'}</b>
+        &nbsp;·&nbsp; <b>${pct(m.significant_pct)}</b> beyond LoD95
+        &nbsp;·&nbsp; <b>${pct(m.outside_pct)}</b> of the paired points sit outside the reference<br>
+        <b>${num(m.n_unpaired)}</b> of <b>${num(m.n_corepoints)}</b> core points had no pair in the cylinder
+        <div style="margin-top:5px;"><span class="chip">M3C2: D=${m.D_cm.toFixed(0)} cm · d=${m.d_cm.toFixed(0)} cm
+          · core points ${m.voxel_cm.toFixed(0)} cm · reg.err = ${m.reg_err_cm.toFixed(2)} cm (this row's alignment RMSE)</span></div>
+        <div style="margin-top:5px; color:var(--text-faint);">
+          M3C2 is computed on core points thinned to ${m.voxel_cm.toFixed(0)} cm, so this cloud is sparser than the
+          Accuracy one${m.approx ? `, and ${num(m.n_corepoints - Math.min(m.n_corepoints, m.dist.length))} of them are left out of the drawing (the figures above are over all of them)` : ''}.
+          The DBSCAN tuner does not apply here — a gap in the reference removes itself, by leaving a core point
+          with nothing to pair with.
+        </div>
+      </div>
+    </div>`;
+}
+
 const part1Grid = document.getElementById('part1-grid');
 const part1Panels = {};
 
@@ -595,9 +695,10 @@ for (const methodId of METHOD_IDS) {
     <div class="tabs">
       <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
       <button class="tab-btn" data-tab="completeness">Completeness</button>
+      ${s.m3c2 ? '<button class="tab-btn" data-tab="m3c2">M3C2</button>' : ''}
       <button class="toggle-btn" data-overlay>LiDAR ref</button>
     </div>
-    <div class="slider-row">
+    <div class="slider-row chamfer-only">
       <span>t=</span><input type="range" min="0.5" max="15" step="0.1" value="3">
       <span class="mono thr-val">3.0cm</span>
       <div class="preset-btns">
@@ -606,10 +707,11 @@ for (const methodId of METHOD_IDS) {
         <button class="preset-btn" data-t="10">10</button>
       </div>
     </div>
-    <div class="panel-stats">
+    <div class="panel-stats chamfer-only">
       <span class="tab-pct">-</span> within t &nbsp;·&nbsp; <span class="f1">F1=-</span><br>
       <span class="mono">source n=${s.nSourceTotal} · target n=${PART1.n_target_total} · excluded≈<span class="excl-count">0</span></span>
     </div>
+    ${s.m3c2 ? m3c2PanelBlock(s.m3c2) : ''}
   `;
   part1Grid.appendChild(panel);
 
@@ -627,8 +729,9 @@ for (const methodId of METHOD_IDS) {
   let viewer = null;
 
   function overlayFor() {
-    // accuracy tab shows reconstruction -> overlay LiDAR; completeness tab shows LiDAR -> overlay reconstruction
-    if (activeTab === 'accuracy') return targetPosGlobal;
+    // accuracy and M3C2 draw the reconstruction -> overlay the LiDAR; completeness draws the
+    // LiDAR -> overlay the reconstruction
+    if (activeTab !== 'completeness') return targetPosGlobal;
     const r = buildAccuracyRender(methodId, 1e9); // all kept points, color irrelevant for an overlay
     return r.pos;
   }
@@ -640,8 +743,8 @@ for (const methodId of METHOD_IDS) {
     f1El.textContent = 'F1=' + m.f1Pct.toFixed(1) + '%';   // percent everywhere on the site
     exclEl.textContent = m.nExcluded.toLocaleString('ru-RU');
 
-    const main = activeTab === 'accuracy'
-      ? buildAccuracyRender(methodId, t)
+    const main = activeTab === 'accuracy' ? buildAccuracyRender(methodId, t)
+      : activeTab === 'm3c2' ? buildM3c2Render(methodId)
       : { pos: targetPosGlobal, color: thresholdColor(s.targetDist, t) };
 
     if (!viewer) {
@@ -669,7 +772,17 @@ for (const methodId of METHOD_IDS) {
   }));
   tabBtns.forEach(b => b.addEventListener('click', () => {
     tabBtns.forEach(x => x.classList.remove('active')); b.classList.add('active');
-    activeTab = b.dataset.tab; refresh();
+    const previous = activeTab;
+    activeTab = b.dataset.tab;
+    if (activeTab !== previous) {
+      // the t slider, the within-t/F1 line and the DBSCAN tuner all belong to the Chamfer
+      // metrics; on the M3C2 tab they would sit there looking live while changing nothing
+      panelsOnM3c2 += (activeTab === 'm3c2' ? 1 : 0) - (previous === 'm3c2' ? 1 : 0);
+      panel.querySelectorAll('.chamfer-only').forEach(el => { el.hidden = activeTab === 'm3c2'; });
+      panel.querySelectorAll('.m3c2-only').forEach(el => { el.hidden = activeTab !== 'm3c2'; });
+      syncDbscanUiState();
+    }
+    refresh();
   }));
   overlayBtn.addEventListener('click', () => {
     overlayBtn.classList.toggle('active');
@@ -745,9 +858,26 @@ mpSlider.addEventListener('input', () => {
 
 const noDbscanChk = document.getElementById('no-dbscan-chk');
 function syncDbscanUiState() {
-  // grey out + disable the three sliders when DBSCAN is off (they no longer affect anything)
-  [ftSlider, epsSlider, mpSlider].forEach(sl => { sl.disabled = !applyDbscan; });
-  document.querySelector('#tuner-section .controls').style.opacity = applyDbscan ? '1' : '0.4';
+  // grey out + disable the three sliders when they no longer affect anything: either DBSCAN
+  // is off, or every panel is showing M3C2, which does not use it. Leaving them live-looking
+  // on the M3C2 tab is the whole trap - a reader drags a slider, nothing moves, and concludes
+  // either that the page is broken or that the M3C2 numbers depend on a setting. They do not.
+  const allOnM3c2 = panelsOnM3c2 > 0 && panelsOnM3c2 === METHOD_IDS.length;
+  const live = applyDbscan && !allOnM3c2;
+  [ftSlider, epsSlider, mpSlider].forEach(sl => { sl.disabled = !live; });
+  document.querySelector('#tuner-section .controls').style.opacity = live ? '1' : '0.4';
+
+  const note = document.getElementById('m3c2-tuner-note');
+  note.hidden = panelsOnM3c2 === 0;
+  if (panelsOnM3c2) {
+    note.innerHTML = '<b>M3C2 does not use DBSCAN.</b> A gap in the reference excludes itself there: a core '
+      + 'point beside one simply finds nothing to pair with inside its cylinder, and leaves the statistics '
+      + 'instead of being scored as an error. '
+      + (allOnM3c2
+          ? 'Every panel is on the M3C2 tab, so these sliders currently change nothing.'
+          : `${panelsOnM3c2} of ${METHOD_IDS.length} panels are on the M3C2 tab; the sliders below still drive `
+            + 'the other ' + (METHOD_IDS.length - panelsOnM3c2) + '.');
+  }
 }
 noDbscanChk.addEventListener('change', () => {
   applyDbscan = !noDbscanChk.checked;

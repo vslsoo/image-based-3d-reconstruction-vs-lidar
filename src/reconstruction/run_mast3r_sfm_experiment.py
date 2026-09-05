@@ -44,6 +44,15 @@ from common import (
     resolve_path,
     select_image_subset,
 )
+from metrics import (
+    METRICS_PATH,
+    GPUMemorySampler,
+    RunTimer,
+    build_metrics_row,
+    classify_failure,
+    peak_rss_mib,
+    write_metrics_row,
+)
 
 MAST3R_ROOT = resolve_path("external/mast3r")
 sys.path.insert(0, str(MAST3R_ROOT))
@@ -72,44 +81,45 @@ def resolve_device(device_setting: str) -> str:
 # 1. MASt3R matching -> COLMAP database
 # ---------------------------------------------------------------------------
 
-def build_colmap_database(model, device: str, image_dir: Path, image_names: list[str], workspace_path: Path, config: dict) -> Path:
+def build_colmap_database(model, device: str, image_dir: Path, image_names: list[str], workspace_path: Path, config: dict, timer: RunTimer) -> Path:
     """Match images with MASt3R and write the correspondences into a COLMAP
     database, so the SfM stage can run on MASt3R matches instead of SIFT."""
     maxdim = max(model.patch_embed.img_size)
     patch_size = model.patch_embed.patch_size
 
     image_paths = [str(image_dir / name) for name in image_names]
-    imgs = load_images(image_paths, size=config["model"]["image_size"], verbose=False)
-    pairs = make_pairs(imgs, scene_graph=config["matching"]["scenegraph"], prefilter=None, symmetrize=True)
-    image_pairs_kapture = [(image_names[a["idx"]], image_names[b["idx"]]) for a, b in pairs]
+    with timer.stage("matching"):
+        imgs = load_images(image_paths, size=config["model"]["image_size"], verbose=False)
+        pairs = make_pairs(imgs, scene_graph=config["matching"]["scenegraph"], prefilter=None, symmetrize=True)
+        image_pairs_kapture = [(image_names[a["idx"]], image_names[b["idx"]]) for a, b in pairs]
 
-    kdata = kapture_import_image_folder_or_list(
-        (str(image_dir), image_names), config["matching"]["shared_intrinsics"]
-    )
+        kdata = kapture_import_image_folder_or_list(
+            (str(image_dir), image_names), config["matching"]["shared_intrinsics"]
+        )
 
-    database_path = workspace_path / "database.db"
-    if database_path.exists():
-        database_path.unlink()
-    colmap_db = COLMAPDatabase.connect(str(database_path))
-    kapture_to_colmap(
-        kdata, str(image_dir), tar_handler=None, database=colmap_db,
-        keypoints_type=None, descriptors_type=None, export_two_view_geometry=False,
-    )
-    colmap_image_pairs = run_mast3r_matching(
-        model, maxdim, patch_size, device,
-        kdata, str(image_dir), image_pairs_kapture, colmap_db,
-        config["matching"]["dense_matching"], config["matching"]["pixel_tol"],
-        config["matching"]["conf_thr"], config["matching"]["skip_geometric_verification"],
-        config["matching"]["min_len_track"], config["matching"]["subsample"],
-    )
-    colmap_db.close()
-    if not colmap_image_pairs:
-        raise RuntimeError("MASt3R matching kept no image pairs - check image overlap/quality.")
+        database_path = workspace_path / "database.db"
+        if database_path.exists():
+            database_path.unlink()
+        colmap_db = COLMAPDatabase.connect(str(database_path))
+        kapture_to_colmap(
+            kdata, str(image_dir), tar_handler=None, database=colmap_db,
+            keypoints_type=None, descriptors_type=None, export_two_view_geometry=False,
+        )
+        colmap_image_pairs = run_mast3r_matching(
+            model, maxdim, patch_size, device,
+            kdata, str(image_dir), image_pairs_kapture, colmap_db,
+            config["matching"]["dense_matching"], config["matching"]["pixel_tol"],
+            config["matching"]["conf_thr"], config["matching"]["skip_geometric_verification"],
+            config["matching"]["min_len_track"], config["matching"]["subsample"],
+        )
+        colmap_db.close()
+        if not colmap_image_pairs:
+            raise RuntimeError("MASt3R matching kept no image pairs - check image overlap/quality.")
 
-    if not config["matching"]["skip_geometric_verification"]:
-        pairs_txt = workspace_path / "pairs.txt"
-        pairs_txt.write_text("\n".join(f"{a} {b}" for a, b in colmap_image_pairs) + "\n")
-        pycolmap.verify_matches(str(database_path), str(pairs_txt))
+        if not config["matching"]["skip_geometric_verification"]:
+            pairs_txt = workspace_path / "pairs.txt"
+            pairs_txt.write_text("\n".join(f"{a} {b}" for a, b in colmap_image_pairs) + "\n")
+            pycolmap.verify_matches(str(database_path), str(pairs_txt))
 
     return database_path
 
@@ -118,32 +128,33 @@ def build_colmap_database(model, device: str, image_dir: Path, image_names: list
 # 2. SfM (classical mapper, seeded with MASt3R matches)
 # ---------------------------------------------------------------------------
 
-def run_sfm(database_path: Path, image_dir: Path, recon_path: Path, config: dict) -> tuple[Path, pycolmap.Reconstruction, dict]:
+def run_sfm(database_path: Path, image_dir: Path, recon_path: Path, config: dict, timer: RunTimer) -> tuple[Path, pycolmap.Reconstruction, dict]:
     recon_path.mkdir(parents=True, exist_ok=True)
     mapper = config["mapper"]["type"]
-    if mapper == "glomap":
-        glomap_bin = config["mapper"]["glomap_bin"]
-        if shutil.which(glomap_bin) is None:
-            raise RuntimeError(
-                f"mapper.type is 'glomap' but '{glomap_bin}' isn't on PATH. "
-                "Install GLOMAP or switch mapper.type to 'incremental' in config/mast3r_sfm.yaml."
+    with timer.stage("sfm_mapping"):
+        if mapper == "glomap":
+            glomap_bin = config["mapper"]["glomap_bin"]
+            if shutil.which(glomap_bin) is None:
+                raise RuntimeError(
+                    f"mapper.type is 'glomap' but '{glomap_bin}' isn't on PATH. "
+                    "Install GLOMAP or switch mapper.type to 'incremental' in config/mast3r_sfm.yaml."
+                )
+            glomap_run_mapper(glomap_bin, str(database_path), str(recon_path), str(image_dir))
+        elif mapper == "incremental":
+            pycolmap.incremental_mapping(
+                database_path=str(database_path),
+                image_path=str(image_dir),
+                output_path=str(recon_path),
+                options=pycolmap.IncrementalPipelineOptions({"multiple_models": False, "extract_colors": True}),
             )
-        glomap_run_mapper(glomap_bin, str(database_path), str(recon_path), str(image_dir))
-    elif mapper == "incremental":
-        pycolmap.incremental_mapping(
-            database_path=str(database_path),
-            image_path=str(image_dir),
-            output_path=str(recon_path),
-            options=pycolmap.IncrementalPipelineOptions({"multiple_models": False, "extract_colors": True}),
-        )
-    else:
-        raise ValueError(f"Unknown mapper.type: {mapper}")
+        else:
+            raise ValueError(f"Unknown mapper.type: {mapper}")
 
-    model_path = recon_path / "0"
-    if not model_path.exists():
-        raise RuntimeError("SfM mapping produced no reconstruction - check matches/overlap.")
+        model_path = recon_path / "0"
+        if not model_path.exists():
+            raise RuntimeError("SfM mapping produced no reconstruction - check matches/overlap.")
 
-    reconstruction = pycolmap.Reconstruction(str(model_path))
+        reconstruction = pycolmap.Reconstruction(str(model_path))
     stats = {
         "registered_images": reconstruction.num_reg_images(),
         "points3D": reconstruction.num_points3D(),
@@ -207,37 +218,80 @@ def main() -> None:
     image_names = [p.name for p in selected]
     print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir} (device={device})")
 
-    print(f"[{exp_id}] Loading MASt3R model...")
-    weights_setting = args.weights or config["model"]["weights"]
-    # a local .pth path is resolved relative to the repo; anything else (e.g.
-    # "naver/MASt3R_...") is passed through as a HuggingFace hub id
-    weights = str(resolve_path(weights_setting)) if weights_setting.endswith(".pth") else weights_setting
-    model = AsymmetricMASt3R.from_pretrained(weights).to(device)
+    timer = RunTimer()
+    gpu_sampler = GPUMemorySampler().start()
+    status, failure_reason = "success", None
+    sfm_stats = {"registered_images": None}
+    output_stats: dict = {}
+    parameters = {
+        "device": device,
+        "image_size": config["model"]["image_size"],
+        "scenegraph": config["matching"]["scenegraph"],
+        "shared_intrinsics": config["matching"]["shared_intrinsics"],
+        "dense_matching": config["matching"]["dense_matching"],
+        "subsample": config["matching"]["subsample"],
+        "conf_thr": config["matching"]["conf_thr"],
+        "mapper": config["mapper"]["type"],
+    }
 
-    print(f"[{exp_id}] Running MASt3R matching -> COLMAP database...")
-    database_path = build_colmap_database(model, device, subset_dir, image_names, output_dir, config)
+    try:
+        print(f"[{exp_id}] Loading MASt3R model...")
+        weights_setting = args.weights or config["model"]["weights"]
+        # a local .pth path is resolved relative to the repo; anything else (e.g.
+        # "naver/MASt3R_...") is passed through as a HuggingFace hub id
+        weights = str(resolve_path(weights_setting)) if weights_setting.endswith(".pth") else weights_setting
+        with timer.stage("model_load"):
+            model = AsymmetricMASt3R.from_pretrained(weights).to(device)
 
-    print(f"[{exp_id}] Running SfM ({config['mapper']['type']})...")
-    sparse_path = output_dir / "sparse"
-    model_path, reconstruction, sfm_stats = run_sfm(database_path, subset_dir, sparse_path, config)
-    print(
-        f"[{exp_id}] SfM done: {sfm_stats['registered_images']}/{len(selected)} images registered, "
-        f"{sfm_stats['points3D']} points, mean reprojection error "
-        f"{sfm_stats['mean_reprojection_error']:.3f}px"
-    )
+        print(f"[{exp_id}] Running MASt3R matching -> COLMAP database...")
+        database_path = build_colmap_database(model, device, subset_dir, image_names, output_dir, config, timer)
 
-    ply_path = output_dir / f"{exp_id}_mast3r_sfm_{args.object_id}.ply"
-    reconstruction.export_PLY(str(ply_path))
-    print(f"[{exp_id}] Exported point cloud -> {ply_path}")
+        print(f"[{exp_id}] Running SfM ({config['mapper']['type']})...")
+        sparse_path = output_dir / "sparse"
+        model_path, reconstruction, sfm_stats = run_sfm(database_path, subset_dir, sparse_path, config, timer)
+        print(
+            f"[{exp_id}] SfM done: {sfm_stats['registered_images']}/{len(selected)} images registered, "
+            f"{sfm_stats['points3D']} points, mean reprojection error "
+            f"{sfm_stats['mean_reprojection_error']:.3f}px"
+        )
 
-    log_lines = [
-        f"Registered images: {sfm_stats['registered_images']}/{len(selected)}",
-        f"Points in reconstruction: {sfm_stats['points3D']}",
-        f"Observations: {sfm_stats['observations']}",
-        f"Mean track length: {sfm_stats['mean_track_length']:.6f}",
-        f"Mean reprojection error: {sfm_stats['mean_reprojection_error']:.6f}px",
-        f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
-    ]
+        ply_path = output_dir / f"{exp_id}_mast3r_sfm_{args.object_id}.ply"
+        with timer.stage("export"):
+            reconstruction.export_PLY(str(ply_path))
+        print(f"[{exp_id}] Exported point cloud -> {ply_path}")
+        output_stats = {
+            "num_points": sfm_stats["points3D"],
+            "mean_reprojection_error_px": round(sfm_stats["mean_reprojection_error"], 6),
+            "mean_track_length": round(sfm_stats["mean_track_length"], 6),
+        }
+
+        log_lines = [
+            f"Registered images: {sfm_stats['registered_images']}/{len(selected)}",
+            f"Points in reconstruction: {sfm_stats['points3D']}",
+            f"Observations: {sfm_stats['observations']}",
+            f"Mean track length: {sfm_stats['mean_track_length']:.6f}",
+            f"Mean reprojection error: {sfm_stats['mean_reprojection_error']:.6f}px",
+            f"Point cloud: {ply_path.relative_to(resolve_path('.'))}",
+        ]
+    except Exception as exc:
+        status = "failed"
+        failure_reason = classify_failure(exc)
+        log_lines = [f"FAILED: {failure_reason}"]
+        raise
+    finally:
+        peak_vram_mib = gpu_sampler.stop()
+        metrics_row = build_metrics_row(
+            exp_id=exp_id, object_id=args.object_id, method="mast3r_sfm",
+            status=status, failure_reason=failure_reason,
+            num_images_input=len(selected),
+            num_images_registered=sfm_stats.get("registered_images"),
+            timer=timer, peak_ram_mib=peak_rss_mib(), peak_vram_mib=peak_vram_mib,
+            output_stats=output_stats, config_file=args.config,
+            selection_method=selection_method, seed=config["image_selection"]["seed"],
+            parameters=parameters,
+        )
+        write_metrics_row(metrics_row)
+        print(f"[{exp_id}] Logged metrics to {METRICS_PATH}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,
@@ -247,16 +301,7 @@ def main() -> None:
         output_dir_rel=output_dir_rel,
         total_images=len(selected),
         selection_method=selection_method,
-        parameters={
-            "device": device,
-            "image_size": config["model"]["image_size"],
-            "scenegraph": config["matching"]["scenegraph"],
-            "shared_intrinsics": config["matching"]["shared_intrinsics"],
-            "dense_matching": config["matching"]["dense_matching"],
-            "subsample": config["matching"]["subsample"],
-            "conf_thr": config["matching"]["conf_thr"],
-            "mapper": config["mapper"]["type"],
-        },
+        parameters=parameters,
         log_lines=log_lines,
     )
     append_experiment_entry(experiments_path, entry)

@@ -13,11 +13,20 @@ model:
   # (no optimization loop like MASt3R's global alignment), so it's usable on
   # CPU too, just slower and without the bfloat16/float16 autocast speedup
   # that's only applied on CUDA.
-  image_mode: crop
+  image_mode: pad
   # crop | pad - passed to vggt.utils.load_fn.load_and_preprocess_images.
   # "crop" (upstream default) sets width to 518px and center-crops height;
   # "pad" preserves all pixels (letterboxed to a 518x518 square) at the cost
   # of some wasted/empty area - see that function's docstring for details.
+  #
+  # Why "pad" here rather than the upstream default: these objects are shot in
+  # portrait (3024x4032). "crop" resizes to 518x686 and then center-crops the
+  # height to 518 - i.e. it throws away ~25% of the frame, and on a bollard /
+  # lamppost / sign that is exactly the top and bottom of the object, the parts
+  # the reconstruction is being scored on. "pad" instead makes the long side
+  # 518 (392x518 for this aspect ratio) and letterboxes to a square, so the
+  # whole frame reaches the model; the object ends up at a slightly lower
+  # linear resolution, but nothing is cut off.
 
 export:
   use_point_map: true

@@ -39,6 +39,15 @@ from common import (
     resolve_path,
     select_image_subset,
 )
+from metrics import (
+    METRICS_PATH,
+    GPUMemorySampler,
+    RunTimer,
+    build_metrics_row,
+    classify_failure,
+    peak_rss_mib,
+    write_metrics_row,
+)
 from run_colmap_experiment import count_ply_vertices, run_dense_reconstruction
 
 HLOC_ROOT = resolve_path("external/hloc")
@@ -68,23 +77,29 @@ def write_window_pairs(output_path: Path, image_names: list[str], window_size: i
         f.write("\n".join(f"{image_names[i]} {image_names[j]}" for i, j in sorted(pairs)))
 
 
-def run_sparse_reconstruction(image_dir: Path, workspace_path: Path, config: dict) -> tuple[Path, dict]:
+def run_sparse_reconstruction(image_dir: Path, workspace_path: Path, config: dict, timer: RunTimer) -> tuple[Path, dict]:
     feature_conf = extract_features.confs[config["features"]["conf"]]
     matcher_conf = match_features.confs[config["matching"]["conf"]]
     image_names = [p.name for p in list_images(image_dir)]
 
     pairs_path = workspace_path / "pairs.txt"
-    if config["matching"].get("pairing", "exhaustive") == "window":
-        write_window_pairs(pairs_path, image_names, config["matching"]["window_size"])
-    else:
-        pairs_from_exhaustive.main(pairs_path, image_list=image_names)
+    # pairing is folded into the "matching" stage (like run_colmap_experiment.py's
+    # pycolmap.match_exhaustive/match_sequential) so stage names line up across methods
+    with timer.stage("matching"):
+        if config["matching"].get("pairing", "exhaustive") == "window":
+            write_window_pairs(pairs_path, image_names, config["matching"]["window_size"])
+        else:
+            pairs_from_exhaustive.main(pairs_path, image_list=image_names)
 
-    features_path = extract_features.main(feature_conf, image_dir, export_dir=workspace_path)
+    with timer.stage("feature_extraction"):
+        features_path = extract_features.main(feature_conf, image_dir, export_dir=workspace_path)
+
     matches_path = workspace_path / "matches.h5"
-    match_features.main(
-        matcher_conf, pairs_path, features=features_path,
-        export_dir=workspace_path, matches=matches_path,
-    )
+    with timer.stage("matching"):
+        match_features.main(
+            matcher_conf, pairs_path, features=features_path,
+            export_dir=workspace_path, matches=matches_path,
+        )
 
     sfm_path = workspace_path / "sparse"
     camera_mode = (
@@ -92,11 +107,12 @@ def run_sparse_reconstruction(image_dir: Path, workspace_path: Path, config: dic
         if config["camera"]["single_camera"]
         else pycolmap.CameraMode.AUTO
     )
-    reconstruction_obj = reconstruction.main(
-        sfm_path, image_dir, pairs_path, features_path, matches_path,
-        camera_mode=camera_mode,
-        image_options={"camera_model": config["camera"]["camera_model"]},
-    )
+    with timer.stage("sparse_mapping"):
+        reconstruction_obj = reconstruction.main(
+            sfm_path, image_dir, pairs_path, features_path, matches_path,
+            camera_mode=camera_mode,
+            image_options={"camera_model": config["camera"]["camera_model"]},
+        )
     if reconstruction_obj is None:
         raise RuntimeError("hloc/COLMAP reconstruction failed - check image overlap/quality.")
 
@@ -162,34 +178,77 @@ def main() -> None:
     subset_dir = copy_image_subset(selected, output_dir / "images")
     print(f"[{exp_id}] Selected {len(selected)} images ({selection_method}) -> {subset_dir}")
 
-    print(f"[{exp_id}] Running sparse reconstruction (SuperPoint+LightGlue -> COLMAP)...")
-    model_path, sparse_stats = run_sparse_reconstruction(subset_dir, output_dir, config)
-    print(
-        f"[{exp_id}] Sparse done: {sparse_stats['registered_images']}/{len(selected)} images registered, "
-        f"{sparse_stats['points3D']} points, mean reprojection error "
-        f"{sparse_stats['mean_reprojection_error']:.3f}px"
-    )
+    timer = RunTimer()
+    gpu_sampler = GPUMemorySampler().start()
+    status, failure_reason = "success", None
+    sparse_stats = {"registered_images": None}
+    output_stats: dict = {}
+    parameters = {
+        "camera_model": config["camera"]["camera_model"],
+        "single_camera": config["camera"]["single_camera"],
+        "features": config["features"]["conf"],
+        "matching": config["matching"]["conf"],
+        "pairing": config["matching"].get("pairing", "exhaustive"),
+        "window_size": config["matching"].get("window_size"),
+        "dense_max_image_size": config["dense"]["max_image_size"],
+    }
 
-    log_lines = [
-        f"Registered images: {sparse_stats['registered_images']}/{len(selected)}",
-        f"Points in sparse reconstruction: {sparse_stats['points3D']}",
-        f"Observations: {sparse_stats['observations']}",
-        f"Mean track length: {sparse_stats['mean_track_length']:.6f}",
-        f"Mean reprojection error: {sparse_stats['mean_reprojection_error']:.6f}px",
-    ]
+    try:
+        print(f"[{exp_id}] Running sparse reconstruction (SuperPoint+LightGlue -> COLMAP)...")
+        model_path, sparse_stats = run_sparse_reconstruction(subset_dir, output_dir, config, timer)
+        print(
+            f"[{exp_id}] Sparse done: {sparse_stats['registered_images']}/{len(selected)} images registered, "
+            f"{sparse_stats['points3D']} points, mean reprojection error "
+            f"{sparse_stats['mean_reprojection_error']:.3f}px"
+        )
 
-    if args.skip_dense:
-        print(f"[{exp_id}] Dense reconstruction skipped: debug run via --skip-dense")
-        log_lines.append("Dense reconstruction skipped: debug run via --skip-dense (not a full experiment)")
-    else:
-        print(f"[{exp_id}] Running dense reconstruction...")
-        fused_path, dense_stats = run_dense_reconstruction(model_path, subset_dir, output_dir, config)
-        renamed_path = fused_path.with_name(f"{exp_id}_hloc_colmap_{args.object_id}.ply")
-        fused_path.rename(renamed_path)
-        fused_path = renamed_path
-        print(f"[{exp_id}] Dense done: {dense_stats['fused_points']} points -> {fused_path}")
-        log_lines.append(f"Dense fused point cloud: {dense_stats['fused_points']} points")
-        log_lines.append(f"Point cloud: {fused_path.relative_to(resolve_path('.'))}")
+        log_lines = [
+            f"Registered images: {sparse_stats['registered_images']}/{len(selected)}",
+            f"Points in sparse reconstruction: {sparse_stats['points3D']}",
+            f"Observations: {sparse_stats['observations']}",
+            f"Mean track length: {sparse_stats['mean_track_length']:.6f}",
+            f"Mean reprojection error: {sparse_stats['mean_reprojection_error']:.6f}px",
+        ]
+        output_stats = {
+            "num_points": sparse_stats["points3D"],
+            "mean_reprojection_error_px": round(sparse_stats["mean_reprojection_error"], 6),
+            "mean_track_length": round(sparse_stats["mean_track_length"], 6),
+        }
+
+        if args.skip_dense:
+            print(f"[{exp_id}] Dense reconstruction skipped: debug run via --skip-dense")
+            log_lines.append("Dense reconstruction skipped: debug run via --skip-dense (not a full experiment)")
+            status = "partial"
+            failure_reason = "dense_skipped_debug_run"
+        else:
+            print(f"[{exp_id}] Running dense reconstruction...")
+            fused_path, dense_stats = run_dense_reconstruction(model_path, subset_dir, output_dir, config, timer)
+            renamed_path = fused_path.with_name(f"{exp_id}_hloc_colmap_{args.object_id}.ply")
+            fused_path.rename(renamed_path)
+            fused_path = renamed_path
+            print(f"[{exp_id}] Dense done: {dense_stats['fused_points']} points -> {fused_path}")
+            log_lines.append(f"Dense fused point cloud: {dense_stats['fused_points']} points")
+            log_lines.append(f"Point cloud: {fused_path.relative_to(resolve_path('.'))}")
+            output_stats["num_points_dense"] = dense_stats["fused_points"]
+    except Exception as exc:
+        status = "failed"
+        failure_reason = classify_failure(exc)
+        log_lines = [f"FAILED: {failure_reason}"]
+        raise
+    finally:
+        peak_vram_mib = gpu_sampler.stop()
+        metrics_row = build_metrics_row(
+            exp_id=exp_id, object_id=args.object_id, method="hloc_colmap",
+            status=status, failure_reason=failure_reason,
+            num_images_input=len(selected),
+            num_images_registered=sparse_stats.get("registered_images"),
+            timer=timer, peak_ram_mib=peak_rss_mib(), peak_vram_mib=peak_vram_mib,
+            output_stats=output_stats, config_file=args.config,
+            selection_method=selection_method, seed=config["image_selection"].get("seed", 42),
+            parameters=parameters,
+        )
+        write_metrics_row(metrics_row)
+        print(f"[{exp_id}] Logged metrics to {METRICS_PATH}")
 
     entry = format_experiment_entry(
         exp_id=exp_id,
@@ -199,15 +258,7 @@ def main() -> None:
         output_dir_rel=output_dir_rel,
         total_images=len(selected),
         selection_method=selection_method,
-        parameters={
-            "camera_model": config["camera"]["camera_model"],
-            "single_camera": config["camera"]["single_camera"],
-            "features": config["features"]["conf"],
-            "matching": config["matching"]["conf"],
-            "pairing": config["matching"].get("pairing", "exhaustive"),
-            "window_size": config["matching"].get("window_size"),
-            "dense_max_image_size": config["dense"]["max_image_size"],
-        },
+        parameters=parameters,
         log_lines=log_lines,
     )
     append_experiment_entry(experiments_path, entry)

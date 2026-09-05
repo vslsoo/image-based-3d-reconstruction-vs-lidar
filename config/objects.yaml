@@ -1,4 +1,144 @@
 objects:
+  bollard_003_test_1_n15:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool: 15 images, greedily farthest-point-selected by pairwise SIFT/RANSAC overlap (proxy for viewing angle, since these are individually-shot photos with no pose data) after a quality gate dropping the blurriest 10% (Laplacian variance). Produced by src/data_preparation/select_nested_diverse_frames.py. Nested: selected_15 subset of selected_30 subset of selected_45 subset of selected_60 (see sibling _n30/_n45/_n60 object_ids) - same underlying selection order, just longer prefixes, so results across the 4 sizes are directly comparable. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested/selected_15
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_n30:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool: 30 images (the _n15 set's 15 images plus 15 more, filling the next-biggest coverage gaps). See _n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested/selected_30
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_n45:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool: 45 images (the _n30 set plus 15 more). See _n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested/selected_45
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_n60:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool: 60 images (the _n45 set plus 15 more, intended to fully surround the object from all sides). See _n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested/selected_60
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_manual_n15:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool, hand-picked by the user (not the SIFT-overlap greedy algorithm behind the sibling _n15/_n30/_n45/_n60 object_ids - see data/images/bollard_003_test_1/pool_69/frame_list.txt for the manual ranking): 15 images. Nested: selected_15 subset of selected_30 subset of selected_45 subset of selected_60 (see sibling _manual_n30/_manual_n45/_manual_n60 object_ids), same underlying manual rank order, just longer prefixes. Images are read in filename/EXIF capture order (via list_images), not the user's manual rank order, so pairing/matching still sees them sorted. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested_manual/selected_15
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_manual_n30:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool, hand-picked by the user (the _manual_n15 set's 15 images plus 15 more). See _manual_n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested_manual/selected_30
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_manual_n45:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool, hand-picked by the user (the _manual_n30 set plus 15 more). See _manual_n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested_manual/selected_45
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_manual_n60:
+    class: bollard
+    description: "Nested coverage-diversity subset of bollard_003_test_1's full 69-photo original pool, hand-picked by the user (the _manual_n45 set plus 15 more, intended to fully surround the object from all sides). See _manual_n15 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1/nested_manual/selected_60
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1_pool69:
+    class: bollard
+    description: "Full, uncurated 69-photo original candidate pool for bollard_003_test_1 (source pool the nested_manual/nested N=15/30/45/60 subsets and the curated selected_44 were all drawn from). Running COLMAP + hloc+COLMAP + MASt3R-GA (logwin-7) + VGGT, all 69 images."
+    images_dir: data/images/bollard_003_test_1/pool_69
+    # lidar_path: not yet cropped for this test_1 capture specifically - a LiDAR crop
+    # exists for the base bollard_003 object (data/lidar/bollard_003/), same physical
+    # object, but needs its own registration to be usable here.
+
+  information_sign_002_test_1_n25:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool: 25 images, greedily farthest-point-selected by pairwise SIFT/RANSAC overlap (proxy for viewing angle, since these are individually-shot photos with no pose data) after a quality gate dropping the blurriest 10% (Laplacian variance). Produced by src/data_preparation/select_nested_diverse_frames.py. Nested: selected_25 subset of selected_50 subset of selected_75 subset of selected_100 (see the sibling _n50/_n75/_n100 object_ids) - same underlying selection order, just longer prefixes, so results across the 4 sizes are directly comparable (each larger set is the smaller one plus more distinct viewpoints, not a re-randomized pick). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested/selected_25
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_n50:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool: 50 images (the _n25 set's 25 images plus 25 more, filling the next-biggest coverage gaps). See _n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested/selected_50
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_n75:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool: 75 images (the _n50 set plus 25 more). See _n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested/selected_75
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_n100:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool: 100 images (the _n75 set plus 25 more, intended to fully surround the object from all sides). See _n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested/selected_100
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_manual_n25:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool, hand-picked by the user (not the SIFT-overlap greedy algorithm behind the sibling _n25/_n50/_n75/_n100 object_ids - see data/images/information_sign_002_test_1/pool_128/frame_list.txt for the manual ranking): 25 images. Nested: selected_25 subset of selected_50 subset of selected_75 (see sibling _manual_n50/_manual_n75 object_ids), same underlying manual rank order, just longer prefixes. Images are read in filename/EXIF capture order (via list_images), not the user's manual rank order, so pairing/matching still sees them sorted. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested_manual/selected_25
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_manual_n50:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool, hand-picked by the user (the _manual_n25 set's 25 images plus 25 more). See _manual_n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested_manual/selected_50
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_manual_n75:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool, hand-picked by the user (the _manual_n50 set plus 25 more). See _manual_n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested_manual/selected_75
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1_manual_n100:
+    class: information_sign
+    description: "Nested coverage-diversity subset of information_sign_002_test_1's full 128-photo original pool, hand-picked by the user (the _manual_n75 set plus 25 more; 100 of the 128 total, remaining 28 not selected). See _manual_n25 for the selection method. Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1/nested_manual/selected_100
+    # lidar_path: not yet cropped
+
+  bollard_003_test_1:
+    class: bollard
+    description: "Bollard (same object as bollard_003), test capture 1 of 3 comparing capture setups: 44 individually-shot HEIC photos (converted to JPG), curated subset (selected_44). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_1
+    # lidar_path: not yet cropped
+
+  bollard_003_test_2:
+    class: bollard
+    description: "Bollard (same object as bollard_003), test capture 2 of 3 comparing capture setups: 44 individually-shot HEIC photos (converted to JPG), curated subset (selected_44). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_2
+    # lidar_path: not yet cropped
+
+  bollard_003_test_3:
+    class: bollard
+    description: "Bollard (same object as bollard_003), test capture 3 of 3 comparing capture setups: 44 individually-shot HEIC photos (converted to JPG), curated subset (selected_44). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/bollard_003_test_3
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_1:
+    class: information_sign
+    description: "Information sign (same object as information_sign_002), test capture 1 of 3 comparing capture setups: 48 individually-shot HEIC photos (converted to JPG), curated subset (selected_48 of ~121 candidates in the same session). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_1
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_2:
+    class: information_sign
+    description: "Information sign (same object as information_sign_002), test capture 2 of 3 comparing capture setups: 48 individually-shot HEIC photos (converted to JPG). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_2
+    # lidar_path: not yet cropped
+
+  information_sign_002_test_3:
+    class: information_sign
+    description: "Information sign (same object as information_sign_002), test capture 3 of 3 comparing capture setups: 48 individually-shot HEIC photos (converted to JPG). Running COLMAP + MASt3R-GA."
+    images_dir: data/images/information_sign_002_test_3
+    # lidar_path: not yet cropped
+
   bus_stop_sign_001:
     class: bus_stop_sign
     description: "Bus stop sign, 35 individually-shot HEIC photos (converted to JPG), same pattern as other _00N objects this session. compute_image_overlap.py exhaustive check (all 595 pairs) showed weak overlap: median 0.6%, 583/595 pairs <20%. Running all 4 methods (MASt3R-GA default, VGGT, COLMAP, hloc+COLMAP - latter two with exhaustive matching/pairing and geom_consistency disabled, per config/reconstruction_busstop.yaml and config/hloc_colmap_busstop.yaml). No LiDAR reference crop yet."
@@ -151,3 +291,84 @@ objects:
       src/data_preparation/extract_video_frames.py on the video to populate
       images/jpg before reconstruction. Not yet run: no experiments exist for
       this object.
+
+  flashlight_004:
+    class: flashlight
+    description: "Fourth flashlight capture: 105 individually-shot JPEG photos (already JPEG, no HEIC conversion needed), EXIF timestamps present so capture-order sorting works. Running COLMAP + hloc+COLMAP + MASt3R-GA (logwin-7) + VGGT."
+    images_dir: data/images/flashlight_004/images
+    # lidar_path: not yet cropped - no crop exists for this object yet; reconstructions
+    # can run without it, but accuracy/completeness/F1 against LiDAR cannot be computed
+    # until src/data_preparation/crop_objects_from_lidar.py is run locally (per
+    # workflow_pod_split memory, LiDAR stays local/off the pod).
+    notes: >
+      Same busstop-family capture pattern as flashlight_001/flashlight_003
+      (individually-shot photos, not a video walk-around) - using
+      config/reconstruction_busstop.yaml / config/hloc_colmap_busstop.yaml for
+      COLMAP / hloc+COLMAP (exhaustive matching + geom_consistency:false) and
+      config/mast3r_ga_logwin.yaml (scenegraph: logwin-7, not the swin-8 default)
+      for MASt3R-GA, all 105 images. flashlight_003's overlap check showed weak
+      overlap (median 1.1%, most pairs <20%) - likely a similar tall/thin object,
+      worth checking reconstruction quality the same way.
+
+  bus_stop_sign_002_master:
+    class: bus_stop_sign
+    description: "Bus stop sign (same physical object as bus_stop_sign_002), separate 'master' capture: 42 individually-shot JPEG photos (already JPEG, no HEIC conversion needed, EXIF timestamps present), distinct from the numbered 79-photo set already used for bus_stop_sign_002's 4-method comparison. Running MASt3R-GA (logwin-7) only, per user request."
+    images_dir: data/images/bus_stop_sign_002/images_master
+    # lidar_path: not yet cropped - same caveat as bus_stop_sign_002 itself.
+
+  bus_stop_002_master:
+    class: bus_stop
+    description: "Bus stop (same physical object as bus_stop_002), separate 'master' capture: 81 individually-shot JPEG photos (already JPEG, no HEIC conversion needed, EXIF timestamps present), distinct from the numbered 96-photo set already used for bus_stop_002's 4-method comparison. Running MASt3R-GA (logwin-7) and VGGT only, per user request."
+    images_dir: data/images/bus_stop_002/images_master
+    # lidar_path: not yet cropped - same caveat as bus_stop_002 itself.
+
+  bus_stop_002:
+    class: bus_stop
+    description: "Bus stop, second capture: 96 individually-shot JPEG photos (already JPEG, no HEIC conversion needed), EXIF timestamps present so capture-order sorting works. Running COLMAP + hloc+COLMAP + MASt3R-GA (logwin-7) + VGGT."
+    images_dir: data/images/bus_stop_002/images
+    # lidar_path: not yet cropped - no crop exists for this object yet; reconstructions
+    # can run without it, but accuracy/completeness/F1 against LiDAR cannot be computed
+    # until src/data_preparation/crop_objects_from_lidar.py is run locally (per
+    # workflow_pod_split memory, LiDAR stays local/off the pod).
+    notes: >
+      Same busstop-family capture pattern as bus_stop_001/bus_stop_sign_001/
+      bus_stop_sign_002/information_sign_002 (individually-shot photos, not a video
+      walk-around) - using config/reconstruction_busstop.yaml /
+      config/hloc_colmap_busstop.yaml for COLMAP / hloc+COLMAP (exhaustive matching +
+      geom_consistency:false) and config/mast3r_ga_logwin.yaml (scenegraph: logwin-7,
+      not the swin-8 default) for MASt3R-GA, all 96 images.
+
+  bus_stop_sign_002:
+    class: bus_stop_sign
+    description: "Bus stop sign, second capture: 79 individually-shot JPEG photos (already JPEG, no HEIC conversion needed), EXIF timestamps present so capture-order sorting works. Running COLMAP + hloc+COLMAP + MASt3R-GA (logwin-7) + VGGT."
+    images_dir: data/images/bus_stop_sign_002/images
+    # lidar_path: not yet cropped - no crop exists for this object yet; reconstructions
+    # can run without it, but accuracy/completeness/F1 against LiDAR cannot be computed
+    # until src/data_preparation/crop_objects_from_lidar.py is run locally (per
+    # workflow_pod_split memory, LiDAR stays local/off the pod).
+    notes: >
+      Same busstop-family capture pattern as bus_stop_sign_001/bus_stop_001/
+      information_sign_002 (individually-shot photos, not a video walk-around) -
+      using config/reconstruction_busstop.yaml / config/hloc_colmap_busstop.yaml
+      for COLMAP / hloc+COLMAP (exhaustive matching + geom_consistency:false) and
+      config/mast3r_ga_logwin.yaml (scenegraph: logwin-7, not the swin-8 default)
+      for MASt3R-GA, all 79 images.
+
+  bench_004:
+    class: bench
+    description: "Park bench, fourth capture: 94 individually-shot HEIC photos (converted to JPG). Running COLMAP + hloc+COLMAP + MASt3R-GA (logwin-7) + VGGT."
+    images_dir: data/images/bench_004
+    # lidar_path: not yet cropped - no Sensat-Euston crop exists for this object yet;
+    # reconstructions can run without it, but accuracy/completeness/F1 against LiDAR
+    # cannot be computed until src/data_preparation/crop_objects_from_lidar.py is run
+    # locally (per workflow_pod_split memory, LiDAR stays local/off the pod).
+    notes: >
+      Individually-shot photos, not a video walk-around - same capture style as
+      bus_stop_001/information_sign_002, which needed exhaustive matching +
+      geom_consistency:false to avoid sparse-model fragmentation and the
+      pycolmap-cuda12 4.1.0 dense-fusion SIGSEGV. Using
+      config/reconstruction_busstop.yaml / config/hloc_colmap_busstop.yaml for
+      COLMAP / hloc+COLMAP for the same reason, all 94 images (no LiDAR yet to
+      size N against; bench_002/bench_003's own reference dims look
+      suspiciously identical to each other and shouldn't be trusted as a
+      stand-in - see summary_all_objects notes).
