@@ -602,9 +602,46 @@ def build_html(data: dict) -> str:
     return wrap_html(json.dumps(data).replace("</", "<\\/"))
 
 
+PERF_JSON = PROJECT_ROOT / "docs" / "tables" / "performance_study_summary.json"
+SUMMARY_JSON = PROJECT_ROOT / "docs" / "tables" / "frame_count_study_summary.json"
+
+
+def cost_block() -> str:
+    """<script id="cost-data">: what each of these 20 reconstructions cost to compute.
+
+    Accuracy and wall-clock time were measured by two different builders and lived on two
+    different pages, so "is N=100 worth three times the time" could not be answered on either.
+    They join on exp_id - and only on exp_id: (object, N, method) would also match the
+    hloc+COLMAP and VGGT sweeps in the performance table, which this ablation does not include.
+    Every row must find a timing; a missing one means the two tables have drifted apart.
+    """
+    if not (PERF_JSON.exists() and SUMMARY_JSON.exists()):
+        print(f"  ! {PERF_JSON.name} or {SUMMARY_JSON.name} missing - the cost table is left out")
+        return ""
+    perf = json.loads(PERF_JSON.read_text())
+    time_by_exp, ram_by_exp = {}, {}
+    for obj in perf["objects"]:
+        for series in obj["series"].values():
+            for exp, t, ram in zip(series["exp_ids"], series["time_s"], series["ram_mib"]):
+                time_by_exp[exp] = t
+                ram_by_exp[exp] = ram
+    rows = []
+    for r in json.loads(SUMMARY_JSON.read_text()):
+        if r["exp_id"] not in time_by_exp:
+            print(f"  ! no timing for {r['exp_id']} - it is missing from {PERF_JSON.name}")
+            continue
+        rows.append({"object": r["object"], "method": r["method"], "size": r["size"], "exp_id": r["exp_id"],
+                     "time_s": time_by_exp[r["exp_id"]], "ram_mib": ram_by_exp[r["exp_id"]],
+                     "f1_3cm": r["f1_3cm"], "f1_ci_lo": r["f1_ci_lo"], "f1_ci_hi": r["f1_ci_hi"]})
+    data = {"rows": rows, "hardware": {"ram_gib": perf.get("ram_total_gib"), "vram_mib": perf.get("vram_total_mib")}}
+    payload = json.dumps(data).replace("</", "<\\/")
+    return f'<script type="application/json" id="cost-data">{payload}</script>\n'
+
+
 def wrap_html(payload: str) -> str:
     head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("frame_count_study"))
-    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    return (head + f'\n<script type="application/json" id="page-data">{payload}</script>\n'
+            + cost_block() + MAIN_JS + HTML_TAIL)
 
 
 def relayout() -> None:

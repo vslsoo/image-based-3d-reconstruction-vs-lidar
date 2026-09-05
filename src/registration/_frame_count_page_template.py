@@ -82,7 +82,7 @@ HTML_HEAD = r"""<!doctype html>
   .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
   .panel-title { font-weight:650; font-size:12.5px; display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
   .panel-title .exp { font-size:10px; color:var(--text-faint); font-weight:500; }
-  canvas { width:100%; height:220px; display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
+  canvas { width:100%; height:var(--canvas-h, 220px); display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
 
   .tabs { display:flex; flex-wrap:wrap; gap:5px; }
@@ -233,11 +233,19 @@ __NAV_CSS__
   </section>
 
 
-  <div class="subtitle" style="max-width:92ch">
-    <b>Is the largest N worth what it costs?</b> This page only says what the extra frames buy in
-    accuracy. What they cost in wall-clock time, RAM and VRAM is measured on the same runs in
-    <a href="performance_study.html">compute cost</a> — read the two together before choosing an N.
-  </div>
+  <hr class="sep">
+  <section id="cost-section">
+    <h2>What do those frames cost?</h2>
+    <div class="subtitle" style="max-width:92ch">
+      The two halves of the question, on one line each: what a larger N costs in wall-clock time, and
+      what it buys in F1. Joined on <span class="mono">exp_id</span>, so each row is one reconstruction
+      timed and scored — no averaging across runs. <b>Δ vs smallest</b> compares against the cheapest
+      set of the same object and method; <b>Δ vs previous</b> against one step down. A difference is
+      marked <b>resolvable</b> only when its 95%&nbsp;CI excludes 0 (the paired test above).
+    </div>
+    <div class="grid-wrap"><div id="cost-table-wrap"></div></div>
+    <div id="cost-note" class="subtitle" style="font-size:11.5px;"></div>
+  </section>
 
   <footer>information_sign_002: exp_109–114, exp_123–128 (COLMAP + MASt3R-GA swin-8 + MASt3R-GA logwin-7) · bollard_003: exp_115–122 (COLMAP + MASt3R-GA swin-8) · manual frame selection · src/registration/build_frame_count_study_page.py</footer>
 </div>
@@ -247,7 +255,7 @@ __NAV_CSS__
 MAIN_JS = r"""<script>
 const DATA = JSON.parse(document.getElementById('page-data').textContent);
 const FLOOR_CM = DATA.floor_cm;
-const RENDER_CAP = 8000;
+const RENDER_CAP = 14000;   // total points drawn per panel, split between the two pools
 const HEAT_VMAX = 15.0; // cm mapped to the top of the turbo scale
 // Each object has its own `sizes` list (a small bollard and a big sign need very
 // different N, so there's no one shared global SIZES) - panels/table/curves all index by
@@ -357,7 +365,21 @@ function makeViewer(canvas, layers) {
     if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; if(z<minZ)minZ=z; if(z>maxZ)maxZ=z; }
   const center = [(minX+maxX)/2,(minY+maxY)/2,(minZ+maxZ)/2];
   const diag = Math.hypot(maxX-minX,maxY-minY,maxZ-minZ) || 1;
-  let azimuth = 0.6, elevation = 0.25, distance = diag * 1.35;
+  // Fit the camera to the object instead of to its 3D diagonal. A 2.5 m sign in a panel of
+  // this shape was drawn at 1.35x its diagonal, which is a good distance for a compact object
+  // and much too far for a thin tall one - the cloud came out a narrow strip with the detail
+  // too small to read. This takes the vertical extent and the worst-case horizontal extent
+  // over an orbit (the XY diagonal, since the camera turns), converts each into the distance
+  // that just fits it in the current viewport, and keeps the larger with a 5% margin.
+  const halfV = (maxZ - minZ) / 2 || diag / 2;
+  const halfH = Math.hypot(maxX - minX, maxY - minY) / 2 || diag / 2;
+  const FOV_Y = Math.PI / 4, MARGIN = 1.05;
+  function fitDistance() {
+    const aspect = (canvas.clientWidth || 1) / (canvas.clientHeight || 1);
+    const tanY = Math.tan(FOV_Y / 2), tanX = tanY * aspect;
+    return Math.max(halfV / tanY, halfH / tanX) * MARGIN;
+  }
+  let azimuth = 0.6, elevation = 0.25, distance = fitDistance();
   function resize(){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=canvas.clientWidth*dpr,h=canvas.clientHeight*dpr;
     if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } }
   function draw(){
@@ -384,8 +406,10 @@ function makeViewer(canvas, layers) {
   canvas.addEventListener('pointermove',e=>{ if(!dragging)return;
     azimuth+=(e.clientX-lastX)*0.008; elevation=Math.max(-1.5,Math.min(1.5,elevation-(e.clientY-lastY)*0.008));
     lastX=e.clientX; lastY=e.clientY; draw(); });
-  canvas.addEventListener('wheel',e=>{ e.preventDefault(); distance=Math.max(diag*0.1,Math.min(diag*6,distance*(1+e.deltaY*0.001))); draw(); }, { passive:false });
-  const onResize = () => draw();
+  canvas.addEventListener('wheel',e=>{ e.preventDefault(); userZoomed=true;
+    distance=Math.max(diag*0.05,Math.min(diag*6,distance*(1+e.deltaY*0.001))); draw(); }, { passive:false });
+  let userZoomed = false;
+  const onResize = () => { if (!userZoomed) distance = fitDistance(); draw(); };
   window.addEventListener('resize', onResize);
   draw();
   return {
@@ -432,6 +456,19 @@ for (const key in DATA.panels) {
 }
 const objTargetPos = {};
 for (const o of DATA.objects) objTargetPos[o.id] = b64ToFloat32(o.target_pos);
+
+// A tall thin object (the sign is 2.5 m over a ~0.5 m footprint) in a panel wider than it is
+// tall wastes most of the panel and leaves the cloud too small to read. Give those objects a
+// taller canvas; compact and long-low ones keep the default.
+function canvasHeightFor(posArr) {
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for (let i=0;i<posArr.length;i+=3){ const x=posArr[i],y=posArr[i+1],z=posArr[i+2];
+    if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; if(z<minZ)minZ=z; if(z>maxZ)maxZ=z; }
+  const foot = Math.max(maxX-minX, maxY-minY) || 1;
+  const aspect = (maxZ-minZ) / foot;
+  return aspect >= 2 ? 340 : (aspect >= 1.2 ? 280 : 220);
+}
+
 
 function recomputeExclusion(key, ft, eps, mp, applyDbscan) {
   const s = panelState[key];
@@ -504,23 +541,53 @@ function buildMain(key, tab, t, colorMode) {
       color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2]; }
     return { pos, color };
   }
+  // What gets drawn has to look like what the number says. Taking the FIRST RENDER_CAP points
+  // of each pool did neither: it drew the two pools 1:1 whatever their real sizes (so a panel
+  // reading "74% within t" came out half red), and it took a contiguous slab of voxel order
+  // rather than a sample spread over the object. Now the budget is split in proportion to the
+  // true population of each pool and each pool is strided, so the colour mix on screen is the
+  // percentage in the readout. Kept ("beyond t") points go in first so that where two points
+  // land at the same depth, the within-t one is the one the depth test keeps.
+  let kept=0;
+  for (let i=0;i<s.keptMask.length;i++) if (s.keptMask[i]) kept++;
+  const belowTrue = s.nBelowTrue;
+  const keptTrue = s.candidateDist.length ? s.nCandTrue * (kept / s.candidateDist.length) : 0;
+  const total = belowTrue + keptTrue;
+  let nKeptDraw = total > 0 ? Math.min(kept, Math.round(RENDER_CAP * keptTrue / total)) : 0;
+  let nBelowDraw = Math.min(s.belowDist.length, RENDER_CAP - nKeptDraw);
   const pos=[], color=[];
-  const nBelow=Math.min(RENDER_CAP, s.belowDist.length);
-  for (let i=0;i<nBelow;i++){ pos.push(s.belowPos[i*3],s.belowPos[i*3+1],s.belowPos[i*3+2]);
-    const c = colorMode==='turbo' ? turbo(s.belowDist[i],HEAT_VMAX) : (s.belowDist[i]<=t?GREEN:RED); color.push(c[0],c[1],c[2]); }
-  let shown=0;
-  for (let i=0;i<s.candidateDist.length && shown<RENDER_CAP;i++){ if(!s.keptMask[i]) continue;
-    pos.push(s.candidatePos[i*3],s.candidatePos[i*3+1],s.candidatePos[i*3+2]);
-    const c = colorMode==='turbo' ? turbo(s.candidateDist[i],HEAT_VMAX) : (s.candidateDist[i]<=t?GREEN:RED); color.push(c[0],c[1],c[2]); shown++; }
+  const push = (px,py,pz,dist) => { pos.push(px,py,pz);
+    const c = colorMode==='turbo' ? turbo(dist,HEAT_VMAX) : (dist<=t?GREEN:RED); color.push(c[0],c[1],c[2]); };
+  if (nKeptDraw > 0) {
+    const step = kept / nKeptDraw;
+    let seen=0, drawn=0;
+    for (let i=0;i<s.candidateDist.length && drawn<nKeptDraw;i++){
+      if(!s.keptMask[i]) continue;
+      if (seen++ >= drawn*step) { push(s.candidatePos[i*3],s.candidatePos[i*3+1],s.candidatePos[i*3+2],s.candidateDist[i]); drawn++; }
+    }
+  }
+  if (nBelowDraw > 0) {
+    const step = s.belowDist.length / nBelowDraw;
+    for (let k=0;k<nBelowDraw;k++){ const i=Math.min(s.belowDist.length-1, Math.floor(k*step));
+      push(s.belowPos[i*3],s.belowPos[i*3+1],s.belowPos[i*3+2],s.belowDist[i]); }
+  }
   return { pos:new Float32Array(pos), color:new Float32Array(color) };
 }
+// The reconstruction as an overlay on the completeness view. Strided like buildMain, so the
+// overlay is the whole cloud thinned rather than the first slab of it.
 function keptReconPos(key) {
   const s = panelState[key]; const pos=[];
-  const nBelow=Math.min(RENDER_CAP, s.belowDist.length);
-  for (let i=0;i<nBelow;i++) pos.push(s.belowPos[i*3],s.belowPos[i*3+1],s.belowPos[i*3+2]);
-  let shown=0;
-  for (let i=0;i<s.candidateDist.length && shown<RENDER_CAP;i++){ if(!s.keptMask[i]) continue;
-    pos.push(s.candidatePos[i*3],s.candidatePos[i*3+1],s.candidatePos[i*3+2]); shown++; }
+  const half = Math.floor(RENDER_CAP / 2);
+  const nBelow = Math.min(half, s.belowDist.length);
+  const stepB = nBelow ? s.belowDist.length / nBelow : 1;
+  for (let k=0;k<nBelow;k++){ const i=Math.min(s.belowDist.length-1, Math.floor(k*stepB));
+    pos.push(s.belowPos[i*3],s.belowPos[i*3+1],s.belowPos[i*3+2]); }
+  let kept=0;
+  for (let i=0;i<s.keptMask.length;i++) if (s.keptMask[i]) kept++;
+  const nKept = Math.min(half, kept), stepK = nKept ? kept / nKept : 1;
+  let seen=0, drawn=0;
+  for (let i=0;i<s.candidateDist.length && drawn<nKept;i++){ if(!s.keptMask[i]) continue;
+    if (seen++ >= drawn*stepK) { pos.push(s.candidatePos[i*3],s.candidatePos[i*3+1],s.candidatePos[i*3+2]); drawn++; } }
   return new Float32Array(pos);
 }
 
@@ -601,6 +668,7 @@ for (const obj of DATA.objects) {
   `;
   objRoot.appendChild(block);
   objView[obj.id] = { tab: 'accuracy', colorMode: 'threshold', overlay: false, t: 3.0 };
+  block.style.setProperty('--canvas-h', canvasHeightFor(objTargetPos[obj.id]) + 'px');
   block.querySelector('.controls-slot').appendChild(buildObjectControls(obj));
 
 
@@ -760,7 +828,7 @@ function buildTable() {
   const wrap=document.getElementById('summary-table-wrap');
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">N</th><th class="txt">Method</th>'
-    + '<th id="th-f1">F1@3cm</th><th>95% CI</th><th id="th-acc">Acc@3cm</th><th id="th-comp">Comp@3cm</th><th>Acc median</th><th>Comp median</th>'
+    + '<th id="th-f1">F1@3cm</th><th>95% CI</th><th id="th-acc">Acc@3cm</th><th id="th-comp">Comp@3cm</th><th>Acc median (cm)</th><th>Comp median (cm)</th>'
     + '<th>#pts (raw→matched)</th><th>inlier RMSE@3cm (mm)</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
@@ -1152,8 +1220,75 @@ document.querySelectorAll('#thr-toggle .tab-btn').forEach(b => b.addEventListene
   updateTable(); updateCurves();
 }));
 
+// ---------- what the frames cost (accuracy x wall-clock, joined on exp_id) ----------
+// COST is optional: if build_frame_count_study_page.py could not find the performance table
+// the block simply is not emitted, and this section removes itself rather than showing gaps.
+const COST = (() => {
+  const el = document.getElementById('cost-data');
+  try { return el ? JSON.parse(el.textContent) : null; } catch { return null; }
+})();
+
+function sigFor(objId, method, nLo, nHi) {
+  return DATA.n_significance.find(r => r.metric === 'F1' && r.object === objId && r.method === method
+                                       && r.n_lo === nLo && r.n_hi === nHi);
+}
+function fmtTime(sec) {
+  return sec >= 3600 ? `${(sec / 3600).toFixed(1)} h` : (sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.round(sec)} s`);
+}
+function deltaCell(r) {
+  if (!r) return '<td>—</td>';
+  const sig = !r.includes_zero;
+  const col = sig ? (r.delta > 0 ? 'var(--best)' : 'var(--red)') : 'var(--text-faint)';
+  return `<td style="color:${col}; font-weight:${sig ? 650 : 400};" title="95% CI [${r.ci_lo.toFixed(1)}, ${r.ci_hi.toFixed(1)}]">`
+    + `${r.delta > 0 ? '+' : ''}${r.delta.toFixed(1)}${sig ? ' *' : ''}</td>`;
+}
+
+function renderCost() {
+  const section = document.getElementById('cost-section');
+  if (!COST || !COST.rows.length) { if (section) section.remove(); return; }
+  const byKey = {};
+  for (const r of COST.rows) byKey[`${r.object}__${r.method}__${r.size}`] = r;
+
+  let h = '<table class="summary"><thead><tr>'
+    + '<th class="txt">Object</th><th class="txt">Method</th><th>N</th><th>time</th><th>× time vs smallest</th>'
+    + '<th>peak RAM (GiB)</th><th>F1@3cm</th><th>ΔF1 vs smallest</th><th>ΔF1 vs previous</th></tr></thead><tbody>';
+  for (const obj of DATA.objects) {
+    const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
+    for (const method of methods) {
+      const sizes = obj.sizes.filter(n => byKey[`${obj.id}__${method}__${n}`]);
+      if (!sizes.length) continue;
+      const base = byKey[`${obj.id}__${method}__${sizes[0]}`];
+      sizes.forEach((n, i) => {
+        const r = byKey[`${obj.id}__${method}__${n}`];
+        const ratio = base.time_s > 0 ? r.time_s / base.time_s : NaN;
+        h += `<tr${i === 0 ? ' class="grouprule"' : ''}>`
+          + `<td class="txt">${i === 0 && method === methods[0] ? obj.title.replace(/ \(.*\)$/, '') : ''}</td>`
+          + `<td class="txt">${i === 0 ? DATA.method_label[method] : ''}</td>`
+          + `<td>${n}</td><td>${fmtTime(r.time_s)}</td>`
+          + `<td>${i === 0 ? '—' : ratio.toFixed(1) + '×'}</td>`
+          + `<td>${(r.ram_mib / 1024).toFixed(1)}</td>`
+          + `<td class="f1cell">${r.f1_3cm.toFixed(1)}</td>`
+          + (i === 0 ? '<td>—</td>' : deltaCell(sigFor(obj.id, method, sizes[0], n)))
+          + (i === 0 ? '<td>—</td>' : deltaCell(sigFor(obj.id, method, sizes[i - 1], n)))
+          + '</tr>';
+      });
+    }
+  }
+  h += '</tbody></table>';
+  document.getElementById('cost-table-wrap').innerHTML = h;
+
+  const hw = COST.hardware || {};
+  document.getElementById('cost-note').innerHTML =
+    `* = 95% CI excludes 0. Every run is timed on the same pod (one NVIDIA L40S, `
+    + `${hw.ram_mib ? '' : ''}${hw.ram_gib ?? '?'}&nbsp;GiB RAM, ${(hw.vram_mib ?? 0).toLocaleString('en-US')}&nbsp;MiB VRAM), `
+    + `so the columns are comparable across methods — but the methods work at different input resolutions, `
+    + `which <a href="performance_study.html">compute cost</a> sets out in full. Times are the whole `
+    + `reconstruction, model load included.`;
+}
+
 // ---------- init ----------
 buildTable();
+renderCost();
 renderSig();
 for (const obj of DATA.objects) recomputeObject(obj.id);
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
