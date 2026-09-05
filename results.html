@@ -104,8 +104,7 @@
       Every reconstruction on this site, scored the same way: density-matched onto the reference's
       1&nbsp;cm grid, source↔target Chamfer distances, gap-aware Accuracy / Completeness / F1. Each object
       uses the gap-detection setting its own page defaults to, and the numbers are computed over the full
-      clouds — identical to <span class="mono">docs/tables/summary_all_objects_accuracy_f1.xlsx</span> and to
-      the “Main results” sheet of <span class="mono">FINAL_results.xlsx</span>.
+      clouds, and identical to the figures reported in the dissertation.
     </div>
   </div>
 
@@ -158,9 +157,9 @@
             <i>did</i> pair, and two rows with different “no pair” shares are medians over different parts of
             the object. <span class="mono">registration_error</span> is not one constant for all rows: each
             row is given its own alignment RMSE, the column immediately to the left. These three read the
-            comparison from the reconstruction's side; the mirror run — core points on the LiDAR, where “no
-            pair” instead means reference surface the reconstruction never covered — is in
-            <span class="mono">docs/tables/m3c2_final_six.json</span>.
+            comparison from the reconstruction's side. The mirror run — core points on the LiDAR, where “no
+            pair” instead means reference surface the reconstruction never covered — was computed as well and
+            is reported in the dissertation.
           </div>
         </details>
       </div>
@@ -372,8 +371,7 @@ function renderIouChart() {
     + `artefact of where the grid happens to start, and their references are incomplete as well, so the unscanned `
     + `volume counts against every method. That is why the column sits under <i>diagnostics</i> with a per-object `
     + `flag rather than beside F1. A caveat that applies everywhere: IoU has no natural scale — each object's IoU `
-    + `roughly doubles from a 2 cm voxel to a 10 cm one, so the number means nothing without its voxel size. `
-    + `Full sweep: <span class="mono">docs/tables/voxel_iou_summary.xlsx</span>.`;
+    + `roughly doubles from a 2 cm voxel to a 10 cm one, so the number means nothing without its voxel size.`;
 }
 
 function cssvar(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
