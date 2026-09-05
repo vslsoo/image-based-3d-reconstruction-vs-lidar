@@ -118,17 +118,20 @@ HTML_HEAD = r"""<!doctype html>
   .grouprule td { border-top:2px solid var(--panel-border); }
 
 
-  /* Significance grid. The verdict card sits in the grid rather than in a side column - it
-     carries capture_comparison.html's aside styling so the two study pages still read as one
-     family, but it can no longer outgrow the panels next to it. */
+  /* Verdict column beside the significance panels, as on capture_comparison.html. `stretch`
+     (not `start`) makes the box exactly the height of the panel grid; the copy inside it is
+     kept short enough to fit that, which is what stopped it hanging off the section before. */
+  .with-aside { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; align-items:stretch; }
+  @media (max-width:1100px) { .with-aside { grid-template-columns:minmax(0,1fr); } }
+  .aside { background:var(--code-bg); border:1px solid var(--panel-border); border-left:3px solid var(--text-faint);
+           border-radius:10px; padding:12px 14px; font-size:12px; color:var(--text-dim); }
+  .aside b { color:var(--text); }
+  .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+              color:var(--text-faint); margin-bottom:6px; }
   /* 5 panels + the verdict card = exactly 3x2 on a desktop width, so the section is two even
      rows with no hole in it; below that it falls back to as many columns as fit. */
   .sig-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(310px,1fr)); gap:12px; }
   @media (min-width:1040px) { .sig-grid { grid-template-columns:repeat(3, minmax(0,1fr)); } }
-  .sig-verdict { background:var(--code-bg); border-left:3px solid var(--text-faint); font-size:12px; color:var(--text-dim); gap:0; }
-  .sig-verdict b { color:var(--text); }
-  .sig-verdict .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
-                    color:var(--text-faint); margin-bottom:6px; }
   .sig-grid svg { width:100%; height:auto; }
   .ci-cell { color:var(--text-faint); font-size:11px; }
 
@@ -211,15 +214,17 @@ HTML_HEAD = r"""<!doctype html>
       counts genuinely differ. <b>If it straddles 0</b>, the extra photos bought nothing measurable. Computed at
       3&nbsp;cm, at default gap-detection settings.
     </div>
-    <!-- The verdict rides in the grid as its last cell (5 panels + 1 card = a full 3x2), rather
-         than in a side column: as an aside it was half again as tall as the panels beside it and
-         hung off the bottom of the section. In the grid the row simply sizes to it. -->
-    <div id="sig-grid" class="sig-grid"></div>
-    <div style="font-size:10.5px; color:var(--text-faint); text-align:center; margin-top:8px;">
-      <span class="swatch" style="background:var(--best)"></span>more photos helped&nbsp;&nbsp;
-      <span class="swatch" style="background:var(--red)"></span>more photos hurt&nbsp;&nbsp;
-      <span class="swatch" style="background:var(--text-faint)"></span>within noise (95% CI spans 0)
-      &nbsp;&middot;&nbsp; * = 95% CI excludes 0
+    <div class="with-aside">
+      <div>
+        <div id="sig-grid" class="sig-grid"></div>
+        <div style="font-size:10.5px; color:var(--text-faint); text-align:center; margin-top:8px;">
+          <span class="swatch" style="background:var(--best)"></span>more photos helped&nbsp;&nbsp;
+          <span class="swatch" style="background:var(--red)"></span>more photos hurt&nbsp;&nbsp;
+          <span class="swatch" style="background:var(--text-faint)"></span>within noise (95% CI spans 0)
+          &nbsp;&middot;&nbsp; * = 95% CI excludes 0
+        </div>
+      </div>
+      <div class="aside" id="sig-aside"></div>
     </div>
   </section>
 
@@ -1012,10 +1017,8 @@ function renderSig() {
       if (panel) grid.appendChild(panel);
     }
   }
-  const card = document.createElement('div');
-  card.className = 'panel sig-verdict';
-  card.innerHTML = buildSigNarrative();
-  grid.appendChild(card);
+  const aside = document.getElementById('sig-aside');
+  if (aside) aside.innerHTML = buildSigNarrative();
 }
 
 // ---------- interpretation (auto from the live numbers) ----------
