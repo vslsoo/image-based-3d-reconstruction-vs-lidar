@@ -37,6 +37,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_XLSX = PROJECT_ROOT / "docs" / "tables" / "summary_all_objects_accuracy_f1_EN.xlsx"
 M3C2_JSON = PROJECT_ROOT / "docs" / "tables" / "m3c2_final_six.json"
 IOU_XLSX = PROJECT_ROOT / "docs" / "tables" / "voxel_iou_summary.xlsx"
+IOU_JSON = PROJECT_ROOT / "docs" / "tables" / "voxel_iou_summary.json"
 OUT_HTML = PROJECT_ROOT / "site" / "results.html"
 
 THRESHOLDS = ["3cm", "5cm", "10cm"]
@@ -120,10 +121,40 @@ def read_iou() -> tuple[dict, dict, dict]:
                      f'{r.get("largest per-method grid spread (pp)")} pp'),
         }
 
-    # For the chart: one line per object, IoU averaged over its four methods at each voxel
-    # size, with the grid-shift spread as a whisker. The spread is only measured at 5 cm (the
-    # sensitivity sheet's grid sweep runs there), so the whisker is drawn at that point alone
-    # rather than implied across the curve.
+    # For the chart: the smallest gap between two adjacent methods, on each of the 16 grid
+    # origins. This is the quantity the IoU verdict actually rests on, and the only honest way
+    # to draw it. Two obvious alternatives both mislead. Averaging the methods (what this chart
+    # showed at first) plots IoU against voxel size, which only says that bigger voxels overlap
+    # more - it averages away the dimension the finding lives in. Drawing the four methods with
+    # per-method grid-shift whiskers misleads the other way: on the lamppost the COLMAP-hloc gap
+    # is 5.0 pp while each method's own spread across grids is 7.2, so the whiskers overlap and
+    # the order looks unresolvable - but a grid shift moves every method together, so the order
+    # holds on all 16 grids and the gap never falls below 3.91. Only the per-grid GAP shows that.
+    per_grid_gaps: dict[str, dict] = {}
+    if IOU_JSON.exists():
+        by_obj: dict[str, dict[str, list]] = {}
+        for r in json.loads(IOU_JSON.read_text()).get("rows", []):
+            vals = (r.get("shift_study") or {}).get("iou_all_pct")
+            if vals:
+                by_obj.setdefault(r["object_id"], {})[r["method"]] = vals
+        for obj_id, methods in by_obj.items():
+            n = min(len(v) for v in methods.values())
+            gaps = []
+            for g in range(n):
+                vals = sorted(m[g] for m in methods.values())
+                gaps.append(round(min(b - a for a, b in zip(vals, vals[1:])), 3))
+            per_grid_gaps[obj_id] = {
+                "gaps": gaps,                     # index 0 is the true grid origin
+                "nominal": gaps[0] if gaps else None,
+                "min": min(gaps) if gaps else None,
+                "n_grids": n,
+                "n_methods": len(methods),
+            }
+    else:
+        print(f"  ! {IOU_JSON.name} not found - the per-grid gap chart is left out")
+
+    # kept for the note under the chart: the grid-shift spread of a single method
+
     spread = [r.get("grid shift: spread (pp)") for r in rows("sensitivity")]
     spread_by_obj: dict[str, list[float]] = {}
     for r in rows("sensitivity"):
@@ -144,6 +175,7 @@ def read_iou() -> tuple[dict, dict, dict]:
             "grid_spread_pp": round(max(sp), 2) if sp else None,
             "complete_reference": str(stability.get(obj_id, {}).get("reference", "")).startswith("complete"),
             "order_stable": bool(stability.get(obj_id, {}).get("stable")),
+            **(per_grid_gaps.get(obj_id, {})),
         }
     return per_row, stability, sweep
 
@@ -256,8 +288,15 @@ HTML = """<!doctype html>
   .tab-btn:hover { border-color:var(--accent); color:var(--text); }
   .tab-btn.active { background:var(--accent-soft); border-color:var(--accent); color:var(--text); font-weight:600; }
   .grid-wrap { overflow-x:auto; }
-  table.summary { border-collapse:collapse; font-size:11.5px; min-width:1430px; }  /* 15 columns incl. M3C2 */
+  /* Was pinned at 1430px for the widest layout, which held the compact view that wide too and
+     pushed "no pair" off a 1440px screen. The compact view needs ~1050; the diagnostics view is
+     wider than any laptop and scrolls inside .grid-wrap, which is what that wrapper is for. */
+  table.summary { border-collapse:collapse; font-size:11.5px; min-width:1050px; }
   table.summary th, table.summary td { padding:6px 8px; border-bottom:1px solid var(--panel-border); text-align:right; white-space:nowrap; }
+  /* headers wrap instead of forcing their column wide: "M3C2 |d| med (cm)" on one line cost
+     184 px and pushed "no pair" off a 1440 px screen */
+  table.summary th { white-space:normal; line-height:1.25; }
+  table.summary td.obj { white-space:normal; max-width:170px; overflow-wrap:anywhere; }
   table.summary th { font-weight:650; color:var(--text-dim); position:sticky; top:0; background:var(--panel); }
   table.summary td.txt, table.summary th.txt { text-align:left; }
   table.summary td.f1cell { font-weight:700; font-variant-numeric:tabular-nums; }
@@ -270,7 +309,12 @@ HTML = """<!doctype html>
   .iou-flag { display:block; font-size:9.5px; font-weight:600; letter-spacing:.02em; }
   .iou-flag.ok { color:var(--best); }
   .iou-flag.weak { color:var(--red); font-weight:500; }
-  .bar { display:inline-block; height:7px; border-radius:3px; background:var(--accent); opacity:.75; vertical-align:1px; }
+  /* the F1 cell carries its own bar as a background, so the chart costs no column. The best
+     value per object is then marked by colour rather than by a background, which the bar now
+     occupies. */
+  :root { --bar-soft:#dcece5; }
+  table.summary td.f1cell { background-size:100% 62%; background-position:left center; }
+  table.summary td.f1cell.best-cell { color:var(--best); font-weight:800; }
   .chip { display:inline-block; font-size:11px; color:var(--text-dim); background:var(--code-bg);
           border:1px solid var(--panel-border); border-radius:20px; padding:2px 10px; }
   /* the M3C2 block: separated because, unlike everything to its left, it does not move with t */
@@ -357,13 +401,15 @@ __NAV_CSS__
   <section id="iou-section" hidden>
     <h2>Voxel IoU, and where it can be read</h2>
     <div class="subtitle" style="max-width:96ch">
-      IoU asks a different question from F1 — how much of the occupied volume the two clouds share,
-      rather than how far apart their surfaces are — and it depends on a voxel size and a grid origin
-      that nothing in the data chooses for you. The curve below is that dependence: IoU per object,
-      averaged over its four methods, at 2, 3, 5 and 10&nbsp;cm.
+      IoU asks a different question from F1 — how much of the occupied volume the two clouds share, rather
+      than how far apart their surfaces are — but it depends on a voxel size and on where the grid happens
+      to start, and nothing in the data chooses either. The question that decides whether it can be used
+      as a ranking is therefore: <b>how far apart are two neighbouring methods, compared with how much a
+      grid shift moves them?</b> Each row below is one object, each dot one of 16 grid origins, and the
+      value is the smallest gap between two adjacent methods on that grid.
     </div>
     <div class="panel" style="max-width:760px;">
-      <svg id="iou-chart" viewBox="0 0 700 330" style="width:100%; height:auto;"></svg>
+      <svg id="iou-chart" viewBox="0 0 700 280" style="width:100%; height:auto;"></svg>
       <div id="iou-legend" style="font-size:11px; color:var(--text-dim); margin-top:6px;"></div>
     </div>
     <div class="note" id="iou-note" style="max-width:96ch;"></div>
@@ -416,20 +462,23 @@ function buildTable() {
   const diag = showDiagnostics;
   let h = '<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Method</th>'
-    + `<th id="th-f1">F1@${thr}</th><th></th><th>95% CI</th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
+    + `<th id="th-f1">F1@${thr}</th><th>95% CI</th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
     + '<th>ΔF1@10−3</th>'
+    // Chamfer is the metric people arrive looking for by name, and the paragraph explaining it
+    // is printed unconditionally - so the column belongs in the default view, next to ΔF1.
+    // align RMSE went the other way: it describes the registration, not the reconstruction,
+    // and the chapter does not quote it.
+    + '<th title="symmetric Chamfer distance: the mean of the two one-sided MEANS (reconstruction'
+    + ' to reference, and reference back), unsquared, in cm. Not the mean of the two medians.">Chamfer<br>(cm)</th>'
     + (diag
         ? '<th class="colsep">Acc med (cm)</th><th>Comp med (cm)</th>'
-          + '<th title="symmetric Chamfer distance: the mean of the two one-sided MEANS (reconstruction'
-          + ' to reference, and reference back), unsquared, in cm. Not the mean of the two medians in the'
-          + ' columns to the left.">Chamfer (cm)</th>'
           + '<th>align RMSE (mm)</th>'
           + '<th class="colsep" title="voxel IoU at 5 cm against the reference. Read the stability note '
           + 'beside it: on the four objects with an incomplete reference the ranking it gives is not '
           + 'reproducible across grid offsets.">IoU@5cm (%)</th>'
         : '')
     + (DATA.has_m3c2
-        ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d| med (cm)</th>'
+        ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d|<br>med (cm)</th>'
           + (diag
              ? '<th class="m3c2" title="core points whose |M3C2| exceeds their own LoD95 — a difference larger than '
                + 'the local roughness of both clouds plus the alignment error of that row">&gt; LoD95 (%)</th>'
@@ -447,18 +496,21 @@ function buildTable() {
       const isBest = (m[`f1_${thr}`] ?? 0) === best;
       const f1 = m[`f1_${thr}`];
       h += `<tr${i === 0 ? ' class="grouprule"' : ''}${isBest ? ' style="font-weight:500"' : ''}>`
-        + `<td class="txt">${i === 0 ? `<a href="${obj.page}">${obj.name}</a>`
+        + `<td class="txt obj">${i === 0 ? `<a href="${obj.page}">${obj.name}</a>`
              + `<div class="note">${obj.size_cm.map(v => (v / 100).toFixed(2)).join(' × ')} m · ${obj.dbscan_mode}</div>` : ''}</td>`
         + `<td class="txt">${m.method}</td>`
-        + `<td class="f1cell${isBest ? ' best-cell' : ''}">${fmt(f1)}</td>`
-        + `<td style="width:78px; text-align:left;"><span class="bar" style="width:${Math.max(0, (f1 ?? 0)) * 0.7}px"></span></td>`
+        // the bar was its own column; as a background of the F1 cell it costs no width at all
+        + `<td class="f1cell${isBest ? ' best-cell' : ''}" style="background-image:linear-gradient(to right,`
+        + ` var(--bar-soft) ${Math.max(0, Math.min(100, f1 ?? 0)).toFixed(0)}%, transparent 0);`
+        + ` background-repeat:no-repeat;">${fmt(f1)}</td>`
         + `<td class="mono ci-cell">${thr === '3cm' && m.f1_ci_lo != null
              ? `[${fmt(m.f1_ci_lo)}, ${fmt(m.f1_ci_hi)}]` : '—'}</td>`
         + `<td>${fmt(m[`acc_${thr}`])}</td><td>${fmt(m[`comp_${thr}`])}</td>`
         + `<td>${fmt(m.delta_10_3)}</td>`
+        + `<td>${fmt(m.chamfer_sym_cm, 2)}</td>`
         + (diag
             ? `<td class="colsep">${fmt(m.acc_median_cm, 2)}</td><td>${fmt(m.comp_median_cm, 2)}</td>`
-              + `<td>${fmt(m.chamfer_sym_cm, 2)}</td><td>${fmt(m.rmse_mm)}</td>`
+              + `<td>${fmt(m.rmse_mm)}</td>`
               + iouCell(obj, m)
             : '')
         + (DATA.has_m3c2 ? m3c2Cells(m, diag) : '')
@@ -483,86 +535,75 @@ function buildTable() {
     + `<a href="tuner.html">gap tuner</a> for what that line depends on.`;
 }
 
-// IoU vs voxel size. One line per object - solid where the reference is complete and the
-// ranking survives a grid shift, dashed where it does not - with the grid-shift spread as a
-// whisker at 5 cm, the one size that sweep was run at. The point of the picture is that the
-// metric has no natural scale: every object's IoU roughly doubles from 2 to 10 cm, so an IoU
-// figure means nothing without the voxel it was measured at.
-const IOU_COLORS = ['#c15c85', '#0d8054', '#5d63c7', '#1aacb3', '#e16b3e', '#8b9084'];
+// What the IoU verdict actually rests on: the smallest gap between two adjacent methods,
+// measured on each of the 16 grid origins. One row per object, 16 dots.
+//
+// The two charts this replaced would both have misled. IoU averaged over the methods only
+// shows that bigger voxels overlap more, and averages away the ranking entirely. Four
+// per-method lines with grid-shift whiskers mislead the other way: on the lamppost each
+// method moves 7.2 pp across grids while the COLMAP-hloc gap is 5.0, so the whiskers overlap
+// and the order looks unresolvable - but the shift moves every method together, and the order
+// in fact holds on all 16 grids. The gap between methods is what survives that common shift,
+// so it is the thing to plot.
+const IOU_OK = '--best', IOU_WEAK = '--red';
 
 function renderIouChart() {
   const sweep = DATA.iou_sweep || {};
-  const objects = DATA.objects.filter(o => sweep[o.id] && sweep[o.id].points.length);
+  const objects = DATA.objects.filter(o => (sweep[o.id] || {}).gaps && sweep[o.id].gaps.length);
   const sec = document.getElementById('iou-section'), sep = document.getElementById('iou-sep');
   if (!objects.length) return;
   sec.hidden = false; sep.hidden = false;
 
-  const W = 700, H = 330, padL = 46, padR = 158, padT = 14, padB = 44;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const xs = [2, 3, 5, 10];
-  const X = v => padL + (Math.log(v) - Math.log(2)) / (Math.log(10) - Math.log(2)) * plotW;
-  const allY = objects.flatMap(o => sweep[o.id].points.map(p => p.iou_mean));
-  const yHi = Math.min(100, Math.ceil((Math.max(...allY) + 6) / 10) * 10), yLo = 0;
-  const Y = v => padT + plotH - (v - yLo) / (yHi - yLo) * plotH;
+  const rowH = 34, padL = 118, padR = 74, padT = 22;
+  const W = 700, H = padT + objects.length * rowH + 46, plotW = W - padL - padR;
+  const all = objects.flatMap(o => sweep[o.id].gaps);
+  const lo = Math.min(...all) * 0.6, hi = Math.max(...all) * 1.5;
+  const X = v => padL + (Math.log(Math.max(v, lo)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * plotW;
   const tick = cssvar('--text-faint'), dim = cssvar('--text-dim');
 
   let s = '';
-  for (let y = yLo; y <= yHi; y += 10) {
-    s += `<line x1="${padL}" y1="${Y(y)}" x2="${padL + plotW}" y2="${Y(y)}" stroke="${tick}" stroke-opacity="0.15"/>`;
-    s += `<text x="${padL - 6}" y="${Y(y) + 3}" font-size="9.5" fill="${tick}" text-anchor="end">${y}</text>`;
+  for (const t of [0.05, 0.1, 0.5, 1, 5, 10]) {
+    if (t < lo || t > hi) continue;
+    s += `<line x1="${X(t).toFixed(1)}" y1="${padT - 8}" x2="${X(t).toFixed(1)}" y2="${padT + objects.length * rowH - 8}" stroke="${tick}" stroke-opacity="0.16"/>`;
+    s += `<text x="${X(t).toFixed(1)}" y="${padT + objects.length * rowH + 8}" font-size="9.5" fill="${tick}" text-anchor="middle">${t}</text>`;
   }
-  for (const v of xs) {
-    s += `<text x="${X(v).toFixed(1)}" y="${padT + plotH + 15}" font-size="9.5" fill="${dim}" text-anchor="middle">${v}</text>`;
-  }
-  s += `<text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 8}" font-size="10" fill="${dim}" text-anchor="middle">voxel size (cm, log scale)</text>`;
-  s += `<text x="12" y="${padT + plotH / 2}" font-size="10" fill="${dim}" transform="rotate(-90 12 ${padT + plotH / 2})" text-anchor="middle">IoU (%), mean over the four methods</text>`;
+  s += `<text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 8}" font-size="10" fill="${dim}" text-anchor="middle">smallest gap between two adjacent methods (percentage points, log scale)</text>`;
 
   objects.forEach((o, i) => {
-    const d = sweep[o.id], col = IOU_COLORS[i % IOU_COLORS.length];
-    const path = d.points.map((p, k) => `${k === 0 ? 'M' : 'L'}${X(p.voxel_cm).toFixed(1)},${Y(p.iou_mean).toFixed(1)}`).join(' ');
-    s += `<path d="${path}" fill="none" stroke="${col}" stroke-width="1.6"`
-      + `${d.complete_reference ? '' : ' stroke-dasharray="4,3"'}/>`;
-    for (const p of d.points) {
-      s += `<circle cx="${X(p.voxel_cm).toFixed(1)}" cy="${Y(p.iou_mean).toFixed(1)}" r="2.8" fill="${col}">`
-        + `<title>${o.name} · ${p.voxel_cm} cm: IoU ${p.iou_mean.toFixed(1)}% (mean of ${p.n_methods} methods)</title></circle>`;
-    }
-    // grid-shift whisker, at the one voxel size the shift sweep was run at
-    const five = d.points.find(p => p.voxel_cm === 5);
-    if (five && d.grid_spread_pp) {
-      const x = X(5), half = d.grid_spread_pp / 2;
-      const yA = Y(five.iou_mean - half), yB = Y(five.iou_mean + half);
-      s += `<line x1="${x.toFixed(1)}" y1="${yA.toFixed(1)}" x2="${x.toFixed(1)}" y2="${yB.toFixed(1)}" stroke="${col}" stroke-width="1.4" stroke-opacity="0.65"/>`;
-      for (const yy of [yA, yB]) s += `<line x1="${(x-3).toFixed(1)}" y1="${yy.toFixed(1)}" x2="${(x+3).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${col}" stroke-width="1.4" stroke-opacity="0.65"/>`;
-    }
+    const d = sweep[o.id];
+    const y = padT + i * rowH + 6;
+    const col = cssvar(d.order_stable ? IOU_OK : IOU_WEAK);
+    s += `<text x="${padL - 10}" y="${y + 3.5}" font-size="10.5" fill="${dim}" text-anchor="end">${o.name}</text>`;
+    s += `<line x1="${X(Math.min(...d.gaps)).toFixed(1)}" y1="${y}" x2="${X(Math.max(...d.gaps)).toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="1.2" stroke-opacity="0.35"/>`;
+    d.gaps.forEach((g, k) => {
+      // a touch of vertical jitter so 16 dots do not stack into one
+      const jy = y + ((k % 5) - 2) * 1.9;
+      s += `<circle cx="${X(g).toFixed(1)}" cy="${jy.toFixed(1)}" r="2.5" fill="${col}" fill-opacity="0.5">`
+        + `<title>${o.name} · grid ${k + 1} of ${d.n_grids}: smallest gap ${g.toFixed(2)} pp</title></circle>`;
+    });
+    const worst = Math.min(...d.gaps);
+    s += `<circle cx="${X(worst).toFixed(1)}" cy="${y}" r="3.6" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+    s += `<text x="${(padL + plotW + 8).toFixed(1)}" y="${y + 3.5}" font-size="9.5" fill="${col}" font-weight="${d.order_stable ? 650 : 400}">min ${worst.toFixed(2)}</text>`;
   });
-
-  // end-of-line labels, nudged apart: four of the six curves finish within a few points of
-  // each other at 10 cm and their names landed on top of one another
-  const labels = objects.map((o, i) => {
-    const last = sweep[o.id].points[sweep[o.id].points.length - 1];
-    return { name: o.name, col: IOU_COLORS[i % IOU_COLORS.length], x: X(last.voxel_cm) + 7, y: Y(last.iou_mean) + 3 };
-  }).sort((a, b) => a.y - b.y);
-  for (let i = 1; i < labels.length; i++) {
-    if (labels[i].y - labels[i - 1].y < 11) labels[i].y = labels[i - 1].y + 11;
-  }
-  for (const l of labels) {
-    s += `<text x="${l.x.toFixed(1)}" y="${l.y.toFixed(1)}" font-size="9.5" fill="${l.col}">${l.name}</text>`;
-  }
   document.getElementById('iou-chart').innerHTML = s;
 
-  const stable = objects.filter(o => sweep[o.id].order_stable).map(o => o.name);
-  const shaky = objects.filter(o => !sweep[o.id].order_stable).map(o => o.name);
+  const stable = objects.filter(o => sweep[o.id].order_stable);
+  const shaky = objects.filter(o => !sweep[o.id].order_stable);
+  const fmtList = arr => arr.map(o => `${o.name} (${Math.min(...sweep[o.id].gaps).toFixed(2)})`).join(', ');
   document.getElementById('iou-legend').innerHTML =
-    `solid = complete reference · dashed = incomplete · whisker at 5 cm = spread across 16 grid offsets`;
+    `each dot is one of the ${objects[0] ? sweep[objects[0].id].n_grids : 16} grid origins · ring = the worst of them · `
+    + `<span style="color:${cssvar(IOU_OK)}">green</span> = the IoU order holds on every grid, `
+    + `<span style="color:${cssvar(IOU_WEAK)}">red</span> = it does not`;
   document.getElementById('iou-note').innerHTML =
-    `<b>Where IoU can be read as a ranking: ${stable.join(' and ')}.</b> There the reference is complete, `
-    + `the IoU order matches the F1 order exactly (Spearman 1) and it holds at 3, 5 and 10 cm and on all 16 `
-    + `grid offsets, with 2–5 points between methods. <b>On ${shaky.join(', ')} it cannot.</b> Those references `
-    + `are incomplete, so the unscanned volume counts against every method; the orders disagree with F1 `
-    + `(Spearman 0.4–0.8), the smallest gap between two methods falls to 0.03–0.2 points on some grids, and one `
-    + `method moves up to 14 points across offsets on the bollard. That is why the column sits under `
-    + `<i>diagnostics</i> with a per-object flag rather than beside F1. Full sweep: `
-    + `<span class="mono">docs/tables/voxel_iou_summary.xlsx</span>.`;
+    `<b>The two groups separate by an order of magnitude.</b> On ${fmtList(stable)} — the objects whose reference `
+    + `is complete — two methods are never closer than about a point, the IoU order matches the F1 order exactly `
+    + `(Spearman 1) and it survives every grid origin, so IoU can be read as a ranking there. On ${fmtList(shaky)} `
+    + `the smallest gap collapses to hundredths of a point on some grids: the ranking those objects produce is an `
+    + `artefact of where the grid happens to start, and their references are incomplete as well, so the unscanned `
+    + `volume counts against every method. That is why the column sits under <i>diagnostics</i> with a per-object `
+    + `flag rather than beside F1. A caveat that applies everywhere: IoU has no natural scale — each object's IoU `
+    + `roughly doubles from a 2 cm voxel to a 10 cm one, so the number means nothing without its voxel size. `
+    + `Full sweep: <span class="mono">docs/tables/voxel_iou_summary.xlsx</span>.`;
 }
 
 function cssvar(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
