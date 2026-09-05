@@ -79,9 +79,8 @@ __NAV_CSS__
     <div class="subtitle">
       Pick an object and method, move the sliders, drag to rotate, watch the clusters. The far_threshold/eps ranges
       adapt automatically to each object's distance scale when you switch. This is an approximate explorer; the final
-      gap-excluded clouds are computed on the full data separately via
-      <code class="mono">remove_reference_gap_points.py</code> (without approximation,
-      see the note below about subsampling).
+      gap-excluded clouds are computed separately on the full data, without any approximation
+      (see the note below about subsampling).
     </div>
   </div>
 
@@ -120,7 +119,7 @@ __NAV_CSS__
     <div class="summary" id="summary-text"></div>
   </div>
 
-  <footer>approximate tuning tool (JS DBSCAN on a subsample of candidates) · final numbers are computed on the full data via src/registration/remove_reference_gap_points.py</footer>
+  <footer>approximate tuning tool (JS DBSCAN on a subsample of candidates) · final numbers are computed on the full data, not in the browser</footer>
 </div>
 
 """

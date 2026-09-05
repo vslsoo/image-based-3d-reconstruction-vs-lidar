@@ -247,7 +247,7 @@ __NAV_CSS__
     <div id="cost-note" class="subtitle" style="font-size:11.5px;"></div>
   </section>
 
-  <footer>information_sign_002: exp_109–114, exp_123–128 (COLMAP + MASt3R-GA swin-8 + MASt3R-GA logwin-7) · bollard_003: exp_115–122 (COLMAP + MASt3R-GA swin-8) · manual frame selection · src/registration/build_frame_count_study_page.py</footer>
+  <footer>information_sign_002: exp_109–114, exp_123–128 (COLMAP + MASt3R-GA swin-8 + MASt3R-GA logwin-7) · bollard_003: exp_115–122 (COLMAP + MASt3R-GA swin-8) · manual frame selection</footer>
 </div>
 """
 
@@ -860,7 +860,7 @@ function updateTable() {
         + `its defaults. A thinned cloud gives DBSCAN fewer clusters to find, so the gap mask under-excludes and `
         + `Accuracy reads low; return the tuner to its defaults for the exact figures.`
       : `Exact figures, computed on the full clouds — the same numbers as `
-        + `<span class="mono">docs/tables/frame_count_study_summary.xlsx</span>. Move the tuner and the table `
+        + `the ones reported in the dissertation. Move the tuner and the table `
         + `switches to the browser's live estimate from the embedded subsample.` + regRateNote();
   }
   // headers follow the threshold tabs - the columns did, but the labels used to stay at 3cm
