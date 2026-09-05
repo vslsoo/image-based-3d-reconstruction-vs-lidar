@@ -10,28 +10,28 @@
   /* forced light palette — matches the thesis-defense deck (index.html, white bg,
      forest-green accent), same values repeated in every theme block on purpose so it
      never flips dark, regardless of system prefers-color-scheme or a data-theme toggle.
-     Chart series hues (--s-*) are unchanged from the dataviz-skill-validated set —
-     those were already validated against a near-white surface. */
+     Method hues (--m-*) are the site-wide set shared with frame count, capture and the
+     chapter-5 figures — all four validated against a near-white surface. */
   :root {
     --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
     --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef;
-    --s-blue:#2a78d6; --s-orange:#eb6834; --s-aqua:#1baf7a; --s-yellow:#eda100;
+    --m-colmap:#c15c85; --m-hloc:#a8621f; --m-mast3r:#0d8054; --m-vggt:#5d63c7;
     --grid:#ddd9cc; --canvas-surface:#ffffff;
     --warn:#a8621f; --warn-soft:#f0dcc4;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
       --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef;
-      --s-blue:#2a78d6; --s-orange:#eb6834; --s-aqua:#1baf7a; --s-yellow:#eda100;
+      --m-colmap:#c15c85; --m-hloc:#a8621f; --m-mast3r:#0d8054; --m-vggt:#5d63c7;
       --grid:#ddd9cc; --canvas-surface:#ffffff; --warn:#a8621f; --warn-soft:#f0dcc4; }
   }
   :root[data-theme="dark"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
     --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef;
-    --s-blue:#2a78d6; --s-orange:#eb6834; --s-aqua:#1baf7a; --s-yellow:#eda100;
+    --m-colmap:#c15c85; --m-hloc:#a8621f; --m-mast3r:#0d8054; --m-vggt:#5d63c7;
     --grid:#ddd9cc; --canvas-surface:#ffffff; --warn:#a8621f; --warn-soft:#f0dcc4; }
   :root[data-theme="light"] { --bg:#ffffff; --panel:#ffffff; --panel-border:#d7d4c8; --text:#181a17; --text-dim:#585d54; --text-faint:#8b9084;
     --accent:#17805f; --accent-soft:#d9ece3; --code-bg:#f5f4ef;
-    --s-blue:#2a78d6; --s-orange:#eb6834; --s-aqua:#1baf7a; --s-yellow:#eda100;
+    --m-colmap:#c15c85; --m-hloc:#a8621f; --m-mast3r:#0d8054; --m-vggt:#5d63c7;
     --grid:#ddd9cc; --canvas-surface:#ffffff; --warn:#a8621f; --warn-soft:#f0dcc4; }
 
   * { box-sizing:border-box; }
@@ -43,13 +43,31 @@
   h2 { font-size:18px; font-weight:650; margin:0 0 2px; }
   h3 { font-size:14px; font-weight:650; margin:0; }
   .subtitle { color:var(--text-dim); font-size:13.5px; max-width:92ch; }
+  .lede p { margin:0 0 15px; position:relative; padding-left:19px; }
+  .lede p:last-child { margin-bottom:0; }
+  .lede p::before { content:"\2192"; position:absolute; left:0; top:0; color:var(--accent); font-weight:600; }
+
+  .with-aside { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; align-items:stretch; }
+  @media (max-width:1100px) { .with-aside { grid-template-columns:minmax(0,1fr); } }
+  .aside { background:var(--code-bg); border:1px solid var(--panel-border); border-left:3px solid var(--text-faint);
+           border-radius:10px; padding:12px 14px; font-size:12px; color:var(--text-dim); }
+  .aside b { color:var(--text); }
+  .aside .k { display:block; font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+              color:var(--text-faint); margin-bottom:6px; }
+  .mkey { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:7px; }
   .mono { font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
   section { display:flex; flex-direction:column; gap:14px; }
   hr.sep { border:none; border-top:1px solid var(--panel-border); margin:2px 0; }
 
-  .scope-box { font-size:12.5px; color:var(--text-dim); background:var(--code-bg); border:1px solid var(--panel-border); border-radius:10px; padding:12px 16px; display:flex; flex-direction:column; gap:6px; }
-  .scope-box b { color:var(--text); }
   .pending-badge { display:inline-block; font-size:10.5px; font-weight:650; color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 55%, transparent); background:var(--warn-soft); border-radius:5px; padding:1px 7px; margin-left:4px; }
+
+  details.note { font-size:12px; color:var(--text-faint); border-left:3px solid var(--warn); padding:3px 0 3px 12px; margin-top:12px; max-width:96ch; }
+  details.note summary { cursor:pointer; color:var(--warn); font-weight:600; list-style:none; }
+  details.note summary::-webkit-details-marker { display:none; }
+  details.note summary::before { content:'\25B8\00a0'; }
+  details.note[open] summary::before { content:'\25BE\00a0'; }
+  details.note > div { padding-top:6px; }
+  .obj-scope { font-size:11.5px; color:var(--text-faint); margin-top:-8px; }
 
   .obj-block { display:flex; flex-direction:column; gap:14px; padding:18px; border:1px solid var(--panel-border); border-radius:14px; background:color-mix(in srgb, var(--panel) 60%, transparent); }
   .obj-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; }
@@ -89,14 +107,6 @@
   .stagebar-seg:last-child { border-right:none; }
   .stage-legend { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:11px; color:var(--text-dim); }
 
-  .interp { background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:18px 20px; display:flex; flex-direction:column; gap:11px;
-    box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
-  .interp .headline { color:var(--accent); font-size:15px; font-weight:650; }
-  .interp ul { margin:2px 0 0; padding-left:18px; font-size:13px; color:var(--text-dim); }
-  .interp li { margin:5px 0; }
-  .interp b { color:var(--text); }
-  .interp .win { color:var(--accent); }
-
   .caveat { font-size:12px; color:var(--text-faint); border-left:3px solid var(--warn); padding:4px 0 4px 12px; }
 
   footer { color:var(--text-faint); font-size:11px; padding-top:4px; }
@@ -131,47 +141,91 @@
   <div>
     <div class="eyebrow">Compute cost · time &amp; memory vs frame count</div>
     <h1>Does reconstruction cost grow with the number of photos — and how, per method?</h1>
-    <div class="subtitle">
-      Same NVIDIA L40S pod for every run (<span id="hw-ram">…</span> GiB RAM ceiling, <span id="hw-vram">…</span> MiB VRAM),
-      so time and memory numbers are directly comparable across methods. Growth-with-N claims below
-      are restricted to <b>controlled sweeps</b> — same object, same capture, same
-      frame-selection algorithm, only N changes — everything else (cross-object
-      comparisons, single points) is kept in a separately-labeled appendix.
+    <div class="subtitle lede" style="max-width:92ch">
+      <p>
+        More photos is the obvious way to a better reconstruction. This asks what that costs — in wall
+        time, in RAM, in VRAM — and whether the four methods pay the same price for it.
+      </p>
+      <p>
+        <b>Every run on the same NVIDIA L40S pod</b> (<span id="hw-ram">…</span> GiB RAM ceiling,
+        <span id="hw-vram">…</span> MiB VRAM), so time and memory are directly comparable across methods.
+      </p>
+      <p>
+        <b>The same two objects and the same nested frame sets</b> as the frame-count study — one object,
+        one capture, one frame-ranking method, and only N changes. Anything that is not a controlled
+        sweep is kept in a labelled appendix.
+      </p>
+      <p>
+        This is the cost half only. What those frames <b>buy</b> is the same runs scored against LiDAR in
+        <a href="frame_count_study.html">frame count</a>.
+      </p>
     </div>
-    <div class="caveat" style="margin-top:10px; max-width:96ch">
-      <b>The methods are not doing equally hard work.</b> COLMAP detects features at 3200&nbsp;px and runs
-      dense stereo at 3024&nbsp;px; hloc detects at 1024&nbsp;px; both feed-forward models operate at
-      roughly 512&nbsp;px — about a sixth of COLMAP's linear resolution, so around a thirtieth of the
-      pixels. Every speed and memory advantage below has to be read against that. It is a deliberate
-      property of the methods as published, left untuned rather than equalised, and a limitation of this
-      comparison rather than a finding of it.
-    </div>
+    <details class="note">
+      <summary>The methods are not doing equally hard work — read every speed number against this</summary>
+      <div>
+        COLMAP detects features at 3200&nbsp;px and runs dense stereo at 3024&nbsp;px; hloc detects at
+        1024&nbsp;px; both feed-forward models operate at roughly 512&nbsp;px — about a sixth of COLMAP's
+        linear resolution, so around a thirtieth of the pixels. It is a deliberate property of the methods
+        as published, left untuned rather than equalised, and a limitation of this comparison rather than
+        a finding of it.
+      </div>
+    </details>
   </div>
 
-  <div class="scope-box" id="scope-box"></div>
-
   <hr class="sep">
+  <section>
+    <h2>Source data — time, RAM and VRAM against N</h2>
+    <div class="subtitle" style="max-width:92ch">
+      One block per object, three cost axes each. Log-log, so a power law is a straight line and its slope
+      is the exponent; the dashed line is the pod's ceiling for that resource.
+    </div>
+  </section>
   <section id="objects-root"></section>
 
   <hr class="sep">
   <section>
-    <h2>Where the time actually goes — pipeline stage share</h2>
-    <div class="subtitle">Median % of total wall time per stage, across every successful run of that method (architecture-intrinsic, not restricted to the controlled sweep). 100%-stacked; segments &lt;6% carry their value in the legend/tooltip only.</div>
-    <div id="stage-root" style="display:flex; flex-direction:column; gap:12px;"></div>
+    <h2>Does the cost actually grow with N?</h2>
+    <div class="subtitle" style="max-width:92ch">
+      Total wall time fitted as time ~ N<sup>b</sup> on each controlled sweep. <b>b &gt; 1</b> means every
+      extra photo costs more than the one before it; <b>b ≈ 1</b> means a frame is a frame. <b>Marginal</b>
+      is the same runs fitted linearly — the seconds one more photo adds.
+    </div>
+    <div class="with-aside">
+      <div class="grid-wrap" id="time-scaling-root"></div>
+      <div class="aside" id="time-aside"></div>
+    </div>
   </section>
 
   <hr class="sep">
   <section>
-    <h2>Which stage actually drives the super-linear growth?</h2>
-    <div class="subtitle">Per-stage power-law fit (stage time ~ N^b), controlled sweeps only (manual selection, both objects pooled on log N).</div>
-    <div class="grid-wrap" id="stage-scaling-root"></div>
+    <h2>Which resource runs out first?</h2>
+    <div class="subtitle" style="max-width:92ch">
+      Peak RAM and peak VRAM fitted linearly against N, then extrapolated to the pod's two ceilings.
+      <b>Saturates at N</b> is where a method would exhaust that resource on this hardware — far beyond any
+      capture in this project, so read it as the direction each method is heading, not as a limit anyone hit.
+    </div>
+    <div class="with-aside">
+      <div class="grid-wrap" id="memory-headroom-root"></div>
+      <div class="aside" id="memory-aside"></div>
+    </div>
   </section>
 
   <hr class="sep">
   <section>
-    <h2>Robustness check — the "even" (SIFT-overlap greedy) selection sweeps</h2>
-    <div class="subtitle">Same N grid, a different (algorithmic instead of human) frame-selection method, COLMAP + MASt3R-GA only. Not charted — included to confirm the scaling exponents above aren't an artifact of the manual ranking.</div>
-    <div class="grid-wrap" id="even-check-root"></div>
+    <h2>Where does the time actually go?</h2>
+    <div class="subtitle" style="max-width:92ch">Median % of total wall time per stage, across every successful run of that method (architecture-intrinsic, not restricted to the controlled sweep). 100%-stacked; segments &lt;6% carry their value in the legend/tooltip only.</div>
+    <div class="with-aside">
+      <div>
+        <div id="stage-root" style="display:flex; flex-direction:column; gap:12px;"></div>
+        <details class="table-toggle" style="margin-top:12px;">
+          <summary>Per-stage scaling exponents</summary>
+          <div class="subtitle" style="margin:6px 0 8px;">Per-stage power-law fit (stage time ~ N^b), controlled sweeps only (manual selection, both objects pooled on log N).</div>
+          <div class="grid-wrap" id="stage-scaling-root"></div>
+        </details>
+        <div id="even-check-root"></div>
+      </div>
+      <div class="aside" id="stage-aside"></div>
+    </div>
   </section>
 
   <hr class="sep">
@@ -181,27 +235,15 @@
     <div class="grid-wrap" id="vggt-root"></div>
   </section>
 
-  <hr class="sep">
-  <section>
-    <h2>Interpretation</h2>
-    <div class="interp" id="interp"></div>
-  </section>
-
-  <div class="subtitle" style="max-width:92ch">
-    <b>And is the extra compute worth it?</b> This page only says what more frames cost. Whether they
-    buy any accuracy — and where that stops — is the same set of runs scored against LiDAR in
-    <a href="frame_count_study.html">frame count</a>.
-  </div>
-
   <footer id="footer-note">src/registration/build_performance_study_page.py · data: docs/tables/experiment_metrics.jsonl</footer>
 </div>
 
-<script type="application/json" id="page-data">{"ram_total_gib": 175.09, "vram_total_mib": 46068, "objects": [{"id": "bollard_003_test_1", "title": "bollard_003", "shape": "bollard (~1 m post)", "sizes": [15, 30, 45, 60], "series": {"colmap": {"label": "COLMAP", "colorvar": "--s-blue", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_115", "exp_116", "exp_117", "exp_118"], "time_s": [481.43, 1198.39, 1834.71, 2680.22], "ram_mib": [12097.8, 16150.7, 18896.0, 22261.3], "vram_mib": [6549.0, 6549.0, 6549.0, 6549.0], "stage_by_n": {"15": {"feature_extraction": 5.6, "matching": 1.1, "sparse_mapping": 67.5, "dense_undistort": 5.9, "dense_patchmatch": 368.3, "dense_fusion": 32.9}, "30": {"feature_extraction": 9.6, "matching": 3.3, "sparse_mapping": 279.3, "dense_undistort": 13.2, "dense_patchmatch": 832.8, "dense_fusion": 60.1}, "45": {"feature_extraction": 12.4, "matching": 7.6, "sparse_mapping": 414.1, "dense_undistort": 20.6, "dense_patchmatch": 1258.5, "dense_fusion": 121.5}, "60": {"feature_extraction": 17.2, "matching": 11.5, "sparse_mapping": 772.9, "dense_undistort": 29.6, "dense_patchmatch": 1686.9, "dense_fusion": 162.1}}, "fit_time": {"b": 1.227, "r2": 0.998}, "fit_time_lin": {"slope": 48.218, "intercept": -259.5, "r2": 0.997}, "fit_ram_lin": {"slope": 221.572, "intercept": 9042.5, "r2": 0.995}, "fit_vram_lin": {"slope": -0.0, "intercept": 6549.0, "r2": null}, "n_points": 4, "n_expected": 4}, "hloc_colmap": {"label": "hloc + COLMAP", "colorvar": "--s-orange", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_159", "exp_160", "exp_161", "exp_170"], "time_s": [462.24, 1185.78, 1944.9, 3028.23], "ram_mib": [13183.9, 18039.8, 21817.8, 27729.0], "vram_mib": [4875.0, 6297.0, 6237.0, 5989.0], "stage_by_n": {"15": {"matching": 5.9, "feature_extraction": 2.1, "sparse_mapping": 16.7, "dense_undistort": 2.5, "dense_patchmatch": 345.6, "dense_fusion": 89.4}, "30": {"matching": 19.4, "feature_extraction": 9.9, "sparse_mapping": 145.2, "dense_undistort": 9.8, "dense_patchmatch": 785.8, "dense_fusion": 215.7}, "45": {"matching": 40.0, "feature_extraction": 21.2, "sparse_mapping": 335.5, "dense_undistort": 15.7, "dense_patchmatch": 1166.0, "dense_fusion": 366.4}, "60": {"matching": 137.1, "feature_extraction": 7.3, "sparse_mapping": 96.4, "dense_undistort": 18.6, "dense_patchmatch": 1870.1, "dense_fusion": 898.3}}, "fit_time": {"b": 1.341, "r2": 0.999}, "fit_time_lin": {"slope": 56.381, "intercept": -459.0, "r2": 0.99}, "fit_ram_lin": {"slope": 316.089, "intercept": 8339.3, "r2": 0.993}, "fit_vram_lin": {"slope": 21.88, "intercept": 5029.0, "r2": 0.408}, "n_points": 4, "n_expected": 4}, "mast3r_ga": {"label": "MASt3R-GA", "colorvar": "--s-aqua", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_119", "exp_120", "exp_121", "exp_122"], "time_s": [97.04, 195.35, 294.33, 394.76], "ram_mib": [11846.0, 11886.4, 11871.4, 11890.0], "vram_mib": [4365.0, 4689.0, 5313.0, 6216.0], "stage_by_n": {"15": {"model_load": 7.7, "matching_and_optimization": 87.8, "export": 1.5}, "30": {"model_load": 7.9, "matching_and_optimization": 184.6, "export": 2.9}, "45": {"model_load": 8.0, "matching_and_optimization": 282.0, "export": 4.2}, "60": {"model_load": 8.0, "matching_and_optimization": 380.3, "export": 6.4}}, "fit_time": {"b": 1.012, "r2": 1.0}, "fit_time_lin": {"slope": 6.614, "intercept": -2.7, "r2": 1.0}, "fit_ram_lin": {"slope": 0.78, "intercept": 11844.2, "r2": 0.571}, "fit_vram_lin": {"slope": 41.18, "intercept": 3601.5, "r2": 0.958}, "n_points": 4, "n_expected": 4}, "vggt": {"label": "VGGT", "colorvar": "--s-yellow", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_165", "exp_166", "exp_167", "exp_168"], "time_s": [6.520000000000001, 10.499999999999998, 23.409999999999997, 18.810000000000002], "ram_mib": [20524.3, 20565.3, 20549.5, 20542.8], "vram_mib": [14347.0, 15535.0, 15793.0, 17799.0], "stage_by_n": {"15": {"model_load": 13.1, "preprocess": 2.4, "inference": 1.3, "export": 2.7}, "30": {"model_load": 13.4, "preprocess": 4.9, "inference": 2.6, "export": 2.7}, "45": {"model_load": 13.0, "preprocess": 7.3, "inference": 4.3, "export": 11.4}, "60": {"model_load": 13.5, "preprocess": 9.7, "inference": 6.6, "export": 1.9}}, "fit_time": {"b": 0.892, "r2": 0.86}, "fit_time_lin": {"slope": 0.332, "intercept": 2.4, "r2": 0.699}, "fit_ram_lin": {"slope": 0.265, "intercept": 20535.5, "r2": 0.091}, "fit_vram_lin": {"slope": 70.76, "intercept": 13215.0, "r2": 0.915}, "n_points": 4, "n_expected": 4}}, "even_check": []}, {"id": "information_sign_002_test_1", "title": "information_sign_002", "shape": "information sign (~2.5 m)", "sizes": [25, 50, 75, 100], "series": {"colmap": {"label": "COLMAP", "colorvar": "--s-blue", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_109", "exp_110", "exp_111", "exp_123"], "time_s": [913.77, 2003.48, 3169.32, 4509.33], "ram_mib": [12936.5, 21188.4, 26203.4, 33625.1], "vram_mib": [6549.0, 6549.0, 6549.0, 6549.0], "stage_by_n": {"25": {"feature_extraction": 7.7, "matching": 2.2, "sparse_mapping": 145.8, "dense_undistort": 11.1, "dense_patchmatch": 673.1, "dense_fusion": 73.7}, "50": {"feature_extraction": 13.8, "matching": 6.7, "sparse_mapping": 461.5, "dense_undistort": 23.7, "dense_patchmatch": 1350.7, "dense_fusion": 146.9}, "75": {"feature_extraction": 19.0, "matching": 128.1, "sparse_mapping": 751.2, "dense_undistort": 41.0, "dense_patchmatch": 2013.8, "dense_fusion": 216.1}, "100": {"feature_extraction": 24.8, "matching": 84.8, "sparse_mapping": 1352.5, "dense_undistort": 65.2, "dense_patchmatch": 2736.6, "dense_fusion": 245.3}}, "fit_time": {"b": 1.147, "r2": 1.0}, "fit_time_lin": {"slope": 47.81, "intercept": -339.2, "r2": 0.998}, "fit_ram_lin": {"slope": 268.323, "intercept": 6718.2, "r2": 0.992}, "fit_vram_lin": {"slope": -0.0, "intercept": 6549.0, "r2": null}, "n_points": 4, "n_expected": 4}, "hloc_colmap": {"label": "hloc + COLMAP", "colorvar": "--s-orange", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_155", "exp_156", "exp_129", "exp_158"], "time_s": [887.07, 2101.64, 3245.3, 5006.2], "ram_mib": [16092.8, 22884.6, 31932.8, 39011.7], "vram_mib": [5907.0, 6143.0, 6193.0, 6005.0], "stage_by_n": {"25": {"matching": 15.1, "feature_extraction": 2.6, "sparse_mapping": 87.8, "dense_undistort": 8.8, "dense_patchmatch": 611.4, "dense_fusion": 161.3}, "50": {"matching": 47.8, "feature_extraction": 4.5, "sparse_mapping": 419.7, "dense_undistort": 17.2, "dense_patchmatch": 1239.1, "dense_fusion": 373.2}, "75": {"matching": 111.3, "feature_extraction": 13.2, "sparse_mapping": 666.6, "dense_undistort": 32.1, "dense_patchmatch": 1888.4, "dense_fusion": 533.6}, "100": {"matching": 203.5, "feature_extraction": 8.0, "sparse_mapping": 1483.2, "dense_undistort": 47.8, "dense_patchmatch": 2522.2, "dense_fusion": 741.5}}, "fit_time": {"b": 1.228, "r2": 0.998}, "fit_time_lin": {"slope": 54.004, "intercept": -565.2, "r2": 0.989}, "fit_ram_lin": {"slope": 311.22, "intercept": 8029.3, "r2": 0.997}, "fit_vram_lin": {"slope": 1.376, "intercept": 5976.0, "r2": 0.116}, "n_points": 4, "n_expected": 4}, "mast3r_ga": {"label": "MASt3R-GA", "colorvar": "--s-aqua", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_112", "exp_113", "exp_114", "exp_124"], "time_s": [178.63, 307.87, 465.71, 450.03], "ram_mib": [13113.5, 11879.8, 11881.7, 13146.4], "vram_mib": [4449.0, 6015.0, 6595.0, 7939.0], "stage_by_n": {"25": {"model_load": 17.0, "matching_and_optimization": 160.0, "export": 1.6}, "50": {"model_load": 7.9, "matching_and_optimization": 296.0, "export": 4.0}, "75": {"model_load": 7.6, "matching_and_optimization": 450.8, "export": 7.2}, "100": {"model_load": 18.9, "matching_and_optimization": 423.4, "export": 7.7}}, "fit_time": {"b": 0.722, "r2": 0.948}, "fit_time_lin": {"slope": 3.888, "intercept": 107.6, "r2": 0.866}, "fit_ram_lin": {"slope": 0.402, "intercept": 12480.2, "r2": 0.0}, "fit_vram_lin": {"slope": 44.2, "intercept": 3487.0, "r2": 0.974}, "n_points": 4, "n_expected": 4}, "mast3r_ga_logwin7": {"label": "MASt3R-GA (logwin-7)", "colorvar": "--s-aqua", "dash": "5 3", "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_128", "exp_127", "exp_126", "exp_125"], "time_s": [115.32, 200.95, 310.37, 403.93], "ram_mib": [11812.5, 11848.0, 11846.3, 13283.2], "vram_mib": [4365.0, 5161.0, 5877.0, 6749.0], "stage_by_n": {"25": {"model_load": 7.6, "matching_and_optimization": 106.5, "export": 1.1}, "50": {"model_load": 6.6, "matching_and_optimization": 190.9, "export": 3.3}, "75": {"model_load": 6.5, "matching_and_optimization": 299.0, "export": 4.8}, "100": {"model_load": 15.6, "matching_and_optimization": 379.9, "export": 8.4}}, "fit_time": {"b": 0.91, "r2": 0.996}, "fit_time_lin": {"slope": 3.901, "intercept": 13.8, "r2": 0.998}, "fit_ram_lin": {"slope": 17.642, "intercept": 11094.9, "r2": 0.619}, "fit_vram_lin": {"slope": 31.472, "intercept": 3571.0, "r2": 0.999}, "n_points": 4, "n_expected": 4}, "vggt": {"label": "VGGT", "colorvar": "--s-yellow", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_162", "exp_163", "exp_130", "exp_164"], "time_s": [7.470000000000002, 15.689999999999998, 25.55, 56.73], "ram_mib": [21636.8, 20535.2, 21416.8, 20520.0], "vram_mib": [15035.0, 15765.0, 18523.0, 19849.0], "stage_by_n": {"25": {"model_load": 28.8, "preprocess": 4.0, "inference": 2.1, "export": 1.1}, "50": {"model_load": 14.3, "preprocess": 8.1, "inference": 5.1, "export": 2.1}, "75": {"model_load": 23.7, "preprocess": 12.5, "inference": 9.3, "export": 3.1}, "100": {"model_load": 12.6, "preprocess": 16.1, "inference": 14.5, "export": 25.4}}, "fit_time": {"b": 1.382, "r2": 0.952}, "fit_time_lin": {"slope": 0.631, "intercept": -13.0, "r2": 0.892}, "fit_ram_lin": {"slope": -9.875, "intercept": 21644.4, "r2": 0.298}, "fit_vram_lin": {"slope": 68.8, "intercept": 12993.0, "r2": 0.956}, "n_points": 4, "n_expected": 4}}, "even_check": []}], "stage_share": {"colmap": {"n_runs": 8, "stages": [{"key": "feature_extraction", "label": "feature extraction", "median_pct": 0.7, "median_s_per_frame": 0.281}, {"key": "matching", "label": "matching", "median_pct": 0.4, "median_s_per_frame": 0.151}, {"key": "sparse_mapping", "label": "sparse mapping", "median_pct": 23.2, "median_s_per_frame": 9.27}, {"key": "dense_undistort", "label": "dense: undistort", "median_pct": 1.2, "median_s_per_frame": 0.466}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "median_pct": 68.0, "median_s_per_frame": 27.19}, {"key": "dense_fusion", "label": "dense: fusion", "median_pct": 6.7, "median_s_per_frame": 2.701}]}, "hloc_colmap": {"n_runs": 8, "stages": [{"key": "feature_extraction", "label": "feature extraction", "median_pct": 0.3, "median_s_per_frame": 0.131}, {"key": "matching", "label": "matching", "median_pct": 2.2, "median_s_per_frame": 0.922}, {"key": "sparse_mapping", "label": "sparse mapping", "median_pct": 14.7, "median_s_per_frame": 6.147}, {"key": "dense_undistort", "label": "dense: undistort", "median_pct": 0.8, "median_s_per_frame": 0.347}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "median_pct": 60.9, "median_s_per_frame": 25.2}, {"key": "dense_fusion", "label": "dense: fusion", "median_pct": 18.2, "median_s_per_frame": 7.303}]}, "mast3r_ga": {"n_runs": 12, "stages": [{"key": "model_load", "label": "model load", "median_pct": 3.6, "median_s_per_frame": 0.168}, {"key": "matching_and_optimization", "label": "matching + global optim.", "median_pct": 94.7, "median_s_per_frame": 5.887}, {"key": "export", "label": "export", "median_pct": 1.5, "median_s_per_frame": 0.082}]}, "vggt": {"n_runs": 17, "stages": [{"key": "model_load", "label": "model load", "median_pct": 38.2, "median_s_per_frame": 0.282}, {"key": "preprocess", "label": "preprocess", "median_pct": 12.2, "median_s_per_frame": 0.16}, {"key": "inference", "label": "inference", "median_pct": 6.6, "median_s_per_frame": 0.087}, {"key": "export", "label": "export", "median_pct": 5.9, "median_s_per_frame": 0.041}]}}, "stage_scaling": {"colmap": [{"key": "feature_extraction", "label": "feature extraction", "exponent": 0.794, "r2": 0.994}, {"key": "matching", "label": "matching", "exponent": 2.505, "r2": 0.858}, {"key": "sparse_mapping", "label": "sparse mapping", "exponent": 1.55, "r2": 0.976}, {"key": "dense_undistort", "label": "dense: undistort", "exponent": 1.23, "r2": 0.994}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "exponent": 1.043, "r2": 0.997}, {"key": "dense_fusion", "label": "dense: fusion", "exponent": 1.091, "r2": 0.963}], "hloc_colmap": [{"key": "feature_extraction", "label": "feature extraction", "exponent": 0.796, "r2": 0.39}, {"key": "matching", "label": "matching", "exponent": 1.927, "r2": 0.965}, {"key": "sparse_mapping", "label": "sparse mapping", "exponent": 2.018, "r2": 0.797}, {"key": "dense_undistort", "label": "dense: undistort", "exponent": 1.421, "r2": 0.963}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "exponent": 1.062, "r2": 0.986}, {"key": "dense_fusion", "label": "dense: fusion", "exponent": 1.199, "r2": 0.896}], "mast3r_ga": [{"key": "model_load", "label": "model load", "exponent": 0.125, "r2": 0.041}, {"key": "matching_and_optimization", "label": "matching + global optim.", "exponent": 0.891, "r2": 0.957}, {"key": "export", "label": "export", "exponent": 0.997, "r2": 0.93}], "vggt": [{"key": "model_load", "label": "model load", "exponent": -0.041, "r2": 0.006}, {"key": "preprocess", "label": "preprocess", "exponent": 1.01, "r2": 1.0}, {"key": "inference", "label": "inference", "exponent": 1.284, "r2": 0.99}, {"key": "export", "label": "export", "exponent": 0.882, "r2": 0.282}]}, "vggt": {"rows": [{"object": "bus_stop_sign_002_master", "n": 42, "model_load_s": 29.3, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 40.2, "ram_mib": 21802.0, "vram_mib": 13439}, {"object": "bollard_003_test_1_pool69", "n": 69, "model_load_s": 23.6, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 57.7, "ram_mib": 21396.0, "vram_mib": 17329}, {"object": "bus_stop_sign_002", "n": 79, "model_load_s": 13.4, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 35.1, "ram_mib": 20523.0, "vram_mib": 15591}, {"object": "bus_stop_002_master", "n": 81, "model_load_s": 13.4, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 35.2, "ram_mib": 20558.0, "vram_mib": 16131}, {"object": "bench_004", "n": 94, "model_load_s": 13.0, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 64.2, "ram_mib": 20524.0, "vram_mib": 20141}, {"object": "bus_stop_002", "n": 96, "model_load_s": 15.8, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 47.4, "ram_mib": 20527.0, "vram_mib": 17147}, {"object": "flashlight_004", "n": 105, "model_load_s": 13.1, "work_s": 0, "work_s_per_frame": 0.0, "total_s": 42.9, "ram_mib": 20545.0, "vram_mib": 16817}], "fit_total": {"b": 0.159, "r2": 0.043}, "fit_work": {"b": null, "r2": null}, "fit_work_lin": {"slope": 0.0, "intercept": -0.0, "r2": null}}, "hloc_status": {"bollard_003_test_1": {"have": [15, 30, 45, 60], "expected": [15, 30, 45, 60]}, "information_sign_002_test_1": {"have": [25, 50, 75, 100], "expected": [25, 50, 75, 100]}}, "method_label": {"colmap": "COLMAP", "hloc_colmap": "hloc + COLMAP", "mast3r_ga": "MASt3R-GA", "mast3r_ga_logwin7": "MASt3R-GA (logwin-7)", "vggt": "VGGT"}}</script>
+<script type="application/json" id="page-data">{"ram_total_gib": 175.09, "vram_total_mib": 46068, "objects": [{"id": "bollard_003_test_1", "title": "bollard_003", "shape": "bollard (~1 m post)", "sizes": [15, 30, 45, 60], "series": {"colmap": {"label": "COLMAP", "colorvar": "--m-colmap", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_115", "exp_116", "exp_117", "exp_118"], "time_s": [481.43, 1198.39, 1834.71, 2680.22], "ram_mib": [12097.8, 16150.7, 18896.0, 22261.3], "vram_mib": [6549.0, 6549.0, 6549.0, 6549.0], "stage_by_n": {"15": {"feature_extraction": 5.6, "matching": 1.1, "sparse_mapping": 67.5, "dense_undistort": 5.9, "dense_patchmatch": 368.3, "dense_fusion": 32.9}, "30": {"feature_extraction": 9.6, "matching": 3.3, "sparse_mapping": 279.3, "dense_undistort": 13.2, "dense_patchmatch": 832.8, "dense_fusion": 60.1}, "45": {"feature_extraction": 12.4, "matching": 7.6, "sparse_mapping": 414.1, "dense_undistort": 20.6, "dense_patchmatch": 1258.5, "dense_fusion": 121.5}, "60": {"feature_extraction": 17.2, "matching": 11.5, "sparse_mapping": 772.9, "dense_undistort": 29.6, "dense_patchmatch": 1686.9, "dense_fusion": 162.1}}, "fit_time": {"b": 1.227, "r2": 0.998}, "fit_time_lin": {"slope": 48.218, "intercept": -259.5, "r2": 0.997}, "fit_ram_lin": {"slope": 221.572, "intercept": 9042.5, "r2": 0.995}, "fit_vram_lin": {"slope": -0.0, "intercept": 6549.0, "r2": null}, "n_points": 4, "n_expected": 4}, "hloc_colmap": {"label": "hloc + COLMAP", "colorvar": "--m-hloc", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_159", "exp_160", "exp_161", "exp_170"], "time_s": [462.24, 1185.78, 1944.9, 3028.23], "ram_mib": [13183.9, 18039.8, 21817.8, 27729.0], "vram_mib": [4875.0, 6297.0, 6237.0, 5989.0], "stage_by_n": {"15": {"matching": 5.9, "feature_extraction": 2.1, "sparse_mapping": 16.7, "dense_undistort": 2.5, "dense_patchmatch": 345.6, "dense_fusion": 89.4}, "30": {"matching": 19.4, "feature_extraction": 9.9, "sparse_mapping": 145.2, "dense_undistort": 9.8, "dense_patchmatch": 785.8, "dense_fusion": 215.7}, "45": {"matching": 40.0, "feature_extraction": 21.2, "sparse_mapping": 335.5, "dense_undistort": 15.7, "dense_patchmatch": 1166.0, "dense_fusion": 366.4}, "60": {"matching": 137.1, "feature_extraction": 7.3, "sparse_mapping": 96.4, "dense_undistort": 18.6, "dense_patchmatch": 1870.1, "dense_fusion": 898.3}}, "fit_time": {"b": 1.341, "r2": 0.999}, "fit_time_lin": {"slope": 56.381, "intercept": -459.0, "r2": 0.99}, "fit_ram_lin": {"slope": 316.089, "intercept": 8339.3, "r2": 0.993}, "fit_vram_lin": {"slope": 21.88, "intercept": 5029.0, "r2": 0.408}, "n_points": 4, "n_expected": 4}, "mast3r_ga": {"label": "MASt3R-GA", "colorvar": "--m-mast3r", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_119", "exp_120", "exp_121", "exp_122"], "time_s": [97.04, 195.35, 294.33, 394.76], "ram_mib": [11846.0, 11886.4, 11871.4, 11890.0], "vram_mib": [4365.0, 4689.0, 5313.0, 6216.0], "stage_by_n": {"15": {"model_load": 7.7, "matching_and_optimization": 87.8, "export": 1.5}, "30": {"model_load": 7.9, "matching_and_optimization": 184.6, "export": 2.9}, "45": {"model_load": 8.0, "matching_and_optimization": 282.0, "export": 4.2}, "60": {"model_load": 8.0, "matching_and_optimization": 380.3, "export": 6.4}}, "fit_time": {"b": 1.012, "r2": 1.0}, "fit_time_lin": {"slope": 6.614, "intercept": -2.7, "r2": 1.0}, "fit_ram_lin": {"slope": 0.78, "intercept": 11844.2, "r2": 0.571}, "fit_vram_lin": {"slope": 41.18, "intercept": 3601.5, "r2": 0.958}, "n_points": 4, "n_expected": 4}, "vggt": {"label": "VGGT", "colorvar": "--m-vggt", "dash": null, "n": [15.0, 30.0, 45.0, 60.0], "exp_ids": ["exp_165", "exp_166", "exp_167", "exp_168"], "time_s": [6.520000000000001, 10.499999999999998, 23.409999999999997, 18.810000000000002], "ram_mib": [20524.3, 20565.3, 20549.5, 20542.8], "vram_mib": [14347.0, 15535.0, 15793.0, 17799.0], "stage_by_n": {"15": {"model_load": 13.1, "preprocess": 2.4, "inference": 1.3, "export": 2.7}, "30": {"model_load": 13.4, "preprocess": 4.9, "inference": 2.6, "export": 2.7}, "45": {"model_load": 13.0, "preprocess": 7.3, "inference": 4.3, "export": 11.4}, "60": {"model_load": 13.5, "preprocess": 9.7, "inference": 6.6, "export": 1.9}}, "fit_time": {"b": 0.892, "r2": 0.86}, "fit_time_lin": {"slope": 0.332, "intercept": 2.4, "r2": 0.699}, "fit_ram_lin": {"slope": 0.265, "intercept": 20535.5, "r2": 0.091}, "fit_vram_lin": {"slope": 70.76, "intercept": 13215.0, "r2": 0.915}, "n_points": 4, "n_expected": 4}}, "even_check": []}, {"id": "information_sign_002_test_1", "title": "information_sign_002", "shape": "information sign (~2.5 m)", "sizes": [25, 50, 75, 100], "series": {"colmap": {"label": "COLMAP", "colorvar": "--m-colmap", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_109", "exp_110", "exp_111", "exp_123"], "time_s": [913.77, 2003.48, 3169.32, 4509.33], "ram_mib": [12936.5, 21188.4, 26203.4, 33625.1], "vram_mib": [6549.0, 6549.0, 6549.0, 6549.0], "stage_by_n": {"25": {"feature_extraction": 7.7, "matching": 2.2, "sparse_mapping": 145.8, "dense_undistort": 11.1, "dense_patchmatch": 673.1, "dense_fusion": 73.7}, "50": {"feature_extraction": 13.8, "matching": 6.7, "sparse_mapping": 461.5, "dense_undistort": 23.7, "dense_patchmatch": 1350.7, "dense_fusion": 146.9}, "75": {"feature_extraction": 19.0, "matching": 128.1, "sparse_mapping": 751.2, "dense_undistort": 41.0, "dense_patchmatch": 2013.8, "dense_fusion": 216.1}, "100": {"feature_extraction": 24.8, "matching": 84.8, "sparse_mapping": 1352.5, "dense_undistort": 65.2, "dense_patchmatch": 2736.6, "dense_fusion": 245.3}}, "fit_time": {"b": 1.147, "r2": 1.0}, "fit_time_lin": {"slope": 47.81, "intercept": -339.2, "r2": 0.998}, "fit_ram_lin": {"slope": 268.323, "intercept": 6718.2, "r2": 0.992}, "fit_vram_lin": {"slope": -0.0, "intercept": 6549.0, "r2": null}, "n_points": 4, "n_expected": 4}, "hloc_colmap": {"label": "hloc + COLMAP", "colorvar": "--m-hloc", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_155", "exp_156", "exp_129", "exp_158"], "time_s": [887.07, 2101.64, 3245.3, 5006.2], "ram_mib": [16092.8, 22884.6, 31932.8, 39011.7], "vram_mib": [5907.0, 6143.0, 6193.0, 6005.0], "stage_by_n": {"25": {"matching": 15.1, "feature_extraction": 2.6, "sparse_mapping": 87.8, "dense_undistort": 8.8, "dense_patchmatch": 611.4, "dense_fusion": 161.3}, "50": {"matching": 47.8, "feature_extraction": 4.5, "sparse_mapping": 419.7, "dense_undistort": 17.2, "dense_patchmatch": 1239.1, "dense_fusion": 373.2}, "75": {"matching": 111.3, "feature_extraction": 13.2, "sparse_mapping": 666.6, "dense_undistort": 32.1, "dense_patchmatch": 1888.4, "dense_fusion": 533.6}, "100": {"matching": 203.5, "feature_extraction": 8.0, "sparse_mapping": 1483.2, "dense_undistort": 47.8, "dense_patchmatch": 2522.2, "dense_fusion": 741.5}}, "fit_time": {"b": 1.228, "r2": 0.998}, "fit_time_lin": {"slope": 54.004, "intercept": -565.2, "r2": 0.989}, "fit_ram_lin": {"slope": 311.22, "intercept": 8029.3, "r2": 0.997}, "fit_vram_lin": {"slope": 1.376, "intercept": 5976.0, "r2": 0.116}, "n_points": 4, "n_expected": 4}, "mast3r_ga": {"label": "MASt3R-GA", "colorvar": "--m-mast3r", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_112", "exp_113", "exp_114", "exp_124"], "time_s": [178.63, 307.87, 465.71, 450.03], "ram_mib": [13113.5, 11879.8, 11881.7, 13146.4], "vram_mib": [4449.0, 6015.0, 6595.0, 7939.0], "stage_by_n": {"25": {"model_load": 17.0, "matching_and_optimization": 160.0, "export": 1.6}, "50": {"model_load": 7.9, "matching_and_optimization": 296.0, "export": 4.0}, "75": {"model_load": 7.6, "matching_and_optimization": 450.8, "export": 7.2}, "100": {"model_load": 18.9, "matching_and_optimization": 423.4, "export": 7.7}}, "fit_time": {"b": 0.722, "r2": 0.948}, "fit_time_lin": {"slope": 3.888, "intercept": 107.6, "r2": 0.866}, "fit_ram_lin": {"slope": 0.402, "intercept": 12480.2, "r2": 0.0}, "fit_vram_lin": {"slope": 44.2, "intercept": 3487.0, "r2": 0.974}, "n_points": 4, "n_expected": 4}, "mast3r_ga_logwin7": {"label": "MASt3R-GA (logwin-7)", "colorvar": "--m-mast3r", "dash": "5 3", "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_128", "exp_127", "exp_126", "exp_125"], "time_s": [115.32, 200.95, 310.37, 403.93], "ram_mib": [11812.5, 11848.0, 11846.3, 13283.2], "vram_mib": [4365.0, 5161.0, 5877.0, 6749.0], "stage_by_n": {"25": {"model_load": 7.6, "matching_and_optimization": 106.5, "export": 1.1}, "50": {"model_load": 6.6, "matching_and_optimization": 190.9, "export": 3.3}, "75": {"model_load": 6.5, "matching_and_optimization": 299.0, "export": 4.8}, "100": {"model_load": 15.6, "matching_and_optimization": 379.9, "export": 8.4}}, "fit_time": {"b": 0.91, "r2": 0.996}, "fit_time_lin": {"slope": 3.901, "intercept": 13.8, "r2": 0.998}, "fit_ram_lin": {"slope": 17.642, "intercept": 11094.9, "r2": 0.619}, "fit_vram_lin": {"slope": 31.472, "intercept": 3571.0, "r2": 0.999}, "n_points": 4, "n_expected": 4}, "vggt": {"label": "VGGT", "colorvar": "--m-vggt", "dash": null, "n": [25.0, 50.0, 75.0, 100.0], "exp_ids": ["exp_162", "exp_163", "exp_130", "exp_164"], "time_s": [7.470000000000002, 15.689999999999998, 25.55, 56.73], "ram_mib": [21636.8, 20535.2, 21416.8, 20520.0], "vram_mib": [15035.0, 15765.0, 18523.0, 19849.0], "stage_by_n": {"25": {"model_load": 28.8, "preprocess": 4.0, "inference": 2.1, "export": 1.1}, "50": {"model_load": 14.3, "preprocess": 8.1, "inference": 5.1, "export": 2.1}, "75": {"model_load": 23.7, "preprocess": 12.5, "inference": 9.3, "export": 3.1}, "100": {"model_load": 12.6, "preprocess": 16.1, "inference": 14.5, "export": 25.4}}, "fit_time": {"b": 1.382, "r2": 0.952}, "fit_time_lin": {"slope": 0.631, "intercept": -13.0, "r2": 0.892}, "fit_ram_lin": {"slope": -9.875, "intercept": 21644.4, "r2": 0.298}, "fit_vram_lin": {"slope": 68.8, "intercept": 12993.0, "r2": 0.956}, "n_points": 4, "n_expected": 4}}, "even_check": []}], "stage_share": {"colmap": {"n_runs": 8, "stages": [{"key": "feature_extraction", "label": "feature extraction", "median_pct": 0.7, "median_s_per_frame": 0.281}, {"key": "matching", "label": "matching", "median_pct": 0.4, "median_s_per_frame": 0.151}, {"key": "sparse_mapping", "label": "sparse mapping", "median_pct": 23.2, "median_s_per_frame": 9.27}, {"key": "dense_undistort", "label": "dense: undistort", "median_pct": 1.2, "median_s_per_frame": 0.466}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "median_pct": 68.0, "median_s_per_frame": 27.19}, {"key": "dense_fusion", "label": "dense: fusion", "median_pct": 6.7, "median_s_per_frame": 2.701}]}, "hloc_colmap": {"n_runs": 8, "stages": [{"key": "feature_extraction", "label": "feature extraction", "median_pct": 0.3, "median_s_per_frame": 0.131}, {"key": "matching", "label": "matching", "median_pct": 2.2, "median_s_per_frame": 0.922}, {"key": "sparse_mapping", "label": "sparse mapping", "median_pct": 14.7, "median_s_per_frame": 6.147}, {"key": "dense_undistort", "label": "dense: undistort", "median_pct": 0.8, "median_s_per_frame": 0.347}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "median_pct": 60.9, "median_s_per_frame": 25.2}, {"key": "dense_fusion", "label": "dense: fusion", "median_pct": 18.2, "median_s_per_frame": 7.303}]}, "mast3r_ga": {"n_runs": 12, "stages": [{"key": "model_load", "label": "model load", "median_pct": 3.6, "median_s_per_frame": 0.168}, {"key": "matching_and_optimization", "label": "matching + global optim.", "median_pct": 94.7, "median_s_per_frame": 5.887}, {"key": "export", "label": "export", "median_pct": 1.5, "median_s_per_frame": 0.082}]}, "vggt": {"n_runs": 17, "stages": [{"key": "model_load", "label": "model load", "median_pct": 38.2, "median_s_per_frame": 0.282}, {"key": "preprocess", "label": "preprocess", "median_pct": 12.2, "median_s_per_frame": 0.16}, {"key": "inference", "label": "inference", "median_pct": 6.6, "median_s_per_frame": 0.087}, {"key": "export", "label": "export", "median_pct": 5.9, "median_s_per_frame": 0.041}]}}, "stage_scaling": {"colmap": [{"key": "feature_extraction", "label": "feature extraction", "exponent": 0.794, "r2": 0.994}, {"key": "matching", "label": "matching", "exponent": 2.505, "r2": 0.858}, {"key": "sparse_mapping", "label": "sparse mapping", "exponent": 1.55, "r2": 0.976}, {"key": "dense_undistort", "label": "dense: undistort", "exponent": 1.23, "r2": 0.994}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "exponent": 1.043, "r2": 0.997}, {"key": "dense_fusion", "label": "dense: fusion", "exponent": 1.091, "r2": 0.963}], "hloc_colmap": [{"key": "feature_extraction", "label": "feature extraction", "exponent": 0.796, "r2": 0.39}, {"key": "matching", "label": "matching", "exponent": 1.927, "r2": 0.965}, {"key": "sparse_mapping", "label": "sparse mapping", "exponent": 2.018, "r2": 0.797}, {"key": "dense_undistort", "label": "dense: undistort", "exponent": 1.421, "r2": 0.963}, {"key": "dense_patchmatch", "label": "dense: patchmatch", "exponent": 1.062, "r2": 0.986}, {"key": "dense_fusion", "label": "dense: fusion", "exponent": 1.199, "r2": 0.896}], "mast3r_ga": [{"key": "model_load", "label": "model load", "exponent": 0.125, "r2": 0.041}, {"key": "matching_and_optimization", "label": "matching + global optim.", "exponent": 0.891, "r2": 0.957}, {"key": "export", "label": "export", "exponent": 0.997, "r2": 0.93}], "vggt": [{"key": "model_load", "label": "model load", "exponent": -0.041, "r2": 0.006}, {"key": "preprocess", "label": "preprocess", "exponent": 1.01, "r2": 1.0}, {"key": "inference", "label": "inference", "exponent": 1.284, "r2": 0.99}, {"key": "export", "label": "export", "exponent": 0.882, "r2": 0.282}]}, "vggt": {"rows": [{"object": "bus_stop_sign_002_master", "n": 42, "model_load_s": 29.3, "work_s": null, "work_s_per_frame": null, "total_s": 40.2, "ram_mib": 21802.0, "vram_mib": 13439}, {"object": "bollard_003_test_1_pool69", "n": 69, "model_load_s": 23.6, "work_s": null, "work_s_per_frame": null, "total_s": 57.7, "ram_mib": 21396.0, "vram_mib": 17329}, {"object": "bus_stop_sign_002", "n": 79, "model_load_s": 13.4, "work_s": null, "work_s_per_frame": null, "total_s": 35.1, "ram_mib": 20523.0, "vram_mib": 15591}, {"object": "bus_stop_002_master", "n": 81, "model_load_s": 13.4, "work_s": null, "work_s_per_frame": null, "total_s": 35.2, "ram_mib": 20558.0, "vram_mib": 16131}, {"object": "bench_004", "n": 94, "model_load_s": 13.0, "work_s": null, "work_s_per_frame": null, "total_s": 64.2, "ram_mib": 20524.0, "vram_mib": 20141}, {"object": "bus_stop_002", "n": 96, "model_load_s": 15.8, "work_s": null, "work_s_per_frame": null, "total_s": 47.4, "ram_mib": 20527.0, "vram_mib": 17147}, {"object": "flashlight_004", "n": 105, "model_load_s": 13.1, "work_s": null, "work_s_per_frame": null, "total_s": 42.9, "ram_mib": 20545.0, "vram_mib": 16817}], "has_work_data": false, "fit_total": {"b": 0.159, "r2": 0.043}, "fit_work": {"b": null, "r2": null}, "fit_work_lin": {"slope": null, "intercept": null, "r2": null}}, "hloc_status": {"bollard_003_test_1": {"have": [15, 30, 45, 60], "expected": [15, 30, 45, 60]}, "information_sign_002_test_1": {"have": [25, 50, 75, 100], "expected": [25, 50, 75, 100]}}, "method_label": {"colmap": "COLMAP", "hloc_colmap": "hloc + COLMAP", "mast3r_ga": "MASt3R-GA", "mast3r_ga_logwin7": "MASt3R-GA (logwin-7)", "vggt": "VGGT"}}</script>
 <script>
 const DATA = JSON.parse(document.getElementById('page-data').textContent);
 const METHOD_LABEL = DATA.method_label;
 const CHART_W = 620, CHART_H = 240;
-const PAD = { l: 58, r: 150, t: 14, b: 30 };
+const PAD = { l: 58, r: 20, t: 14, b: 30 };
 
 function fmt(v, digits) {
   if (v === null || v === undefined || Number.isNaN(v)) return '—';
@@ -212,7 +254,9 @@ function fmtTime(s) {
   if (s >= 90) return Math.round(s/60) + 'm';
   return Math.round(s) + 's';
 }
-function fmtMib(m) { return m >= 1024 ? (m/1024).toFixed(1) + ' GiB' : Math.round(m) + ' MiB'; }
+// memory charts plot GiB, so niceLogTicks' 1/2/5 x 10^k lands on round human values.
+// Axis ticks are therefore always integers; the extra decimal is for tooltip readouts.
+function fmtGib(g) { return (g >= 100 ? Math.round(g) : Math.round(g * 10) / 10) + ' GiB'; }
 
 // ---------- nice log-scale ticks: 1/2/5 * 10^k within [lo,hi] ----------
 function niceLogTicks(lo, hi) {
@@ -263,8 +307,8 @@ function renderLineChart(container, opts) {
     svg += `<text x="${CHART_W-PAD.r}" y="${y-4}" text-anchor="end" font-size="9" fill="var(--text-faint)">${opts.ceiling.label}</text>`;
   }
 
-  // series lines + points
-  const endLabels = []; // collected first, laid out after (collision avoidance)
+  // series lines + points (series are identified by the legend under the chart, not by
+  // labels inside the plot field - those repeated the legend and overlapped each other)
   opts.series.forEach(s => {
     const pts = s.n.map((n,i) => [px(n), py(s.y[i])]);
     if (pts.length >= 2) {
@@ -276,31 +320,6 @@ function renderLineChart(container, opts) {
       svg += `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="var(--canvas-surface)"/>`;
       svg += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(${s.colorvar})"/>`;
     });
-    if (pts.length) {
-      const last = pts[pts.length-1];
-      const partial = s.n.length < opts.nExpected ? ' (partial)' : '';
-      endLabels.push({ x: last[0], py0: last[1], y: last[1], colorvar: s.colorvar, text: s.label + partial });
-    }
-  });
-
-  // direct end labels: sort by data y, then push apart any that would collide
-  // (dataviz skill: "when end-labels collide, don't stack them" - nudge + leader line)
-  endLabels.sort((a,b) => a.y - b.y);
-  const MIN_GAP = 12;
-  for (let i = 1; i < endLabels.length; i++) {
-    if (endLabels[i].y - endLabels[i-1].y < MIN_GAP) endLabels[i].y = endLabels[i-1].y + MIN_GAP;
-  }
-  const yCap = CHART_H - PAD.b - 2;
-  for (let i = endLabels.length - 1; i >= 0; i--) {
-    if (endLabels[i].y > yCap) { endLabels[i].y = yCap; if (i > 0) endLabels[i-1].y = Math.min(endLabels[i-1].y, yCap - MIN_GAP); }
-  }
-  endLabels.forEach(lb => {
-    if (Math.abs(lb.y - lb.py0) > 1.5) {
-      // nudged off its data point - draw a thin leader line so the label still traces back
-      svg += `<line x1="${lb.x+2}" y1="${lb.py0}" x2="${lb.x+7}" y2="${lb.y}" stroke="var(${lb.colorvar})" stroke-width="1" opacity="0.55"/>`;
-    }
-    svg += `<line x1="${lb.x+7}" y1="${lb.y}" x2="${lb.x+19}" y2="${lb.y}" stroke="var(${lb.colorvar})" stroke-width="2"/>`;
-    svg += `<text x="${lb.x+22}" y="${lb.y+3}" font-size="9.5" fill="var(--text-dim)">${lb.text}</text>`;
   });
 
   const svgId = 'svg-' + Math.random().toString(36).slice(2);
@@ -341,11 +360,6 @@ function renderLineChart(container, opts) {
 }
 
 // ---------- objects section ----------
-function fitBadge(fit) {
-  if (fit == null || fit.b == null) return '<span class="mono" style="color:var(--text-faint)">n/a</span>';
-  return `<span class="mono">N<sup>${fit.b}</sup></span> <span style="color:var(--text-faint)">(R²=${fit.r2})</span>`;
-}
-
 function renderObjects() {
   const root = document.getElementById('objects-root');
   DATA.objects.forEach(obj => {
@@ -359,6 +373,7 @@ function renderObjects() {
         <span class="chip">N = ${obj.sizes.join(' / ')} (manual selection)</span>
         <span class="chip">${seriesList.length} methods</span>
       </div>
+      <div class="obj-scope">Controlled sweep — one object, one capture, one frame-ranking method; only N changes.</div>
       <div class="chart-row">
         <div class="chart-card">
           <div class="chart-title">Total time vs N</div>
@@ -372,32 +387,33 @@ function renderObjects() {
         </div>
         <div class="chart-card">
           <div class="chart-title">Peak VRAM vs N</div>
-          <div class="chart-sub">log-log · dashed = pod ceiling (${DATA.vram_total_mib.toLocaleString()} MiB, L40S)</div>
+          <div class="chart-sub">log-log · dashed = pod ceiling (${Math.round(DATA.vram_total_mib/1024)} GiB, L40S)</div>
           <div class="ch-vram"></div>
         </div>
       </div>
       <div class="legend" id="legend-${obj.id}"></div>
       <details class="table-toggle">
-        <summary>Fitted exponents &amp; raw data — ${obj.title}</summary>
+        <summary>Raw data — ${obj.title}</summary>
         <div class="grid-wrap" style="margin-top:8px;"></div>
       </details>
     `;
     root.appendChild(block);
 
     const mk = (n,y) => ({ n, y });
+    const gib = arr => arr.map(v => v / 1024);
     renderLineChart(block.querySelector('.ch-time'), {
       series: seriesList.map(s => ({ ...mk(s.n, s.time_s), key: s.label, label: s.label, colorvar: s.colorvar, dash: s.dash })),
-      xTicks: obj.sizes, yFmt: v => fmtTime(v), nExpected: Math.max(...obj.sizes) ? obj.sizes.length : 4,
+      xTicks: obj.sizes, yFmt: v => fmtTime(v),
     });
     renderLineChart(block.querySelector('.ch-ram'), {
-      series: seriesList.map(s => ({ ...mk(s.n, s.ram_mib), key: s.label, label: s.label, colorvar: s.colorvar, dash: s.dash })),
-      xTicks: obj.sizes, yFmt: v => fmtMib(v), nExpected: obj.sizes.length,
-      ceiling: { value: DATA.ram_total_gib * 1024, label: 'pod RAM ceiling' },
+      series: seriesList.map(s => ({ ...mk(s.n, gib(s.ram_mib)), key: s.label, label: s.label, colorvar: s.colorvar, dash: s.dash })),
+      xTicks: obj.sizes, yFmt: fmtGib,
+      ceiling: { value: DATA.ram_total_gib, label: 'pod RAM ceiling' },
     });
     renderLineChart(block.querySelector('.ch-vram'), {
-      series: seriesList.map(s => ({ ...mk(s.n, s.vram_mib), key: s.label, label: s.label, colorvar: s.colorvar, dash: s.dash })),
-      xTicks: obj.sizes, yFmt: v => fmtMib(v), nExpected: obj.sizes.length,
-      ceiling: { value: DATA.vram_total_mib, label: 'GPU VRAM ceiling' },
+      series: seriesList.map(s => ({ ...mk(s.n, gib(s.vram_mib)), key: s.label, label: s.label, colorvar: s.colorvar, dash: s.dash })),
+      xTicks: obj.sizes, yFmt: fmtGib,
+      ceiling: { value: DATA.vram_total_mib / 1024, label: 'GPU VRAM ceiling' },
     });
 
     const legend = block.querySelector(`#legend-${obj.id}`);
@@ -415,18 +431,7 @@ function renderObjects() {
           <td>${fmt(s.ram_mib[i],0)}</td><td>${fmt(s.vram_mib[i],0)}</td></tr>`;
       });
     });
-    let fitRows = '';
-    seriesList.forEach(s => {
-      fitRows += `<tr><td class="txt">${s.label}</td><td>${fitBadge(s.fit_time)}</td>
-        <td>${s.fit_time_lin.slope!=null ? s.fit_time_lin.slope.toFixed(1)+' s/frame' : 'n/a'}</td>
-        <td>${s.fit_ram_lin.slope!=null ? s.fit_ram_lin.slope.toFixed(0)+' MiB/frame' : 'n/a'}</td>
-        <td>${s.fit_vram_lin.slope!=null ? s.fit_vram_lin.slope.toFixed(1)+' MiB/frame' : 'n/a'}</td></tr>`;
-    });
     tableWrap.innerHTML = `
-      <table class="data" style="min-width:520px; margin-bottom:14px;">
-        <thead><tr><th class="txt">method</th><th>time~N^b</th><th>marginal time</th><th>marginal RAM</th><th>marginal VRAM</th></tr></thead>
-        <tbody>${fitRows}</tbody>
-      </table>
       <table class="data">
         <thead><tr><th class="txt">method</th><th>N</th><th class="txt">exp_id</th><th>total (s)</th><th>s/frame</th><th>RAM (MiB)</th><th>VRAM (MiB)</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -471,10 +476,12 @@ function renderStageScaling() {
 // ---------- even-selection robustness table ----------
 function renderEvenCheck() {
   const root = document.getElementById('even-check-root');
-  let html = '';
+  if (!DATA.objects.some(o => o.even_check.length)) { root.remove(); return; }
+  let html = `<details class="table-toggle"><summary>Robustness check — the "even" (SIFT-overlap greedy) selection sweeps</summary>
+    <div class="subtitle" style="margin:6px 0 8px;">Same N grid, an algorithmic instead of human frame selection — included to confirm the exponents above aren't an artifact of the manual ranking.</div>`;
   DATA.objects.forEach(obj => {
     if (!obj.even_check.length) return;
-    html += `<h3 style="margin:8px 0 4px;">${obj.title}</h3><table class="data" style="min-width:640px; margin-bottom:14px;">
+    html += `<h3 style="margin:8px 0 4px;">${obj.title}</h3><div class="grid-wrap"><table class="data" style="min-width:640px; margin-bottom:14px;">
       <thead><tr><th class="txt">method</th><th>time~N^b</th><th>R²</th><th class="txt">N</th><th>time (s)</th><th>RAM (MiB)</th><th>VRAM (MiB)</th></tr></thead><tbody>`;
     obj.even_check.forEach(m => {
       m.rows.forEach((r,i) => {
@@ -482,80 +489,207 @@ function renderEvenCheck() {
           <td class="txt">${r.n}</td><td>${fmt(r.time_s,0)}</td><td>${fmt(r.ram_mib,0)}</td><td>${fmt(r.vram_mib,0)}</td></tr>`;
       });
     });
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
   });
-  root.innerHTML = html;
+  root.innerHTML = html + '</details>';
 }
 
 // ---------- VGGT appendix ----------
 function renderVggt() {
   const v = DATA.vggt;
+  // These older runs logged only model_load - no preprocess/inference entry at all. That is
+  // missing data, not zero seconds, so the two stage columns are dropped entirely rather than
+  // printed as 0 next to a real total (which read as "VGGT does no work"). They come back on
+  // their own, with '—' for any run that still lacks the split, once staged runs are added.
+  const stageCols = v.has_work_data;
+  const gaps = v.rows.filter(r => r.work_s == null).map(r => r.total_s - r.model_load_s);
+  let missingNote = '';
+  if (gaps.length) {
+    const lo = Math.min(...gaps).toFixed(1), hi = Math.max(...gaps).toFixed(1);
+    missingNote = ` ${gaps.length === v.rows.length ? 'These runs predate' : 'Some of these runs predate'}
+      per-stage timing — only <span class="mono">model_load</span> was recorded, leaving ${lo}–${hi}s of each
+      total unattributed to any stage, so the preprocess/inference split is
+      ${stageCols ? "shown as '—' where it was never logged" : 'left out of the table below'}.`;
+  }
+  let workFit = '';
+  if (v.fit_work.b != null) {
+    workFit = ` preprocess+inference only: N<sup>${v.fit_work.b}</sup> (R²=${v.fit_work.r2}),
+      linear ≈ ${v.fit_work_lin.slope} s/frame + ${v.fit_work_lin.intercept}s.`;
+  }
   document.getElementById('vggt-caveat').innerHTML =
     `bollard_003 and information_sign_002 now have a real VGGT N-sweep — see the main charts above, VGGT is
     charted there like every other method. Every row below is everything else: a <b>different object</b> at a different N,
-    so an N-effect can't be isolated from an object/scene effect for these. <span class="mono">model_load</span>
-    (13–29s, HF cache hot/cold) is stripped before fitting since it swamps the signal at these small N and has nothing to do with frame count.
-    total (uncorrected) fit: N<sup>${v.fit_total.b ?? '—'}</sup> (R²=${v.fit_total.r2 ?? '—'}) — dominated by cache-state noise, not meaningful.
-    preprocess+inference only: N<sup>${v.fit_work.b ?? '—'}</sup> (R²=${v.fit_work.r2 ?? '—'}), linear ≈ ${v.fit_work_lin.slope} s/frame + ${v.fit_work_lin.intercept}s.`;
-  let html = '<table class="data" style="min-width:760px;"><thead><tr><th class="txt">object</th><th>N</th><th>model_load (s)</th><th>preprocess+inference (s)</th><th>s/frame (work only)</th><th>total (s)</th><th>RAM (MiB)</th><th>VRAM (MiB)</th></tr></thead><tbody>';
+    so an N-effect can't be isolated from an object/scene effect for these.${missingNote}
+    Total (uncorrected) fit: N<sup>${v.fit_total.b ?? '—'}</sup> (R²=${v.fit_total.r2 ?? '—'}) — that R² is the point:
+    at these small N the total is dominated by <span class="mono">model_load</span> (13–29s, HF cache hot or cold),
+    which has nothing to do with frame count.${workFit}`;
+  const stageHead = stageCols ? '<th>preprocess+inference (s)</th><th>s/frame (work only)</th>' : '';
+  let html = `<table class="data" style="min-width:${stageCols ? 760 : 620}px;"><thead><tr><th class="txt">object</th><th>N</th><th>model_load (s)</th>${stageHead}<th>total (s)</th><th>RAM (MiB)</th><th>VRAM (MiB)</th></tr></thead><tbody>`;
   v.rows.forEach(r => {
     // "_test_1" is an internal capture suffix; other qualifiers (_master, _pool69) name a
     // genuinely different capture and stay.
-    html += `<tr><td class="txt">${r.object.replace('_test_1','')}</td><td>${r.n}</td><td>${r.model_load_s}</td><td>${r.work_s}</td><td>${r.work_s_per_frame}</td><td>${r.total_s}</td><td>${fmt(r.ram_mib,0)}</td><td>${fmt(r.vram_mib,0)}</td></tr>`;
+    const stageCells = stageCols ? `<td>${fmt(r.work_s,1)}</td><td>${fmt(r.work_s_per_frame,3)}</td>` : '';
+    html += `<tr><td class="txt">${r.object.replace('_test_1','')}</td><td>${r.n}</td><td>${r.model_load_s}</td>${stageCells}<td>${r.total_s}</td><td>${fmt(r.ram_mib,0)}</td><td>${fmt(r.vram_mib,0)}</td></tr>`;
   });
   html += '</tbody></table>';
   document.getElementById('vggt-root').innerHTML = html;
 }
 
-// ---------- scope box + interpretation (data-driven text) ----------
-function renderScopeAndInterp() {
-  document.getElementById('hw-ram').textContent = DATA.ram_total_gib;
-  document.getElementById('hw-vram').textContent = DATA.vram_total_mib.toLocaleString();
-  const scope = document.getElementById('scope-box');
-  let hlocLines = '';
-  Object.entries(DATA.hloc_status).forEach(([obj, st]) => {
-    const missing = st.expected.filter(n => !st.have.includes(n));
-    if (missing.length) hlocLines += `<div>hloc+COLMAP · ${obj.replace('_test_1','')}: have N=${st.have.join(',')||'none'} <span class="pending-badge">missing N=${missing.join(',')}</span> — rerun this builder once the pod sweep lands.</div>`;
-  });
-  const scopeLines = DATA.objects.map(obj => {
-    const methods = Object.values(obj.series).map(s => s.label).join(', ');
-    return `<div><b>${obj.title}</b> (N=${obj.sizes.join('/')}, manual frame selection): ${methods}.</div>`;
-  }).join('');
-  scope.innerHTML = `
-    <div><b>In scope (controlled, charted):</b></div>
-    ${scopeLines}
-    <div><b>Out of scope (appendix only):</b> VGGT on every other object in the project — still just one point each, no N-sweep.</div>
-    ${hlocLines}
-  `;
+// ---------- shared helpers for the two answer sections ----------
+const SUPERLIN = 1.0;  // b > 1 == each extra frame costs more than the last
 
-  // ---- data-driven interpretation ----
-  const interp = document.getElementById('interp');
-  let items = '';
-  DATA.objects.forEach(obj => {
-    const c = obj.series.colmap, m = obj.series.mast3r_ga, v = obj.series.vggt;
-    if (c && c.fit_time.b != null) items += `<li><b>${obj.title}:</b> COLMAP time ~ N<sup>${c.fit_time.b}</sup> (R²=${c.fit_time.r2}), super-linear — each extra frame costs more than the last (dense patchmatch + sparse mapping both grow, see stage table).</li>`;
-    if (m && m.fit_time.b != null) items += `<li><b>${obj.title}:</b> MASt3R-GA time ~ N<sup>${m.fit_time.b}</sup> (R²=${m.fit_time.r2}), close to linear.</li>`;
-    if (v && v.fit_time.b != null) items += `<li><b>${obj.title}:</b> VGGT (model_load-corrected) time ~ N<sup>${v.fit_time.b}</sup> (R²=${v.fit_time.r2}), ${v.fit_time_lin.slope.toFixed(2)} s/frame — an order of magnitude below every other method's marginal cost.</li>`;
-  });
-  const c1 = DATA.objects[1]?.series.colmap, m1 = DATA.objects[1]?.series.mast3r_ga, v1 = DATA.objects[1]?.series.vggt;
-  interp.innerHTML = `
-    <div class="headline">Bottleneck resource is method-specific, not universal</div>
-    <ul>
-      ${items}
-      <li>COLMAP and hloc+COLMAP are <b>RAM-bound</b>, not VRAM-bound: VRAM stays flat (patchmatch's windowed workspace doesn't grow with N) while RAM grows ${c1 ? c1.fit_ram_lin.slope.toFixed(0) : '—'} MiB/frame — at that rate the ${DATA.ram_total_gib} GiB pod saturates around N ≈ ${c1 ? Math.round((DATA.ram_total_gib*1024 - c1.fit_ram_lin.intercept)/c1.fit_ram_lin.slope) : '—'}, far beyond any capture in this project.</li>
-      <li>MASt3R-GA is the mirror image — <b>VRAM-bound</b>: RAM is essentially flat (~12 GiB regardless of N) while VRAM grows ${m1 ? m1.fit_vram_lin.slope.toFixed(1) : '—'} MiB/frame, hitting the L40S's ${DATA.vram_total_mib.toLocaleString()} MiB around N ≈ ${m1 ? Math.round((DATA.vram_total_mib - m1.fit_vram_lin.intercept)/m1.fit_vram_lin.slope) : '—'} — the practical scaling ceiling for this method on this GPU.</li>
-      <li>hloc+COLMAP's extra cost over plain COLMAP is concentrated in <b>matching + sparse mapping</b> (both exhaustive-pairing artifacts), not in the shared dense stage — see the stage-scaling table above.</li>
-      <li>VGGT is <b>VRAM-bound from a much higher floor</b>: even at the smallest N its VRAM (${v1 ? Math.round(v1.fit_vram_lin.intercept).toLocaleString() : '—'} MiB baseline) already exceeds MASt3R-GA's VRAM at the *largest* N tested — a single feed-forward pass over every frame at once costs more memory per frame than an incremental/windowed pipeline, even though it's by far the fastest wall-clock method.</li>
-    </ul>
-  `;
+function seriesOf(method) { return DATA.objects.map(o => o.series[method]).filter(Boolean); }
+function valuesOf(method, pick) { return seriesOf(method).map(pick).filter(v => v != null); }
+// one number if every sweep agrees, otherwise the range across sweeps
+function span(vals, digits) {
+  if (!vals.length) return '—';
+  const f = v => digits == null ? String(v) : v.toFixed(digits);
+  const lo = f(Math.min(...vals)), hi = f(Math.max(...vals));
+  return lo === hi ? lo : `${lo}–${hi}`;
+}
+function swatch(colorvar) { return `<span class="mkey" style="background:var(${colorvar})"></span>`; }
+
+// N at which a linear memory trend would meet the ceiling. A flat or falling trend never
+// does, and is reported as such rather than as a huge or negative N.
+function saturationN(lin, ceilingMib) {
+  if (!lin || lin.slope == null || lin.slope <= 0) return null;
+  const n = (ceilingMib - lin.intercept) / lin.slope;
+  return n > 0 ? Math.round(n) : null;
 }
 
+// ---------- section: does the cost grow with N? ----------
+function renderTimeScaling() {
+  let html = '<table class="data" style="min-width:600px;"><thead><tr><th class="txt">object</th><th class="txt">method</th>'
+    + '<th>time ~ N<sup>b</sup></th><th>R²</th><th>marginal</th><th>total at largest N</th></tr></thead><tbody>';
+  DATA.objects.forEach(obj => {
+    const list = Object.values(obj.series);
+    list.forEach((s, i) => {
+      const iMax = s.n.indexOf(Math.max(...s.n));
+      html += `<tr>${i === 0 ? `<td class="txt" rowspan="${list.length}">${obj.title}</td>` : ''}
+        <td class="txt">${swatch(s.colorvar)}${s.label}</td>
+        <td class="mono">${s.fit_time.b ?? '—'}</td>
+        <td>${s.fit_time.r2 ?? '—'}</td>
+        <td>${s.fit_time_lin.slope != null ? s.fit_time_lin.slope.toFixed(1) + ' s/frame' : '—'}</td>
+        <td>${fmtTime(s.time_s[iMax])} <span style="color:var(--text-faint)">at N=${s.n[iMax]}</span></td></tr>`;
+    });
+  });
+  document.getElementById('time-scaling-root').innerHTML = html + '</tbody></table>';
+
+  const cB = valuesOf('colmap', s => s.fit_time.b), hB = valuesOf('hloc_colmap', s => s.fit_time.b);
+  const mB = valuesOf('mast3r_ga', s => s.fit_time.b), vB = valuesOf('vggt', s => s.fit_time.b);
+  const corr = cB.concat(hB);
+  const cMarg = valuesOf('colmap', s => s.fit_time_lin.slope);
+  const vMarg = valuesOf('vggt', s => s.fit_time_lin.slope);
+  const vTimes = seriesOf('vggt').flatMap(s => s.time_s);
+  // the headline is read off the data, so a future sweep that changes the picture changes the
+  // sentence with it instead of leaving a stale claim on the page
+  const headline = corr.every(b => b > SUPERLIN)
+    ? 'Yes — but only the correspondence pipelines pay a rising price per frame.'
+    : 'Not uniformly — the exponents below disagree across methods.';
+  document.getElementById('time-aside').innerHTML = `
+    <span class="k">The answer</span>
+    <b>${headline}</b> COLMAP grows as N<sup>${span(cB)}</sup> and hloc + COLMAP as N<sup>${span(hB)}</sup>
+    — above 1 on every sweep, because exhaustive pairing grows with N². MASt3R-GA is effectively linear or better
+    (N<sup>${span(mB)}</sup>).
+    <br><br>
+    VGGT's exponent is the least stable of the four (N<sup>${span(vB)}</sup>): across whole runs of
+    ${fmtTime(Math.min(...vTimes))}–${fmtTime(Math.max(...vTimes))} the fit is riding on a few seconds
+    either way, so read its <i>base</i> rather than its slope.
+    <br><br>
+    That base is where the real gap is: one more frame adds about <b>${span(cMarg, 0)}s</b> to a COLMAP
+    run and about <b>${span(vMarg, 1)}s</b> to a VGGT one.`;
+}
+
+// ---------- section: which resource runs out first? ----------
+function renderMemoryHeadroom() {
+  const ramCeil = DATA.ram_total_gib * 1024, vramCeil = DATA.vram_total_mib;
+  let html = '<table class="data" style="min-width:660px;"><thead><tr><th class="txt">object</th><th class="txt">method</th>'
+    + '<th>RAM / frame</th><th>VRAM / frame</th><th class="txt">bound by</th><th>saturates at N ≈</th></tr></thead><tbody>';
+  DATA.objects.forEach(obj => {
+    const list = Object.values(obj.series);
+    list.forEach((s, i) => {
+      const nR = saturationN(s.fit_ram_lin, ramCeil), nV = saturationN(s.fit_vram_lin, vramCeil);
+      let bound = '<span style="color:var(--text-faint)">neither — both flat</span>', boundN = '—';
+      if (nR != null && (nV == null || nR <= nV)) { bound = '<b>RAM</b>'; boundN = nR.toLocaleString(); }
+      else if (nV != null) { bound = '<b>VRAM</b>'; boundN = nV.toLocaleString(); }
+      const flat = v => {
+        if (v == null) return '—';
+        if (v <= 0) return `<span style="color:var(--text-faint)" title="${v} MiB/frame — no growth with N">flat</span>`;
+        return (v < 1 ? '&lt;1' : v.toFixed(0)) + ' MiB';
+      };
+      html += `<tr>${i === 0 ? `<td class="txt" rowspan="${list.length}">${obj.title}</td>` : ''}
+        <td class="txt">${swatch(s.colorvar)}${s.label}</td>
+        <td>${flat(s.fit_ram_lin.slope)}</td>
+        <td>${flat(s.fit_vram_lin.slope)}</td>
+        <td class="txt">${bound}</td>
+        <td>${boundN}</td></tr>`;
+    });
+  });
+  document.getElementById('memory-headroom-root').innerHTML = html + '</tbody></table>';
+
+  const satRam = m => valuesOf(m, s => saturationN(s.fit_ram_lin, ramCeil));
+  const satVram = m => valuesOf(m, s => saturationN(s.fit_vram_lin, vramCeil));
+  const corrRam = valuesOf('colmap', s => s.fit_ram_lin.slope).concat(valuesOf('hloc_colmap', s => s.fit_ram_lin.slope));
+  const corrN = satRam('colmap').concat(satRam('hloc_colmap'));
+  const feedVram = valuesOf('mast3r_ga', s => s.fit_vram_lin.slope).concat(valuesOf('vggt', s => s.fit_vram_lin.slope));
+  const feedN = satVram('mast3r_ga').concat(satVram('vggt'));
+  const vggtN = satVram('vggt');
+  const vggtFloor = valuesOf('vggt', s => s.fit_vram_lin.intercept);
+  document.getElementById('memory-aside').innerHTML = `
+    <span class="k">The answer</span>
+    <b>The bottleneck is method-specific, not universal.</b>
+    <br><br>
+    <b>COLMAP and hloc + COLMAP are RAM-bound.</b> VRAM stays flat — patchmatch's windowed workspace does
+    not grow with N — while RAM climbs ${span(corrRam, 0)} MiB per frame, filling the
+    ${DATA.ram_total_gib} GiB pod around N ≈ ${span(corrN)}.
+    <br><br>
+    <b>MASt3R-GA and VGGT are the mirror image.</b> RAM is essentially flat; VRAM climbs
+    ${span(feedVram, 0)} MiB per frame and reaches the L40S's ${Math.round(vramCeil / 1024)} GiB first,
+    around N ≈ ${span(feedN)}.
+    <br><br>
+    <b>VGGT gets there soonest</b> (N ≈ ${span(vggtN)}) and from the highest floor
+    (${span(vggtFloor.map(Math.round))} MiB before a single frame is added): one feed-forward pass over
+    every frame at once costs more memory per frame than an incremental pipeline — even though it is by
+    far the fastest method on the clock.`;
+}
+
+// ---------- stage-section answer ----------
+function renderStageAside() {
+  const pick = (method, key) => {
+    const st = (DATA.stage_scaling[method] || []).find(x => x.key === key);
+    return st && st.exponent != null ? st.exponent : null;
+  };
+  const dense = ['colmap', 'hloc_colmap'].map(m => pick(m, 'dense_patchmatch')).filter(v => v != null);
+  const match = ['colmap', 'hloc_colmap'].map(m => pick(m, 'matching')).filter(v => v != null);
+  const sparse = ['colmap', 'hloc_colmap'].map(m => pick(m, 'sparse_mapping')).filter(v => v != null);
+  document.getElementById('stage-aside').innerHTML = `
+    <span class="k">The answer</span>
+    <b>The super-linear part is matching, not the dense stage.</b>
+    <br><br>
+    Dense patchmatch — the stage that eats most of the wall clock — scales at N<sup>${span(dense)}</sup>,
+    essentially linear, because it is per-image work. What bends the curve is <b>matching</b>
+    (N<sup>${span(match)}</sup>) and <b>sparse mapping</b> (N<sup>${span(sparse)}</sup>): both are
+    pair-count artifacts of exhaustive pairing, which grows as N².
+    <br><br>
+    That is also where hloc + COLMAP's extra cost over plain COLMAP sits — in the correspondence stages,
+    not in the dense stage the two run identically.`;
+}
+
+// ---------- header hardware numbers ----------
+function renderHeaderNumbers() {
+  document.getElementById('hw-ram').textContent = DATA.ram_total_gib;
+  document.getElementById('hw-vram').textContent = DATA.vram_total_mib.toLocaleString();
+}
+
+renderHeaderNumbers();
 renderObjects();
+renderTimeScaling();
+renderMemoryHeadroom();
 renderStageShare();
 renderStageScaling();
+renderStageAside();
 renderEvenCheck();
 renderVggt();
-renderScopeAndInterp();
 </script>
 </body>
 </html>
