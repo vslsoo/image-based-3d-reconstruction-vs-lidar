@@ -114,6 +114,11 @@ def page_data(rows: list[dict]) -> dict:
             "raw_points": r["raw points"],
             "matched_points": r["matched points (1cm voxel)"],
             "delta_10_3": r["ΔF1@10-3cm (pp)"],
+            # 95% spatial block-bootstrap CIs, 3 cm only - the threshold the thesis quotes.
+            # acc/comp intervals ride along for the accuracy x completeness figure.
+            "f1_ci_lo": r.get("F1@3cm CI low"), "f1_ci_hi": r.get("F1@3cm CI high"),
+            "acc_ci_lo": r.get("accuracy@3cm CI low"), "acc_ci_hi": r.get("accuracy@3cm CI high"),
+            "comp_ci_lo": r.get("completeness@3cm CI low"), "comp_ci_hi": r.get("completeness@3cm CI high"),
             **{f"{m}_{t}": r[f"{name}@{t} (%)"]
                for t in THRESHOLDS
                for m, name in (("acc", "accuracy"), ("comp", "completeness"), ("f1", "F1"))},
@@ -174,6 +179,7 @@ HTML = """<!doctype html>
   table.summary tbody tr:hover { background:color-mix(in srgb, var(--accent-soft) 40%, transparent); }
   .grouprule td { border-top:2px solid var(--panel-border); }
   .note { font-size:11.5px; color:var(--text-faint); }
+  .ci-cell { color:var(--text-faint); font-size:11px; }
   .bar { display:inline-block; height:7px; border-radius:3px; background:var(--accent); opacity:.75; vertical-align:1px; }
   .chip { display:inline-block; font-size:11px; color:var(--text-dim); background:var(--code-bg);
           border:1px solid var(--panel-border); border-radius:20px; padding:2px 10px; }
@@ -258,7 +264,7 @@ function m3c2Cells(m) {
 function buildTable() {
   let h = '<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Method</th>'
-    + `<th id="th-f1">F1@${thr}</th><th></th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
+    + `<th id="th-f1">F1@${thr}</th><th></th><th>95% CI</th><th id="th-acc">Acc@${thr}</th><th id="th-comp">Comp@${thr}</th>`
     + '<th>ΔF1@10−3</th><th>Acc med (cm)</th><th>Comp med (cm)</th><th>align RMSE (mm)</th>'
     + (DATA.has_m3c2
         ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d| med (cm)</th>'
@@ -279,6 +285,8 @@ function buildTable() {
         + `<td class="txt">${m.method}</td>`
         + `<td class="f1cell${isBest ? ' best-cell' : ''}">${fmt(f1)}</td>`
         + `<td style="width:78px; text-align:left;"><span class="bar" style="width:${Math.max(0, (f1 ?? 0)) * 0.7}px"></span></td>`
+        + `<td class="mono ci-cell">${thr === '3cm' && m.f1_ci_lo != null
+             ? `[${fmt(m.f1_ci_lo)}, ${fmt(m.f1_ci_hi)}]` : '—'}</td>`
         + `<td>${fmt(m[`acc_${thr}`])}</td><td>${fmt(m[`comp_${thr}`])}</td>`
         + `<td>${fmt(m.delta_10_3)}</td>`
         + `<td>${fmt(m.acc_median_cm, 2)}</td><td>${fmt(m.comp_median_cm, 2)}</td><td>${fmt(m.rmse_mm)}</td>`

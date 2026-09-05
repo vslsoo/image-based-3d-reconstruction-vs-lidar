@@ -64,6 +64,14 @@ THRESHOLDS_CM = [3.0, 5.0, 10.0]
 # longer - see the note next to BLOCK_CM.
 B_BOOT = 2000
 BLOCK_CM = 5.0
+# Checked, not assumed (`--block-check`, 2026-09-05): reran bus_stop (4.3 m) and flashlight
+# (5.8 m) - the two objects larger than anything the constant was tuned on - at 5 and 10 cm.
+# The interval does roughly double at 10 cm, but that is what coarser blocks do on their own:
+# points lie on a surface, so a doubled edge leaves ~4x fewer blocks and a bootstrap over 4x
+# fewer units is ~2x wider. Measured width ratio against sqrt(n_blocks_5 / n_blocks_10) came
+# out 0.82-1.05, median 0.98 across the eight rows - the coarser grid explains all of the
+# widening, and there is no error correlation beyond 5 cm left to capture. So 5 cm stays, which
+# also keeps this table comparable with the two ablations.
 BOOT_SEED = 123
 # Accuracy/completeness/F1 are reported at all three thresholds now, not just 3cm - 3cm is
 # still what the DBSCAN gap-mask itself is built against (FLOOR_CM/the live tuner's floor),
@@ -186,13 +194,19 @@ def load_icp_rmse_mm(exp_id: str) -> tuple[float | None, float | None]:
     return entry.get("rmse_inlier_mm"), entry.get("inlier_share_pct")
 
 
-def compute_rows() -> tuple[list[dict], list[dict]]:
+def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None) -> tuple[list[dict], list[dict]]:
     """(rows, significance) - one row per object x method, plus every pairwise method
-    comparison within an object."""
+    comparison within an object.
+
+    `block_cm` and `only_pages` exist for the block-size check (--block-check); the table
+    itself is always built with the module's own BLOCK_CM over every object.
+    """
     rows = []
     boot_rng = np.random.default_rng(BOOT_SEED)
     f1_draws: dict[tuple[str, str], np.ndarray] = {}
     for page_id, cfg in MERGED_OBJECTS.items():
+        if only_pages is not None and page_id not in only_pages:
+            continue
         ref_path = PROJECT_ROOT / cfg["ref"]
         print(f"[ref] {page_id}: loading {ref_path.name}", flush=True)
         ref = load_reference(ref_path)
@@ -280,7 +294,7 @@ def compute_rows() -> tuple[list[dict], list[dict]]:
             # An interval computed over a different set would not describe the number beside it.
             acc_b, comp_b, f1_b, n_blk_acc, n_blk_comp = bootstrap_draws(
                 mpts[kept_mask], d_kept_cm <= 3.0, rpts, d_t2s_cm <= 3.0,
-                BLOCK_CM / 100.0, B_BOOT, boot_rng,
+                block_cm / 100.0, B_BOOT, boot_rng,
             )
             f1_draws[(capture["id"], method_id)] = f1_b
             for name, draws in (("accuracy", acc_b), ("completeness", comp_b), ("f1", f1_b)):
@@ -500,5 +514,43 @@ def main() -> None:
     write_json(rows, significance, OUT_JSON)
 
 
+def block_check(pages=("bus_stop", "flashlight")) -> None:
+    """Does the interval widen on the two largest objects if the blocks are doubled?
+
+    BLOCK_CM was chosen on the bollard (1 m) and the sign (2.5 m). If error correlation runs
+    longer on a 4.3 m shelter or a 5.8 m lamppost, 5 cm blocks would still be splitting one
+    mistake across several resampling units and the interval would come out too narrow. This
+    reruns those two objects at 5 and 10 cm and prints both widths, so the choice is made from
+    the numbers rather than from the assumption.
+    """
+    _load = {}
+    for block in (5.0, 10.0):
+        rows, _ = compute_rows(block_cm=block, only_pages=set(pages))
+        _load[block] = {(r["object_id"], r["method"]): r for r in rows}
+    # A wider interval at 10 cm is not by itself evidence of longer-range correlation: with
+    # points on a surface, doubling the block edge leaves ~4x fewer blocks, and a bootstrap
+    # over 4x fewer units is ~2x wider on its own. So the comparison that matters is the
+    # measured width ratio against sqrt(n_blocks_5 / n_blocks_10) - the width the coarser
+    # grid would produce with no extra correlation at all. Only a ratio clearly ABOVE that
+    # means 5 cm blocks were splitting one mistake across several resampling units.
+    import math
+    print("\n--- block size check: 95% CI width at 3 cm (pp) ---", flush=True)
+    print(f'{"object":<20}{"method":<14}{"F1 @5cm":>9}{"F1 @10cm":>10}{"ratio":>7}{"expected":>10}'
+          f'{"blocks 5cm":>12}{"blocks 10cm":>12}', flush=True)
+    excess = []
+    for key in _load[5.0]:
+        a, b = _load[5.0][key], _load[10.0][key]
+        w = lambda r, m: r[f"{m}_3cm_ci_hi"] - r[f"{m}_3cm_ci_lo"]
+        ratio = w(b, "f1") / w(a, "f1") if w(a, "f1") else float("nan")
+        expected = math.sqrt(a["n_blocks_acc"] / b["n_blocks_acc"]) if b["n_blocks_acc"] else float("nan")
+        excess.append(ratio / expected)
+        print(f'{key[0]:<20}{key[1]:<14}{w(a,"f1"):9.2f}{w(b,"f1"):10.2f}{ratio:7.2f}{expected:10.2f}'
+              f'{a["n_blocks_acc"]:12d}{b["n_blocks_acc"]:12d}', flush=True)
+    print(f'\nmeasured / expected: min {min(excess):.2f}, median {sorted(excess)[len(excess)//2]:.2f}, '
+          f'max {max(excess):.2f}  (1.0 = the coarser grid explains all of the widening)', flush=True)
+
+
 if __name__ == "__main__":
+    if "--block-check" in sys.argv[1:]:
+        sys.exit(block_check())
     main()

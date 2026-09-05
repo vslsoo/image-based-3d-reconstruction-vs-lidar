@@ -5,6 +5,7 @@ It does not recompute anything. Each sheet is copied verbatim from the table its
 builder already wrote, so this file can never disagree with the site:
 
   Main results        <- summary_all_objects_accuracy_f1_EN.xlsx   (build_accuracy_f1_summary_table.py)
+  Main significance   <- summary_all_objects_accuracy_f1_EN.xlsx sheet 2
   Capture strategy    <- capture_comparison_summary.xlsx           (build_capture_comparison_page.py)
   Capture significance<- capture_comparison_summary.xlsx sheet 2
   Frame count         <- frame_count_study_summary.xlsx            (build_frame_count_study_page.py)
@@ -39,6 +40,10 @@ SOURCES = [
     ("Main results", "summary_all_objects_accuracy_f1_EN.xlsx", "summary",
      "6 objects x 4 methods. Accuracy / completeness / F1 at 3, 5 and 10 cm against the LiDAR "
      "reference, on a shared 1 cm grid. Alignment RMSE is measured from the same aligned clouds."),
+    ("Main significance", "summary_all_objects_accuracy_f1_EN.xlsx", "significance",
+     "Pairwise F1@3cm differences between methods on the same object, block bootstrap. Unpaired: "
+     "the four reconstructions of an object share no frames. A CI spanning 0 means the two "
+     "methods are not distinguishable on that object."),
     ("Capture strategy", "capture_comparison_summary.xlsx", "capture_comparison",
      "2 objects x 3 capture approaches x 2 methods. T1 = close-range + distant, T2 = close-range "
      "only, T3 = distant only."),
