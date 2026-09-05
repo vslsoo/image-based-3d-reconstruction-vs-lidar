@@ -39,7 +39,7 @@
 
   .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:9px 9px 11px; display:flex; flex-direction:column; gap:7px; box-shadow:0 1px 2px rgba(24,26,23,0.05), 0 1px 8px rgba(24,26,23,0.03); }
   .tuner-panel { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 2px 12px rgba(23,128,95,0.16); }
-  canvas { width:100%; height:230px; display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
+  canvas { width:100%; height:var(--canvas-h, 230px); display:block; border-radius:7px; background:var(--canvas-bg); touch-action:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
 
   .tabs { display:flex; gap:5px; }
@@ -305,7 +305,21 @@ function makeViewer(canvas, layers) {
   }
   const center = [(minX+maxX)/2, (minY+maxY)/2, (minZ+maxZ)/2];
   const diag = Math.hypot(maxX-minX, maxY-minY, maxZ-minZ) || 1;
-  let azimuth = 0.6, elevation = 0.35, distance = diag * 1.3;
+  // Fit the camera to the object instead of to its 3D diagonal. A 2.5 m sign in a panel of
+  // this shape was drawn at 1.35x its diagonal, which is a good distance for a compact object
+  // and much too far for a thin tall one - the cloud came out a narrow strip with the detail
+  // too small to read. This takes the vertical extent and the worst-case horizontal extent
+  // over an orbit (the XY diagonal, since the camera turns), converts each into the distance
+  // that just fits it in the current viewport, and keeps the larger with a 5% margin.
+  const halfV = (maxZ - minZ) / 2 || diag / 2;
+  const halfH = Math.hypot(maxX - minX, maxY - minY) / 2 || diag / 2;
+  const FOV_Y = Math.PI / 4, MARGIN = 1.05;
+  function fitDistance() {
+    const aspect = (canvas.clientWidth || 1) / (canvas.clientHeight || 1);
+    const tanY = Math.tan(FOV_Y / 2), tanX = tanY * aspect;
+    return Math.max(halfV / tanY, halfH / tanX) * MARGIN;
+  }
+  let azimuth = 0.6, elevation = 0.35, distance = fitDistance();
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -350,12 +364,15 @@ function makeViewer(canvas, layers) {
     elevation = Math.max(-1.5, Math.min(1.5, elevation - (e.clientY - lastY) * 0.008));
     lastX = e.clientX; lastY = e.clientY; draw();
   });
+  let userZoomed = false;
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
-    distance = Math.max(diag * 0.1, Math.min(diag * 6, distance * (1 + e.deltaY * 0.001)));
+    userZoomed = true;
+    distance = Math.max(diag * 0.05, Math.min(diag * 6, distance * (1 + e.deltaY * 0.001)));
     draw();
   }, { passive: false });
-  window.addEventListener('resize', draw);
+  // a resize changes the aspect, so refit - unless the reader has zoomed by hand
+  window.addEventListener('resize', () => { if (!userZoomed) distance = fitDistance(); draw(); });
   draw();
 
   return {
@@ -401,7 +418,22 @@ function pctWithin(distCmFull, t) {
 const METHOD_IDS = ["bus_stop_sign_002__mast3r_ga", "bus_stop_sign_002__vggt", "bus_stop_sign_002__colmap", "bus_stop_sign_002__hloc_colmap"];
 const FLOOR_CM = PART1.floor_cm;
 const targetPosGlobal = b64ToFloat32(PART1.target_pos);
-const RENDER_CAP = 6000;
+
+// A tall thin object (the sign is 2.5 m over a ~0.5 m footprint) in a panel wider than it is
+// tall wastes most of the panel and leaves the cloud too small to read. Give those objects a
+// taller canvas; compact and long-low ones keep the default.
+function canvasHeightFor(posArr) {
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for (let i=0;i<posArr.length;i+=3){ const x=posArr[i],y=posArr[i+1],z=posArr[i+2];
+    if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; if(z<minZ)minZ=z; if(z>maxZ)maxZ=z; }
+  const foot = Math.max(maxX-minX, maxY-minY) || 1;
+  const aspect = (maxZ-minZ) / foot;
+  return aspect >= 2 ? 340 : (aspect >= 1.2 ? 280 : 220);
+}
+
+document.getElementById('part1-grid').style.setProperty('--canvas-h', canvasHeightFor(targetPosGlobal) + 'px');
+
+const RENDER_CAP = 12000;   // total points drawn per panel, split between the two pools
 
 // global tuner state, shared by all 4 panels
 const FT_DEFAULT = 5, EPS_DEFAULT = 2, MP_DEFAULT = 3;
@@ -512,22 +544,42 @@ function shownMetrics(methodId, t) {
   return { accPct: acc.pct, compPct, f1Pct, nExcluded: acc.nExcludedEst, exact: false };
 }
 
+// What is drawn has to look like what the number says. Taking the FIRST RENDER_CAP points of
+// each pool did neither: the two pools were drawn 1:1 whatever their real sizes (so a panel
+// reading "74% within t" came out half red), and each was a contiguous slab of voxel order
+// rather than a sample spread over the object. The budget is now split in proportion to the
+// true population of each pool, each pool is strided, and the kept "beyond t" points are
+// written first so a within-t point wins any depth tie.
 function buildAccuracyRender(methodId, t) {
   const s = part1State[methodId];
+  let kept = 0;
+  for (let i = 0; i < s.keptMask.length; i++) if (s.keptMask[i]) kept++;
+  const belowTrue = s.nBelowTrue;
+  const keptTrue = s.candidateDist.length ? s.nCandidatesTrue * (kept / s.candidateDist.length) : 0;
+  const total = belowTrue + keptTrue;
+  const nKeptDraw = total > 0 ? Math.min(kept, Math.round(RENDER_CAP * keptTrue / total)) : 0;
+  const nBelowDraw = Math.min(s.belowDist.length, RENDER_CAP - nKeptDraw);
+
   const pos = [], color = [];
-  const nBelow = Math.min(RENDER_CAP, s.belowDist.length);
-  for (let i = 0; i < nBelow; i++) {
-    pos.push(s.belowPos[i*3], s.belowPos[i*3+1], s.belowPos[i*3+2]);
-    const c = s.belowDist[i] <= t ? GREEN : RED;
+  const push = (px, py, pz, dist) => {
+    pos.push(px, py, pz);
+    const c = dist <= t ? GREEN : RED;
     color.push(c[0], c[1], c[2]);
+  };
+  if (nKeptDraw > 0) {
+    const step = kept / nKeptDraw;
+    let seen = 0, drawn = 0;
+    for (let i = 0; i < s.candidateDist.length && drawn < nKeptDraw; i++) {
+      if (!s.keptMask[i]) continue;
+      if (seen++ >= drawn * step) { push(s.candidatePos[i*3], s.candidatePos[i*3+1], s.candidatePos[i*3+2], s.candidateDist[i]); drawn++; }
+    }
   }
-  let shown = 0;
-  for (let i = 0; i < s.candidateDist.length && shown < RENDER_CAP; i++) {
-    if (!s.keptMask[i]) continue;
-    pos.push(s.candidatePos[i*3], s.candidatePos[i*3+1], s.candidatePos[i*3+2]);
-    const c = s.candidateDist[i] <= t ? GREEN : RED;
-    color.push(c[0], c[1], c[2]);
-    shown++;
+  if (nBelowDraw > 0) {
+    const step = s.belowDist.length / nBelowDraw;
+    for (let k = 0; k < nBelowDraw; k++) {
+      const i = Math.min(s.belowDist.length - 1, Math.floor(k * step));
+      push(s.belowPos[i*3], s.belowPos[i*3+1], s.belowPos[i*3+2], s.belowDist[i]);
+    }
   }
   return { pos: new Float32Array(pos), color: new Float32Array(color) };
 }
