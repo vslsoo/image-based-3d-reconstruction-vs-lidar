@@ -34,7 +34,18 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import open3d as o3d
+
+# open3d is imported lazily by main() - --relayout re-renders the page from the payload it
+# already carries and needs no point cloud at all (the import alone costs ~2 min in this venv).
+o3d = None
+
+
+def _load_open3d() -> None:
+    global o3d
+    if o3d is None:
+        import open3d as _o3d
+        o3d = _o3d
+
 from scipy.spatial import cKDTree
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -345,6 +356,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
 
 
 def main() -> None:
+    _load_open3d()
     reg_rates = reg_rates_from_metrics()
     for _e, _v in reg_rates_from_experiments_yaml().items():
         reg_rates.setdefault(_e, _v)   # jsonl wins where present; yaml fills the gaps
@@ -644,8 +656,30 @@ def main() -> None:
 
 
 def build_html(data: dict) -> str:
-    payload = json.dumps(data).replace("</", "<\\/")
+    return wrap_html(json.dumps(data).replace("</", "<\\/"))
+
+
+def wrap_html(payload: str) -> str:
     return HTML_HEAD + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+
+
+def relayout() -> None:
+    """Re-render site/capture_comparison.html from the payload already embedded in it.
+
+    The 12 clouds are the only expensive part and they are already in the file, so a change
+    confined to the template - new column, restyled chart, reworded copy - reuses the payload
+    verbatim. Only valid while that payload is unchanged: a new field the template reads has
+    to come from a full rebuild.
+    """
+    import re
+
+    html = OUT_HTML.read_text(encoding="utf-8")
+    m = re.search(r'<script type="application/json" id="page-data">(.*?)</script>', html, re.S)
+    if not m:
+        sys.exit(f"no embedded payload in {OUT_HTML} - run a full rebuild instead")
+    OUT_HTML.write_text(wrap_html(m.group(1)), encoding="utf-8")
+    print(f"Re-rendered {OUT_HTML.relative_to(PROJECT_ROOT)} from its existing payload "
+          f"({OUT_HTML.stat().st_size / (1024 * 1024):.2f} MB)")
 
 
 # HTML_HEAD / MAIN_JS / HTML_TAIL are defined in the template module below to keep this
@@ -654,4 +688,6 @@ from _capture_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
 
 
 if __name__ == "__main__":
+    if "--relayout" in sys.argv[1:]:
+        sys.exit(relayout())
     sys.exit(main())

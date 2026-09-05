@@ -50,6 +50,7 @@ shell out to per-cloud CLIs. Run it with `-u` to see progress.
 
 Usage:
     python -u src/registration/build_frame_count_study_page.py
+    python src/registration/build_frame_count_study_page.py --relayout   # HTML/JS only, seconds
 """
 
 from __future__ import annotations
@@ -60,8 +61,20 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import open3d as o3d
 from scipy.spatial import cKDTree
+
+# open3d is imported lazily by `main()` - see --relayout below. The import alone costs
+# ~2 min in this venv, and re-rendering the page from the payload already in the HTML
+# (a template/JS change, no new numbers) doesn't need it at all.
+o3d = None
+
+
+def _load_open3d() -> None:
+    global o3d
+    if o3d is None:
+        import open3d as _o3d
+        o3d = _o3d
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUT_HTML = PROJECT_ROOT / "site" / "frame_count_study.html"
@@ -283,6 +296,7 @@ def load_reference(path) -> o3d.geometry.PointCloud:
 
 
 def main() -> None:
+    _load_open3d()
     reg_rates = reg_rates_from_metrics()
     for _e, _v in reg_rates_from_experiments_yaml().items():
         reg_rates.setdefault(_e, _v)   # jsonl wins where present; yaml fills the gaps
@@ -585,8 +599,31 @@ def write_summary_xlsx(summary: list[dict], n_significance: list[dict], path: Pa
 
 
 def build_html(data: dict) -> str:
-    payload = json.dumps(data).replace("</", "<\\/")
+    return wrap_html(json.dumps(data).replace("</", "<\\/"))
+
+
+def wrap_html(payload: str) -> str:
     return HTML_HEAD + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+
+
+def relayout() -> None:
+    """Re-render site/frame_count_study.html from the payload already embedded in it.
+
+    The page is HTML_HEAD + <the data> + MAIN_JS + HTML_TAIL, and the data is the only
+    part that costs anything to produce (20 clouds through open3d). So a template-only
+    change - new chart, restyled table, reworded copy - can reuse the payload verbatim
+    and skip the numeric work entirely. Use this ONLY when the payload itself is
+    unchanged: any new field the template reads has to come from a full rebuild.
+    """
+    import re
+
+    html = OUT_HTML.read_text(encoding="utf-8")
+    m = re.search(r'<script type="application/json" id="page-data">(.*?)</script>', html, re.S)
+    if not m:
+        sys.exit(f"no embedded payload in {OUT_HTML} - run a full rebuild instead")
+    OUT_HTML.write_text(wrap_html(m.group(1)), encoding="utf-8")
+    size_mb = OUT_HTML.stat().st_size / (1024 * 1024)
+    print(f"Re-rendered {OUT_HTML.relative_to(PROJECT_ROOT)} from its existing payload ({size_mb:.2f} MB)")
 
 
 # HTML_HEAD / MAIN_JS / HTML_TAIL are defined in the template module below to keep this
@@ -595,4 +632,6 @@ from _frame_count_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E4
 
 
 if __name__ == "__main__":
+    if "--relayout" in sys.argv[1:]:
+        sys.exit(relayout())
     sys.exit(main())
