@@ -167,6 +167,7 @@
     <div class="xtoggle" id="obj-toggle"><span class="mono" style="font-size:11px; color:var(--text-faint);">object:</span></div>
     <div class="subtitle" id="curves-subtitle"></div>
     <div class="curve-grid" id="curve-grid"></div>
+    <div class="subtitle" id="curves-note" style="max-width:92ch"></div>
   </section>
 
   <hr class="sep">
@@ -186,13 +187,7 @@
 
   <hr class="sep">
   <section>
-    <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;">
-      <h2>Does adding photos actually change anything?</h2>
-      <div class="tabs" id="sig-metric-toggle">
-        <button class="tab-btn active" data-metric="F1">F1</button>
-        <button class="tab-btn" data-metric="accuracy">Accuracy</button>
-      </div>
-    </div>
+    <h2>Does adding photos actually change anything?</h2>
     <div class="subtitle" style="max-width:92ch">
       A curve that rises by a couple of points could just be luck of which surface patches happened to be
       covered. To tell, every pair of frame counts is re-scored 2000 times on resampled 5&nbsp;cm patches of the
@@ -212,7 +207,7 @@
         </div>
       </div>
       <div class="aside">
-        <span class="k">The answer</span>
+        <span class="k">Where you can stop</span>
         <div id="sig-aside"></div>
       </div>
     </div>
@@ -517,7 +512,6 @@ for (const obj of DATA.objects) {
     <div class="obj-head">
       <h2>${obj.title}</h2>
       <span class="chip">${obj.shape}</span>
-      <span class="chip">ref median spacing ${obj.ref_spacing_cm.toFixed(2)} cm</span>
       <span class="chip">gap detection: ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
@@ -771,9 +765,12 @@ function cssvar(v){ return getComputedStyle(document.documentElement).getPropert
 const METHOD_COLORVAR = { colmap: '--colmap', mast3r_ga: '--mastr', mast3r_ga_logwin7: '--mastr2' };
 function methodColor(method) { return cssvar(METHOD_COLORVAR[method] || '--accent'); }
 
-// one small-multiple line chart: `metricFn(key)` -> live {value, ciLo, ciHi} at threshold 3cm
+// One small-multiple line chart. The titles carry no "@3cm": the tabs above change what is
+// plotted, and a threshold baked into a title would sit there being wrong. The bootstrap
+// whiskers were dropped here too - at about +/-1.5 points they were shorter than the dots and
+// only added clutter; the intervals live in the summary table and drive the section below.
 function renderCurvePanel(container, obj, methods, title, metricKey) {
-  const W = 460, H = 300, padL = 40, padR = 14, padT = 16, padB = 40;
+  const W = 460, H = 230, padL = 38, padR = 14, padT = 14, padB = 38;
   const plotW = W - padL - padR, plotH = H - padT - padB;
 
   // gather live points
@@ -783,8 +780,7 @@ function renderCurvePanel(container, obj, methods, title, metricKey) {
       const d = panelState[key].d;
       const m = shownMetrics(key, activeThreshold);
       const val = metricKey === 'f1' ? m.f1 : (metricKey === 'acc' ? m.accPct : m.compPct);
-      return { x: sz, y: val, size: sz, n: d.raw_points, matched: d.matched_points,
-               ciLo: d.default[`${metricKey}_ci_lo`], ciHi: d.default[`${metricKey}_ci_hi`] };
+      return { x: sz, y: val, size: sz, n: d.raw_points, matched: d.matched_points };
     }).filter(p => p.x != null && !isNaN(p.x));
     return { method, label: DATA.method_label[method], color: methodColor(method), pts };
   });
@@ -797,7 +793,7 @@ function renderCurvePanel(container, obj, methods, title, metricKey) {
   let s = '';
   for (let y = 0; y <= 100; y += 20) {
     const yy = Y(y);
-    s += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${cssvar('--text-faint')}" stroke-opacity="0.22"/>`;
+    s += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${cssvar('--text-faint')}" stroke-opacity="0.15"/>`;
     s += `<text x="${padL-6}" y="${yy+3}" font-size="9.5" fill="${cssvar('--text-faint')}" text-anchor="end">${y}</text>`;
   }
   const xt = cssvar('--text-dim');
@@ -811,44 +807,18 @@ function renderCurvePanel(container, obj, methods, title, metricKey) {
     if (sr.pts.length === 0) continue;
     const sorted = sr.pts.slice().sort((a,b)=>a.x-b.x);
     const path = sorted.map((p,i) => `${i===0?'M':'L'}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ');
-    s += `<path d="${path}" fill="none" stroke="${sr.color}" stroke-width="2.2"/>`;
+    s += `<path d="${path}" fill="none" stroke="${sr.color}" stroke-width="1.5"/>`;
   }
 
-  // 95% block-bootstrap whiskers. Only drawn where the interval actually belongs to the
-  // value plotted (3cm, default gap settings) - see ciValid(); otherwise the points stand
-  // alone rather than carrying an interval computed for a different configuration.
-  const showCI = ciValid(obj.id);
-  if (showCI) {
-    for (const sr of series) {
-      for (const p of sr.pts) {
-        if (p.ciLo == null || isNaN(p.ciLo)) continue;
-        const px = X(p.x), yLo = Y(p.ciLo), yHi = Y(p.ciHi);
-        s += `<line x1="${px.toFixed(1)}" y1="${yLo.toFixed(1)}" x2="${px.toFixed(1)}" y2="${yHi.toFixed(1)}" stroke="${sr.color}" stroke-width="1.6" stroke-opacity="0.55"/>`;
-        for (const yy of [yLo, yHi]) {
-          s += `<line x1="${(px-3.5).toFixed(1)}" y1="${yy.toFixed(1)}" x2="${(px+3.5).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${sr.color}" stroke-width="1.6" stroke-opacity="0.55"/>`;
-        }
-      }
+  // Just the dots. The per-point N labels were removed with the whiskers: the x axis already
+  // says 25/50/75/100, and with three near-identical series their labels stacked into a smear
+  // that had to be nudged out of the plot area to fit.
+  for (const sr of series) {
+    for (const p of sr.pts) {
+      s += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="${sr.color}">`
+        + `<title>${sr.label} · N=${p.size} (${p.n.toLocaleString('en-US')}→${p.matched.toLocaleString('en-US')} pts): `
+        + `${title}@${activeThreshold}cm=${p.y.toFixed(1)}%</title></circle>`;
     }
-  }
-
-  // circles + N-labels: computed across BOTH series together so labels that would land
-  // on top of each other get nudged apart instead of overlapping into an unreadable smear.
-  const allPts = [];
-  for (const sr of series) for (const p of sr.pts) allPts.push({ ...p, color: sr.color, label: sr.label, px: X(p.x), py: Y(p.y) });
-  allPts.sort((a, b) => a.px - b.px);
-  const placedLabelY = [];
-  for (const p of allPts) {
-    let dy = -8, tries = 0;
-    while (tries < 8 && placedLabelY.some(q => Math.abs(q.px - p.px) < 22 && Math.abs((p.py + dy) - q.ly) < 9)) {
-      dy -= 10; tries++;
-    }
-    p.dy = dy;
-    placedLabelY.push({ px: p.px, ly: p.py + dy });
-  }
-  for (const p of allPts) {
-    const ciTxt = showCI && p.ciLo != null && !isNaN(p.ciLo) ? ` [95% CI ${p.ciLo.toFixed(1)}, ${p.ciHi.toFixed(1)}]` : '';
-    s += `<circle cx="${p.px.toFixed(1)}" cy="${p.py.toFixed(1)}" r="4" fill="${p.color}"><title>${p.label} · N=${p.size} (${p.n.toLocaleString('en-US')}→${p.matched.toLocaleString('en-US')} pts): ${title}=${p.y.toFixed(1)}%${ciTxt}</title></circle>`;
-    s += `<text x="${p.px.toFixed(1)}" y="${(p.py + p.dy).toFixed(1)}" font-size="9" fill="${p.color}" text-anchor="middle">N${p.size}</text>`;
   }
 
   const panel = document.createElement('div');
@@ -866,20 +836,27 @@ function updateCurves() {
   const obj = DATA.objects.find(o => o.id === curveObjId);
   if (!obj) return;
   const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
-  renderCurvePanel(grid, obj, methods, 'F1@3cm', 'f1');
-  renderCurvePanel(grid, obj, methods, 'Accuracy@3cm', 'acc');
-  renderCurvePanel(grid, obj, methods, 'Completeness@3cm', 'comp');
-  const ciNote = ciValid(obj.id)
-    ? `Whiskers are 95% spatial block-bootstrap intervals (${DATA.bootstrap.n_draws} draws, ${DATA.bootstrap.block_cm} cm blocks).`
-    : atDefaults(obj.id)
-      ? `Whiskers are hidden: the bootstrap CIs were computed at 3&nbsp;cm only.`
-      : `Whiskers are hidden and the points are the browser's live estimate — the tuner is off this object's `
-        + `default gap settings, which is what the CIs were computed at.`;
+  renderCurvePanel(grid, obj, methods, 'F1', 'f1');
+  renderCurvePanel(grid, obj, methods, 'Accuracy', 'acc');
+  renderCurvePanel(grid, obj, methods, 'Completeness', 'comp');
   document.getElementById('curves-subtitle').innerHTML =
-    `<b>${obj.title}</b> — Accuracy and Completeness are shown separately from F1 because they tend to saturate `
-    + `differently: completeness keeps climbing as new viewpoints close coverage gaps, while accuracy can plateau `
-    + `early or even dip as MVS/GA fuses more hard-to-triangulate points. Live with the DBSCAN tuner below. `
-    + ciNote;
+    `<b>${obj.title.replace(/ \(.*\)$/, '')}</b> — completeness saturates first; accuracy can plateau or dip.`;
+
+  // Why the logwin-7 variant is the one kept, stated where its curve is visible. Only the
+  // sign has it, so the note appears with that object and not the other.
+  const note = document.getElementById('curves-note');
+  if (note) {
+    const hasLogwin = methods.includes('mast3r_ga_logwin7');
+    note.innerHTML = !hasLogwin ? '' :
+      `<b>Why MASt3R-GA (logwin-7).</b> It matches swin-8 while the ring of photos is short `
+      + `(N=25, N=50: within noise) and pulls ahead once it is long — <b>+2.6 points at N=75</b> `
+      + `(intervals don't overlap) and +1.7 at N=100. The two differ only in which pairs the global `
+      + `aligner is given: swin-8 matches each photo to its 8 neighbours, logwin-7 to offsets `
+      + `1,&nbsp;2,&nbsp;4,&nbsp;…&nbsp;64, so the graph reaches 36 images around the object instead of 8 `
+      + `and closes the loop instead of forming a long chain, which is what stops drift accumulating `
+      + `around the circle. It does this on <i>fewer</i> pairs (1400 vs 1600 at N=100), so the gain can `
+      + `only come from that reach, not from more matching.`;
+  }
 }
 
 // ---------- "does adding photos change anything?" (static, at default DBSCAN params) ----------
@@ -888,10 +865,13 @@ function updateCurves() {
 // Deliberately NOT live with the tuner: the draws are not in the browser, so the panels
 // stay at the default gap settings the intervals were computed for - same discipline as
 // the significance section of capture_comparison.html.
-let sigMetric = 'F1';
+// F1 only. The paired test also ran on accuracy (it is in the workbook), but two panels per
+// method asked the reader to hold two answers to one question; F1 is the one the rest of the
+// page ranks on.
+const SIG_METRIC = 'F1';
 
 function sigRows(objId, method) {
-  return DATA.n_significance.filter(r => r.object === objId && r.method === method && r.metric === sigMetric);
+  return DATA.n_significance.filter(r => r.object === objId && r.method === method && r.metric === SIG_METRIC);
 }
 function sigColor(r) {
   if (r.includes_zero) return cssvar('--text-faint');
@@ -943,7 +923,7 @@ function renderSigPanel(objId, method) {
     s += `<text x="${X(v).toFixed(1)}" y="${yAxis + 4}" font-size="9" fill="${tick}" text-anchor="middle">${v.toFixed(dec)}</text>`;
   }
   s += `<text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 3}" font-size="8.5" fill="${tick}" text-anchor="middle">`
-    + `&Delta; ${sigMetric === 'F1' ? 'F1' : 'Accuracy'}@3cm (pp) &middot; ${DATA.bootstrap.n_draws} paired bootstrap draws</text>`;
+    + `&Delta; F1@3cm (pp) &middot; ${DATA.bootstrap.n_draws} paired bootstrap draws</text>`;
 
   const panel = document.createElement('div');
   panel.className = 'panel';
@@ -964,33 +944,51 @@ function plateauN(objId, method) {
 }
 
 function buildSigNarrative() {
-  const metricTxt = sigMetric === 'F1' ? 'F1@3cm' : 'Accuracy@3cm';
-  let h = `<div style="color:var(--text-faint); font-size:11px; margin-bottom:7px;">metric: ${metricTxt}</div>`;
+  // One line per (object, method): the smallest N you could have shot instead. Written from
+  // the pairwise CIs, not from where the curve happens to look flat.
+  const short = { colmap: 'COLMAP', mast3r_ga: 'MASt3R-GA', mast3r_ga_logwin7: 'MASt3R-GA logwin-7' };
+  let rowsHtml = '';
   for (const obj of DATA.objects) {
+    const objName = obj.title.replace(/ \(.*\)$/, '').replace('information_sign_002', 'sign').replace('bollard_003', 'bollard');
     const methods = [...new Set(obj.panels.map(k => panelState[k].d.method))];
-    const parts = methods.map(method => {
-      const label = DATA.method_label[method];
+    for (const method of methods) {
       const rows = sigRows(obj.id, method);
+      const first = obj.sizes[0], last = obj.sizes[obj.sizes.length - 1];
       const plateau = plateauN(obj.id, method);
       const drops = rows.filter(r => !r.includes_zero && r.delta < 0);
-      const first = rows.find(r => r.n_lo === obj.sizes[0] && r.n_hi === obj.sizes[1]);
-      if (plateau === obj.sizes[0]) {
-        return `<b>${label}</b> is flat from the start — nothing above N=${obj.sizes[0]} is resolvable`;
+      const lastStep = rows.find(r => r.n_lo === obj.sizes[obj.sizes.length - 2] && r.n_hi === last);
+      let verdict, detail;
+      if (plateau === first) {
+        verdict = `<b>N=${first}</b>`;
+        detail = 'already enough — nothing above it is resolvable';
       } else if (plateau) {
-        const gain = rows.filter(r => r.n_lo < plateau && r.n_hi <= plateau && !r.includes_zero)
-                         .reduce((mx, r) => Math.max(mx, r.delta), 0);
-        return `<b>${label}</b> gains up to N=${plateau} (${gain > 0 ? '+' : ''}${gain.toFixed(0)}&nbsp;pts at most), then stops`;
+        const gain = rows.filter(r => r.n_lo === first && r.n_hi === plateau).map(r => r.delta)[0];
+        verdict = `<b>N=${plateau}</b>`;
+        detail = `worth ${gain > 0 ? '+' : ''}${gain.toFixed(0)}&nbsp;pts to get there, nothing after`;
       } else if (drops.length) {
-        const d = drops[drops.length - 1];
-        return `<b>${label}</b> never settles — the last step is a resolvable <i>drop</i> `
-             + `(${d.pair.replace(/ - /, ' − ')}: ${d.delta.toFixed(1)}&nbsp;pts)`;
+        // best count is the one the last resolvable DROP starts from: it gained up to there
+        // (sometimes only a little), and going past it measurably loses.
+        const stopN = drops[drops.length - 1].n_lo;
+        const up = rows.find(r => r.n_lo === first && r.n_hi === stopN);
+        verdict = `<b>N=${stopN}</b>`;
+        detail = (up && !up.includes_zero ? `+${up.delta.toFixed(1)}&nbsp;pts over N=${first}, and ` : '')
+          + `going further costs ${Math.abs(drops[drops.length - 1].delta).toFixed(1)}&nbsp;pts`;
+      } else {
+        verdict = `<b>&gt;${last}</b>`;
+        detail = `still gaining at the largest tested (+${(lastStep ? lastStep.delta : 0).toFixed(0)}&nbsp;pts on the last step)`;
       }
-      return `<b>${label}</b> is still improving at N=${obj.sizes[obj.sizes.length - 1]}`
-           + (first && !first.includes_zero ? ` (${first.delta > 0 ? '+' : ''}${first.delta.toFixed(0)}&nbsp;pts on the first step alone)` : '');
-    });
-    h += `<div style="margin-bottom:9px;"><b>${obj.title.replace(/ \(.*\)$/, '')}</b> — ${parts.join('; ')}.</div>`;
+      rowsHtml += `<div style="margin-bottom:7px;">${short[method] || method} · ${objName}: ${verdict}`
+        + `<div style="color:var(--text-faint); font-size:11.5px;">${detail}</div></div>`;
+    }
   }
-  return h;
+  return rowsHtml
+    + `<div style="border-top:1px solid var(--panel-border); padding-top:7px; margin-top:2px;">`
+    + `<b>The photos are for COLMAP.</b> It starts low and every batch buys real points — `
+    + `+11 on the sign from 25 to 50, +39 on the bollard from 15 to 30, and on the bollard it has `
+    + `still not finished at 60. MASt3R-GA is near its ceiling from the smallest count tested and `
+    + `moves in single points after that: nothing above N=15 on the bollard, a peak at N=75 on the `
+    + `sign (+2.5, logwin-7 +5.3) and then <b>2–3 points lost</b> at N=100, where the extra frames `
+    + `add low-overlap pairs rather than coverage.</div>`;
 }
 
 function renderSig() {
@@ -1007,13 +1005,6 @@ function renderSig() {
   const aside = document.getElementById('sig-aside');
   if (aside) aside.innerHTML = buildSigNarrative();
 }
-
-document.querySelectorAll('#sig-metric-toggle .tab-btn').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#sig-metric-toggle .tab-btn').forEach(x => x.classList.remove('active'));
-  b.classList.add('active');
-  sigMetric = b.dataset.metric;
-  renderSig();
-}));
 
 // ---------- interpretation (auto from the live numbers) ----------
 
