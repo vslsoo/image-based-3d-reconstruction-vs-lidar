@@ -852,7 +852,7 @@ function buildTable() {
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Approach</th><th class="txt">Method</th>'
     + '<th id="th-f1">F1</th><th>95% CI</th><th id="th-acc">Acc</th><th id="th-comp">Comp</th><th>Acc median (cm)</th><th>Comp median (cm)</th>'
-    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE (mm)</th><th>excl≈</th></tr></thead><tbody>';
+    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE (cm)</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) {
@@ -944,7 +944,7 @@ function updateTable() {
         tr.querySelector('[data-col=acc]').textContent=m.accPct.toFixed(1);
         tr.querySelector('[data-col=comp]').textContent=m.compPct.toFixed(1);
         // cm internally (every distance on the page is cm), reported in mm like the tables
-        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':(m.rmse*10).toFixed(1);
+        tr.querySelector('[data-col=rmse]').textContent=isNaN(m.rmse)?'—':m.rmse.toFixed(2);
         tr.querySelector('[data-col=excl]').textContent=m.nExcluded.toLocaleString('en-US');
         tr.classList.toggle('best', key===bestKey);
         tr.querySelector('[data-col=f1]').classList.toggle('best-cell', key===bestKey);

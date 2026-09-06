@@ -248,7 +248,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
     for k in thresh:
         headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
     headers += ["ΔF1@10-3cm (pp)", "F1@3cm 95% CI lo", "F1@3cm 95% CI hi",
-                "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (mm)",
+                "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (cm)",
                 "reg-rate (%)", "points raw", "points density-matched", "excluded as gap",
                 "DBSCAN (ft/eps/mp)"]
 
@@ -268,7 +268,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
         vals += [r.get("f1_delta_10_3"), r.get("f1_ci_lo"), r.get("f1_ci_hi"),
                  r["accuracy_median_cm"], r["completeness_median_cm"],
                  # mm, matching every other table on the site (it was the one column in cm)
-                 (round(r["inlier_rmse_3cm"] * 10, 2) if r.get("inlier_rmse_3cm") is not None else None),
+                 (round(r["inlier_rmse_3cm"], 2) if r.get("inlier_rmse_3cm") is not None else None),
                  (round(r["reg_rate"] * 100, 1) if r.get("reg_rate") is not None else None), r["raw_points"], r["matched_points"], r.get("n_excluded"),
                  f"{d['ft']:g}/{d['eps']:g}/{d['mp']:g}"]
         ws.append(vals)

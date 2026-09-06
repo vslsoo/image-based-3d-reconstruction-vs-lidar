@@ -15,11 +15,13 @@ varies. Two such sweeps exist in the project:
 Both have COLMAP + MASt3R-GA (swin-8) + VGGT full sweeps now; information_sign_002_test_1
 also has MASt3R-GA/logwin-7 (config/mast3r_ga_logwin.yaml) and hloc+COLMAP (config/
 hloc_colmap_busstop.yaml — exhaustive SuperPoint+LightGlue pairing, geom_consistency off,
-matching run_colmap_experiment.py's dense stage exactly); bollard_003_test_1's hloc+COLMAP
-sweep only ran N=15/30/45 (N=60 wasn't requested). A second, SIFT-overlap-greedy ("even")
-selection exists at the same N grid for COLMAP/MASt3R-GA on both objects — used here
-only as a robustness cross-check table (Section D), not charted, since scaling behaviour
-turned out near-identical to the manual selection.
+matching run_colmap_experiment.py's dense stage exactly).
+
+A second, SIFT-overlap-greedy ("even") selection at the same N grid would be a useful
+robustness cross-check on the manual ranking, and the code to table it is still here — but
+no such run is in experiment_metrics.jsonl: every controlled row is `..._manual_nXX`. The
+page therefore renders no robustness section at all rather than a heading with nothing
+under it, and the section reappears by itself if plain `..._nXX` rows are ever added.
 
 VGGT used to have NO controlled sweep - every VGGT run was a different object at a
 different N, so isolating the N effect from the object effect wasn't possible, and it was
@@ -60,13 +62,15 @@ METHOD_LABEL = {
     "mast3r_ga_logwin7": "MASt3R-GA (logwin-7)",
     "vggt": "VGGT",
 }
-# validated 4-slot categorical (dataviz skill, references/palette.md, adjacent-pair order)
+# The site-wide method palette - identical hues to _frame_count_page_template.py,
+# _capture_page_template.py and build_thesis_figures.py's METHOD_COLOR, so a method keeps
+# one colour across every page and every Chapter 5 figure.
 METHOD_COLORVAR = {
-    "colmap": "--s-blue",
-    "hloc_colmap": "--s-orange",
-    "mast3r_ga": "--s-aqua",
-    "mast3r_ga_logwin7": "--s-aqua",  # variant of the same method -> same hue, dashed line
-    "vggt": "--s-yellow",
+    "colmap": "--m-colmap",
+    "hloc_colmap": "--m-hloc",
+    "mast3r_ga": "--m-mast3r",
+    "mast3r_ga_logwin7": "--m-mast3r",  # variant of the same method -> same hue, dashed line
+    "vggt": "--m-vggt",
 }
 METHOD_DASH = {"mast3r_ga_logwin7": "5 3"}
 
@@ -322,24 +326,39 @@ def main() -> None:
          and r["exp_id"] not in VGGT_EXCLUDED],
         key=lambda r: r["num_images_input"],
     )
+    # These runs predate per-stage timing: their `stages` dict holds model_load and nothing
+    # else. A missing stage is missing data, NOT zero seconds - summing .get(...,0) over an
+    # absent key produced a work column of literal zeros sitting next to real totals (which
+    # reads as "VGGT does no work", and left 11-51s per run unaccounted for), and fed a
+    # degenerate 0-slope fit. Unmeasured stays None; the page drops or dashes the column.
+    def _work_seconds(r: dict) -> float | None:
+        st = r["timing"]["stages"]
+        if "preprocess" not in st and "inference" not in st:
+            return None
+        return st.get("preprocess", 0) + st.get("inference", 0)
+
     vggt_table = []
     for r in vggt_rows:
         s = r["timing"]["stages"]
-        work = s.get("preprocess", 0) + s.get("inference", 0)
+        work = _work_seconds(r)
         vggt_table.append({
             "object": r["object_id"], "n": r["num_images_input"],
             "model_load_s": round(s.get("model_load", 0), 1),
-            "work_s": round(work, 1),
-            "work_s_per_frame": round(work / r["num_images_input"], 3),
+            "work_s": None if work is None else round(work, 1),
+            "work_s_per_frame": None if work is None else round(work / r["num_images_input"], 3),
             "total_s": round(r["timing"]["total_seconds"], 1),
             "ram_mib": round(r["memory"]["peak_ram_mib"], 0),
             "vram_mib": round(r["memory"].get("peak_vram_mib") or 0, 0),
         })
     n_v = np.array([r["num_images_input"] for r in vggt_rows], dtype=float)
-    work_v = np.array([r["timing"]["stages"].get("preprocess", 0) + r["timing"]["stages"].get("inference", 0) for r in vggt_rows], dtype=float)
     vggt_fit_total = power_fit(n_v, np.array([r["timing"]["total_seconds"] for r in vggt_rows], dtype=float))
-    vggt_fit_work = power_fit(n_v, work_v)
-    vggt_fit_work_lin = linear_fit(n_v, work_v)
+    # ... and the work fits run over the rows that actually carry the stage, so they are
+    # absent (rather than 0-slope nonsense) while no such row exists.
+    work_rows = [r for r in vggt_rows if _work_seconds(r) is not None]
+    n_w = np.array([r["num_images_input"] for r in work_rows], dtype=float)
+    work_v = np.array([_work_seconds(r) for r in work_rows], dtype=float)
+    vggt_fit_work = power_fit(n_w, work_v)
+    vggt_fit_work_lin = linear_fit(n_w, work_v)
 
     # hloc sweep completeness note (so the page states plainly what's still pending)
     hloc_status = {}
@@ -355,6 +374,7 @@ def main() -> None:
         "stage_scaling": stage_scaling,
         "vggt": {
             "rows": vggt_table,
+            "has_work_data": bool(work_rows),
             "fit_total": vggt_fit_total,
             "fit_work": vggt_fit_work,
             "fit_work_lin": vggt_fit_work_lin,

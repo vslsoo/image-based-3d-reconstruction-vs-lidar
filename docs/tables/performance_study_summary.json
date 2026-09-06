@@ -15,7 +15,7 @@
       "series": {
         "colmap": {
           "label": "COLMAP",
-          "colorvar": "--s-blue",
+          "colorvar": "--m-colmap",
           "dash": null,
           "n": [
             15.0,
@@ -105,7 +105,7 @@
         },
         "hloc_colmap": {
           "label": "hloc + COLMAP",
-          "colorvar": "--s-orange",
+          "colorvar": "--m-hloc",
           "dash": null,
           "n": [
             15.0,
@@ -195,7 +195,7 @@
         },
         "mast3r_ga": {
           "label": "MASt3R-GA",
-          "colorvar": "--s-aqua",
+          "colorvar": "--m-mast3r",
           "dash": null,
           "n": [
             15.0,
@@ -273,7 +273,7 @@
         },
         "vggt": {
           "label": "VGGT",
-          "colorvar": "--s-yellow",
+          "colorvar": "--m-vggt",
           "dash": null,
           "n": [
             15.0,
@@ -369,7 +369,7 @@
       "series": {
         "colmap": {
           "label": "COLMAP",
-          "colorvar": "--s-blue",
+          "colorvar": "--m-colmap",
           "dash": null,
           "n": [
             25.0,
@@ -459,7 +459,7 @@
         },
         "hloc_colmap": {
           "label": "hloc + COLMAP",
-          "colorvar": "--s-orange",
+          "colorvar": "--m-hloc",
           "dash": null,
           "n": [
             25.0,
@@ -549,7 +549,7 @@
         },
         "mast3r_ga": {
           "label": "MASt3R-GA",
-          "colorvar": "--s-aqua",
+          "colorvar": "--m-mast3r",
           "dash": null,
           "n": [
             25.0,
@@ -627,7 +627,7 @@
         },
         "mast3r_ga_logwin7": {
           "label": "MASt3R-GA (logwin-7)",
-          "colorvar": "--s-aqua",
+          "colorvar": "--m-mast3r",
           "dash": "5 3",
           "n": [
             25.0,
@@ -705,7 +705,7 @@
         },
         "vggt": {
           "label": "VGGT",
-          "colorvar": "--s-yellow",
+          "colorvar": "--m-vggt",
           "dash": null,
           "n": [
             25.0,
@@ -1055,8 +1055,8 @@
         "object": "bus_stop_sign_002_master",
         "n": 42,
         "model_load_s": 29.3,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 40.2,
         "ram_mib": 21802.0,
         "vram_mib": 13439
@@ -1065,8 +1065,8 @@
         "object": "bollard_003_test_1_pool69",
         "n": 69,
         "model_load_s": 23.6,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 57.7,
         "ram_mib": 21396.0,
         "vram_mib": 17329
@@ -1075,8 +1075,8 @@
         "object": "bus_stop_sign_002",
         "n": 79,
         "model_load_s": 13.4,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 35.1,
         "ram_mib": 20523.0,
         "vram_mib": 15591
@@ -1085,8 +1085,8 @@
         "object": "bus_stop_002_master",
         "n": 81,
         "model_load_s": 13.4,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 35.2,
         "ram_mib": 20558.0,
         "vram_mib": 16131
@@ -1095,8 +1095,8 @@
         "object": "bench_004",
         "n": 94,
         "model_load_s": 13.0,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 64.2,
         "ram_mib": 20524.0,
         "vram_mib": 20141
@@ -1105,8 +1105,8 @@
         "object": "bus_stop_002",
         "n": 96,
         "model_load_s": 15.8,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 47.4,
         "ram_mib": 20527.0,
         "vram_mib": 17147
@@ -1115,13 +1115,14 @@
         "object": "flashlight_004",
         "n": 105,
         "model_load_s": 13.1,
-        "work_s": 0,
-        "work_s_per_frame": 0.0,
+        "work_s": null,
+        "work_s_per_frame": null,
         "total_s": 42.9,
         "ram_mib": 20545.0,
         "vram_mib": 16817
       }
     ],
+    "has_work_data": false,
     "fit_total": {
       "b": 0.159,
       "r2": 0.043
@@ -1131,8 +1132,8 @@
       "r2": null
     },
     "fit_work_lin": {
-      "slope": 0.0,
-      "intercept": -0.0,
+      "slope": null,
+      "intercept": null,
       "r2": null
     }
   },

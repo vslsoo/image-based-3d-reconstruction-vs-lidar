@@ -30,7 +30,7 @@ the reference was scanned, not by geometry, and they hit recall. For ~4 points p
 surface voxel the side has to be ~2x the worst interval: >= 4 cm.
 
 Lower bound B, residual alignment error. registration_rmse_from_aligned_clouds.json
-gives inlier RMSE 11.6-21.7 mm across its 24 rows. If the voxel side is comparable to
+gives inlier RMSE 1.16-2.17 cm across its 24 rows. If the voxel side is comparable to
 that, a rigid 2 cm shift moves occupancy by a whole voxel and IoU starts measuring
 registration quality instead of shape. Same bound: >= ~4 cm (2x the worst RMSE).
 

@@ -6,7 +6,7 @@ number (default 1 cm), which is what every earlier, non-final M3C2 run used. Tha
 number is not a detail - it goes straight into the Level of Detection
 (LoD95 = 1.96 * sqrt(spread1^2/n1 + spread2^2/n2) + registration_error), i.e. it sets
 how large a difference has to be before this comparison calls it real. The alignment
-these clouds actually have was measured per object x method and runs 11.6-21.7 mm, so
+these clouds actually have was measured per object x method and runs 1.16-2.17 cm, so
 a flat 10 mm was optimistic for most of the 24 and generous for none of them.
 
 Where each number comes from:
@@ -233,6 +233,9 @@ def summarize(combos: list[dict]) -> dict:
             "method": c["method"],
             "registration_error_m": c["registration_error"],
             "rmse_inlier_mm": c["rmse_inlier_mm"],
+            # reported in cm like every other distance in this table; the sidecar and the
+            # py4dgeo parameter above both stay in their own units, which their names give
+            "rmse_inlier_cm": round(c["rmse_inlier_mm"] / 10.0, 2),
             # the source direction stays at the top level: it is what results.html and the
             # object pages read, and what "M3C2" means without further qualification here
             **source,
@@ -270,7 +273,7 @@ XLSX_COLUMNS = [
     ("capture", None, "capture_id", None),
     ("method", None, "method", None),
     ("exp_id", None, "_exp_id", None),
-    ("registration error (mm)", None, "rmse_inlier_mm", 2),
+    ("registration error (cm)", None, "rmse_inlier_cm", 2),
     ("recon: core points", "source", "num_corepoints", 0),
     ("recon: no pair (%)", "source", "unpaired_pct", 1),
     ("recon: |M3C2| median (cm)", "source", "median_abs_cm", 2),
@@ -328,7 +331,7 @@ def _md_table(summary: dict, side: str) -> str:
         for _, key, fmt in MD_COLUMNS:
             v = src.get(key)
             cells.append(fmt.format(v) if v is not None else "—")
-        lines.append(f"| {r['object_name']} | {r['method']} | {exp_id} | {r['rmse_inlier_mm']:.2f} | "
+        lines.append(f"| {r['object_name']} | {r['method']} | {exp_id} | {r['rmse_inlier_mm'] / 10:.2f} | "
                      + " | ".join(cells) + " |")
     return "\n".join(lines)
 
@@ -352,7 +355,7 @@ Generated: {summary['generated']}
   `summary_all_objects_accuracy_f1.xlsx`. Not the August `outputs/metrics/*_m3c2*` runs, which
   predate the final six.
 - **`registration_error` is per row**, from `docs/tables/registration_rmse_from_aligned_clouds.json`
-  (`rows[exp_id].rmse_inlier_mm`, 11.6-21.7 mm), not one assumed constant. It goes into
+  (`rows[exp_id].rmse_inlier_mm`, 1.16-2.17 cm), not one assumed constant. It goes into
   LoD95 = 1.96 * sqrt(spread1²/n1 + spread2²/n2) + registration_error, i.e. it sets how large a
   difference has to be before M3C2 calls it real.
 - **Parameters**, identical for all 24: D = {p['normal_scale_D_m'] * 100:.0f} cm,
@@ -439,7 +442,7 @@ def main() -> int:
         for i, (c, side, key) in enumerate(todo, 1):
             print("=" * 100)
             print(f"[{i}/{len(todo)}] {c['page_id']} · {c['method']} · {c['exp_id']} · core points: {side}  "
-                  f"registration_error = {c['rmse_inlier_mm']:.2f} mm", flush=True)
+                  f"registration_error = {c['rmse_inlier_mm'] / 10:.2f} cm", flush=True)
             if not c["source"].exists():
                 print(f"  ! source cloud missing: {c['source']} - skipped", flush=True)
                 continue
@@ -475,7 +478,7 @@ def main() -> int:
     print("-" * len(hdr))
     for r in summary["rows"].values():
         tgt = r.get("corepoints_target")
-        print(f"{r['page_id']:17s} {r['method']:12s} {r['rmse_inlier_mm']:5.1f}mm | "
+        print(f"{r['page_id']:17s} {r['method']:12s} {r['rmse_inlier_mm'] / 10:5.2f}cm | "
               f"{r['num_corepoints']:9,d} {cell(r, 'unpaired_pct', '8.1f', 9)}% "
               f"{cell(r, 'median_abs_cm', '7.2f', 9)}cm {cell(r, 'significant_pct', '6.1f', 7)}% | "
               f"{cell(tgt, 'num_corepoints', '9,d', 9)} {cell(tgt, 'unpaired_pct', '8.1f', 9)}% "

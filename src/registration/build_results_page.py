@@ -219,7 +219,8 @@ def page_data(rows: list[dict]) -> dict:
             "m3c2_signif_pct": m.get("significant_pct"),
             "m3c2_unpaired_pct": m.get("unpaired_pct"),
             "m3c2_outside_pct": m.get("outside_pct"),
-            "m3c2_reg_err_mm": m.get("rmse_inlier_mm"),
+            "m3c2_reg_err_cm": (None if m.get("rmse_inlier_mm") is None
+                                else round(m["rmse_inlier_mm"] / 10.0, 2)),
             "m3c2_corepoints": m.get("num_corepoints"),
             "iou_5cm": iou_row.get((r["object_id"], r["method"])),
             "acc_median_cm": r["accuracy median (cm)"],
@@ -228,7 +229,7 @@ def page_data(rows: list[dict]) -> dict:
             # in the workbook beside it. Not derivable from the two medians shown here - the
             # note under the table says so, because a reader will otherwise try.
             "chamfer_sym_cm": r.get("symmetric Chamfer (cm)"),
-            "rmse_mm": r["alignment RMSE (mm)"],
+            "rmse_cm": r["alignment RMSE (cm)"],
             "raw_points": r["raw points"],
             "matched_points": r["matched points (1cm voxel)"],
             "delta_10_3": r["ΔF1@10-3cm (pp)"],
@@ -471,7 +472,7 @@ function buildTable() {
     + ' to reference, and reference back), unsquared, in cm. Not the mean of the two medians.">Chamfer<br>(cm)</th>'
     + (diag
         ? '<th class="colsep">Acc med (cm)</th><th>Comp med (cm)</th>'
-          + '<th>align RMSE (mm)</th>'
+          + '<th>align RMSE (cm)</th>'
           + '<th class="colsep" title="voxel IoU at 5 cm against the reference. Read the stability note '
           + 'beside it: on the four objects with an incomplete reference the ranking it gives is not '
           + 'reproducible across grid offsets.">IoU@5cm (%)</th>'
@@ -509,7 +510,7 @@ function buildTable() {
         + `<td>${fmt(m.chamfer_sym_cm, 2)}</td>`
         + (diag
             ? `<td class="colsep">${fmt(m.acc_median_cm, 2)}</td><td>${fmt(m.comp_median_cm, 2)}</td>`
-              + `<td>${fmt(m.rmse_mm)}</td>`
+              + `<td>${fmt(m.rmse_cm)}</td>`
               + iouCell(obj, m)
             : '')
         + (DATA.has_m3c2 ? m3c2Cells(m, diag) : '')

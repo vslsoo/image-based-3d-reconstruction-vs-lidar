@@ -88,7 +88,7 @@ SOURCES = [
      "IoU at 2, 3, 5 and 10 cm for every row. 5 cm is the primary size, and it is clamped from "
      "both sides rather than chosen: at least ~4 cm so that a surface voxel holds several "
      "reference points (worst median spacing is 2.00 cm, on the bench) and so that a 2 cm "
-     "alignment error cannot shift occupancy by a whole voxel (worst inlier RMSE 21.7 mm); at "
+     "alignment error cannot shift occupancy by a whole voxel (worst inlier RMSE 2.17 cm); at "
      "most 5 cm so the lamppost, 15.5 cm across, still spans three voxels. The two ends are "
      "reported to show what happens there, not as results - 2 cm sits below both lower bounds "
      "and drops recall for every method at once, which is an artefact of how the reference was "

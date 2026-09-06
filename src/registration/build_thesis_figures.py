@@ -76,10 +76,14 @@ def load_rows() -> list[dict]:
     """
     ws = openpyxl.load_workbook(SRC_XLSX, data_only=True)[
         openpyxl.load_workbook(SRC_XLSX).sheetnames[0]]
+    # by name, not by position: columns get added to this workbook (the CIs, the symmetric
+    # Chamfer) and a hard-coded index silently starts reading a different column when they do
+    hdr = [c.value for c in ws[1]]
+    dbscan_i = hdr.index("DBSCAN mode")
     rows, obj_id, obj_name, dbscan = [], None, None, None
     for r in list(ws.iter_rows(values_only=True))[1:]:
         if r[0]:
-            obj_id, obj_name, dbscan = r[0], r[1], r[24]
+            obj_id, obj_name, dbscan = r[0], r[1], r[dbscan_i]
         if not r[6]:
             continue
         rows.append({

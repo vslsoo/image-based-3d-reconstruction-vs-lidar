@@ -56,6 +56,21 @@ VOXEL_M = 0.01
 FLOOR_CM = 3.0
 THRESHOLDS_CM = [3.0, 5.0, 10.0]
 
+# Spelled out on the "symmetric Chamfer" column and repeated in FINAL_results.xlsx, because
+# the name covers several different quantities and a number under it is unusable without one.
+CHAMFER_NOTE = (
+    "Symmetric Chamfer distance, in centimetres.\n\n"
+    "Convention used here: the mean of the two one-sided means - reconstruction to reference "
+    "(the accuracy side) and reference to reconstruction (the completeness side) - with the "
+    "distances NOT squared, on the same 1 cm grid and the same gap-excluded points as every "
+    "other column. Accuracy and completeness are those two halves; this is their half-sum.\n\n"
+    "Papers on learned reconstruction (VGGT and MASt3R included) commonly report a SQUARED "
+    "Chamfer, so their numbers are not directly comparable with these.\n\n"
+    "Reported for completeness. The thresholded F1 columns remain the primary result: where "
+    "the reference itself is incomplete, a raw symmetric distance is dominated by the regions "
+    "the scanner never reached rather than by the quality of the reconstruction."
+)
+
 # Spatial block bootstrap for the 95% CIs, at 3 cm only - the threshold the text quotes; 5 and
 # 10 cm are there as a bias check and do not need intervals. Same B and block size as the two
 # ablations, so an interval here and an interval on capture_comparison.html mean the same
@@ -171,8 +186,15 @@ RMSE_PATH = PROJECT_ROOT / "docs" / "tables" / "registration_rmse_from_aligned_c
 _rmse_table = json.loads(RMSE_PATH.read_text())["rows"] if RMSE_PATH.exists() else {}
 
 
-def load_icp_rmse_mm(exp_id: str) -> tuple[float | None, float | None]:
-    """Registration quality -> (rmse_mm, inlier_share_pct).
+def load_icp_rmse_cm(exp_id: str) -> tuple[float | None, float | None]:
+    """Registration quality -> (rmse_cm, inlier_share_pct).
+
+    Returned in cm, though the sidecar stores mm. Every other distance this table
+    reports is in cm, and this column exists precisely to be read against one of them -
+    accuracy median - to tell "this method is worse" from "this registration is worse".
+    A reader cannot make that comparison across a unit change. The sidecar keeps mm
+    because its field is named rmse_inlier_mm and two scripts read it; the conversion
+    belongs here, at the point of reporting.
 
     Reported alongside F1 so a reader can tell "F1 differs because the method differs" from
     "F1 differs because this particular registration is worse" - it answers "maybe it's just
@@ -191,7 +213,8 @@ def load_icp_rmse_mm(exp_id: str) -> tuple[float | None, float | None]:
     entry = _rmse_table.get(exp_id)
     if not entry:
         return None, None
-    return entry.get("rmse_inlier_mm"), entry.get("inlier_share_pct")
+    rmse_mm = entry.get("rmse_inlier_mm")
+    return (None if rmse_mm is None else round(rmse_mm / 10.0, 2)), entry.get("inlier_share_pct")
 
 
 def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None) -> tuple[list[dict], list[dict]]:
@@ -229,7 +252,7 @@ def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None)
             raw_points = len(src.points)
             matched = src.voxel_down_sample(VOXEL_M)
             mpts = np.asarray(matched.points)
-            icp_rmse_mm, icp_inlier_pct = load_icp_rmse_mm(exp_id)
+            icp_rmse_cm, icp_inlier_pct = load_icp_rmse_cm(exp_id)
 
             d_s2t_cm = np.asarray(matched.compute_point_cloud_distance(ref)) * 100.0
             d_t2s_cm = np.asarray(ref.compute_point_cloud_distance(matched)) * 100.0
@@ -251,6 +274,19 @@ def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None)
             d_kept_cm = d_s2t_cm[kept_mask]
             acc_median = float(np.median(d_kept_cm)) if d_kept_cm.size else float("nan")
             comp_median = float(np.median(d_t2s_cm)) if d_t2s_cm.size else float("nan")
+            # The same two distance sets as MEANS, and their half-sum: the symmetric Chamfer
+            # distance. Nothing new is measured here - accuracy and completeness already ARE the
+            # two one-sided halves of Chamfer (reconstruction->reference and back). This only
+            # prints the single number that name usually refers to, so a reader looking for
+            # "Chamfer distance" does not conclude the work never computed one.
+            # State the convention, because the literature has several: mean of the two one-sided
+            # MEANS, distances NOT squared, in centimetres, over the same gap-excluded kept points
+            # and the same 1 cm grid as every other number in this table. Papers on learned
+            # methods (VGGT and MASt3R among them) commonly report a SQUARED Chamfer instead -
+            # those figures are not directly comparable with these.
+            acc_mean = float(np.mean(d_kept_cm)) if d_kept_cm.size else float("nan")
+            comp_mean = float(np.mean(d_t2s_cm)) if d_t2s_cm.size else float("nan")
+            chamfer_sym = 0.5 * (acc_mean + comp_mean)
             length_cm, width_cm, height_cm = bbox_dims_cm(mpts)
 
             row = {
@@ -260,7 +296,10 @@ def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None)
                 "method": method_id,
                 "accuracy_median_cm": round(acc_median, 2),
                 "completeness_median_cm": round(comp_median, 2),
-                "icp_rmse_mm": icp_rmse_mm,
+                "accuracy_mean_cm": round(acc_mean, 2),
+                "completeness_mean_cm": round(comp_mean, 2),
+                "chamfer_sym_cm": round(chamfer_sym, 2),
+                "icp_rmse_cm": icp_rmse_cm,
                 "icp_inlier_pct": icp_inlier_pct,
                 "raw_points": raw_points,
                 "matched_points": len(mpts),
@@ -303,8 +342,9 @@ def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None)
                 row[f"{name}_3cm_ci_hi"] = round(hi, 1)
             row["n_blocks_acc"], row["n_blocks_comp"] = int(n_blk_acc), int(n_blk_comp)
 
-            rmse_str = f"{icp_rmse_mm:.1f}mm/{icp_inlier_pct:.0f}%" if icp_rmse_mm is not None else "N/A"
-            print(f"          acc_med={acc_median:.2f}cm comp_med={comp_median:.2f}cm  " + " ".join(metrics_log) +
+            rmse_str = f"{icp_rmse_cm:.2f}cm/{icp_inlier_pct:.0f}%" if icp_rmse_cm is not None else "N/A"
+            print(f"          acc_med={acc_median:.2f}cm comp_med={comp_median:.2f}cm "
+                  f"chamfer_sym={chamfer_sym:.2f}cm  " + " ".join(metrics_log) +
                   f"  ΔF1(10-3)={row['f1_delta_10_3_pct']:+.1f}pp  ICP_RMSE={rmse_str}  "
                   f"raw={raw_points} matched={len(mpts)} (x{row['raw_to_matched_ratio']})  "
                   f"L={length_cm:.0f}cm W={width_cm:.0f}cm H={height_cm:.0f}cm", flush=True)
@@ -341,19 +381,20 @@ def compute_rows(block_cm: float = BLOCK_CM, only_pages: set[str] | None = None)
 
 def fmt_rmse(r: dict):
     """RMSE cell - measured from the same aligned cloud and reference as this row's F1."""
-    v = r["icp_rmse_mm"]
+    v = r["icp_rmse_cm"]
     return "N/A" if v is None else v
 
 
 def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str) -> None:
     from openpyxl import Workbook
+    from openpyxl.comments import Comment
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
     thresh_keys = [f"{t:g}cm" for t in THRESHOLDS_CM]
     if lang == "ru":
         headers = ["object_id", "форма", "шаг реф., см", "длина, см", "ширина, см", "высота, см",
                    "метод", "accuracy median, см", "completeness median, см",
-                   "RMSE выравнивания, мм", "точек в 3см, %"]
+                   "RMSE выравнивания, см", "точек в 3см, %"]
         f1_cols = []
         for k in thresh_keys:
             headers += [f"accuracy@{k}, %", f"completeness@{k}, %", f"F1@{k}, %"]
@@ -361,13 +402,14 @@ def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str
         headers += ["ΔF1@10-3см, п.п.",
                     "F1@3cm CI low", "F1@3cm CI high", "accuracy@3cm CI low", "accuracy@3cm CI high",
                     "completeness@3cm CI low", "completeness@3cm CI high",
+                    "accuracy mean, см", "completeness mean, см", "симметричный Chamfer, см",
                     "точек до вокселя", "точек после 1см", "raw/matched, ×",
                     "режим DBSCAN", "примечание по эталону"]
         shape_key, note_key = "shape_ru", "ref_note_ru"
     else:
         headers = ["object_id", "shape", "ref. spacing (cm)", "length (cm)", "width (cm)", "height (cm)",
                    "method", "accuracy median (cm)", "completeness median (cm)",
-                   "alignment RMSE (mm)", "points within 3cm (%)"]
+                   "alignment RMSE (cm)", "points within 3cm (%)"]
         f1_cols = []
         for k in thresh_keys:
             headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
@@ -375,11 +417,13 @@ def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str
         headers += ["ΔF1@10-3cm (pp)",
                     "F1@3cm CI low", "F1@3cm CI high", "accuracy@3cm CI low", "accuracy@3cm CI high",
                     "completeness@3cm CI low", "completeness@3cm CI high",
+                    "accuracy mean (cm)", "completeness mean (cm)", "symmetric Chamfer (cm)",
                     "raw points", "matched points (1cm voxel)", "raw/matched ratio",
                     "DBSCAN mode", "reference note"]
         shape_key, note_key = "shape_en", "ref_note_en"
     n_cols = len(headers)
     dbscan_col, note_col = n_cols - 1, n_cols
+    chamfer_col = n_cols - 5  # ..., symmetric Chamfer, raw, matched, ratio, DBSCAN mode, note
 
     wb = Workbook()
     ws = wb.active
@@ -391,6 +435,9 @@ def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str
         c.font = header_font
         c.fill = header_fill
         c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    # Which Chamfer this is - the name covers several conventions, so it is spelled out on the
+    # column rather than left to the reader. The two "mean" columns beside it are its halves.
+    ws.cell(row=1, column=chamfer_col).comment = Comment(CHAMFER_NOTE, "build_accuracy_f1_summary_table.py", height=190, width=460)
 
     best_font = Font(bold=True)
 
@@ -421,6 +468,7 @@ def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str
                  r["f1_3cm_ci_lo"], r["f1_3cm_ci_hi"],
                  r["accuracy_3cm_ci_lo"], r["accuracy_3cm_ci_hi"],
                  r["completeness_3cm_ci_lo"], r["completeness_3cm_ci_hi"],
+                 r["accuracy_mean_cm"], r["completeness_mean_cm"], r["chamfer_sym_cm"],
                  r["raw_points"], r["matched_points"], r["raw_to_matched_ratio"],
                  r["dbscan_mode"], r[note_key]]
         ws.append(vals)
@@ -445,7 +493,7 @@ def write_xlsx(rows: list[dict], significance: list[dict], path: Path, lang: str
             ws.cell(row=first_row, column=col).border = top_border
 
     widths = ([20, 14, 12, 11, 11, 11, 12, 15, 17, 15, 13] + [13, 16, 10] * len(thresh_keys)
-              + [14] + [12] * 6 + [12, 15, 13, 14, 60])
+              + [14] + [12] * 6 + [16, 19, 20] + [12, 15, 13, 14, 60])
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
     ws.freeze_panes = "A2"
@@ -491,6 +539,11 @@ def write_json(rows: list[dict], significance: list[dict], path: Path) -> None:
                for m, name in (("acc", "accuracy"), ("comp", "completeness"), ("f1", "f1"))},
             "acc_median_cm": r["accuracy_median_cm"],
             "comp_median_cm": r["completeness_median_cm"],
+            # the two one-sided MEANS and their half-sum - the symmetric Chamfer distance.
+            # Unsquared, in cm, over the same kept points as the medians above. See CHAMFER_NOTE.
+            "acc_mean_cm": r["accuracy_mean_cm"],
+            "comp_mean_cm": r["completeness_mean_cm"],
+            "chamfer_sym_cm": r["chamfer_sym_cm"],
             "n_excluded": r["n_excluded"],
             # 95% block-bootstrap CIs at 3 cm, computed over the same kept points
             **{f"{m}_3cm_ci_{end}": r[f"{name}_3cm_ci_{end}"]
@@ -501,6 +554,7 @@ def write_json(rows: list[dict], significance: list[dict], path: Path) -> None:
     path.write_text(json.dumps({
         "source": "build_accuracy_f1_summary_table.py",
         "bootstrap": {"n_draws": B_BOOT, "block_cm": BLOCK_CM, "threshold_cm": 3.0, "paired": False},
+        "chamfer_convention": CHAMFER_NOTE,
         "significance": significance,
         "pages": pages,
     }, indent=2))

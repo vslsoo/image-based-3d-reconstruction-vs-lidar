@@ -508,7 +508,7 @@ def write_summary_xlsx(summary: list[dict], n_significance: list[dict], path: Pa
     ws = wb.active
     ws.title = "frame_count_study"
     headers = ["object", "method", "N", "exp_id", "reg-rate (%)", "raw_points", "matched_points",
-               "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (mm)"]
+               "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (cm)"]
     for k in thresh:
         headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
     headers += ["ΔF1@10-3cm (pp)", "F1@3cm CI lo", "F1@3cm CI hi",
@@ -521,7 +521,7 @@ def write_summary_xlsx(summary: list[dict], n_significance: list[dict], path: Pa
                 row["raw_points"], row["matched_points"],
                 row["accuracy_median_cm"], row["completeness_median_cm"],
                 # mm, matching summary_all_objects_accuracy_f1.xlsx; it was cm here alone
-                round(row["inlier_rmse_3cm"] * 10, 2)]
+                round(row["inlier_rmse_3cm"], 2)]
         for k in thresh:
             vals += [row.get(f"acc_{k}"), row.get(f"comp_{k}"), row.get(f"f1_{k}")]
         vals += [row.get("f1_delta_10_3"), row["f1_ci_lo"], row["f1_ci_hi"],
