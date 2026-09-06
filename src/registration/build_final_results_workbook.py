@@ -1,5 +1,5 @@
 """Assemble docs/tables/FINAL_results.xlsx - one workbook holding every result the
-dissertation reports, so the thesis can cite a single file instead of five.
+dissertation reports, so the thesis can cite a single file instead of six.
 
 It does not recompute anything. Each sheet is copied verbatim from the table its own
 builder already wrote, so this file can never disagree with the site:
@@ -12,6 +12,9 @@ builder already wrote, so this file can never disagree with the site:
   Frame significance  <- frame_count_study_summary.xlsx sheet 2
   Compute cost        <- performance_study_summary.xlsx            (build_performance_study_page.py)
   M3C2                <- m3c2_final_six.xlsx                     (run_m3c2_final_six.py)
+  Voxel IoU           <- voxel_iou_summary.xlsx                  (compute_voxel_iou.py)
+  Voxel IoU sweep     <- voxel_iou_summary.xlsx sheet 2
+  Voxel IoU checks    <- voxel_iou_summary.xlsx sheet 4
   Experiment index    <- config/experiments.yaml (every exp_id cited above, with its
                          object, method, image count and registration rate)
 
@@ -39,7 +42,14 @@ HEADER_FONT = Font(bold=True, color="FFFFFF")
 SOURCES = [
     ("Main results", "summary_all_objects_accuracy_f1_EN.xlsx", "summary",
      "6 objects x 4 methods. Accuracy / completeness / F1 at 3, 5 and 10 cm against the LiDAR "
-     "reference, on a shared 1 cm grid. Alignment RMSE is measured from the same aligned clouds."),
+     "reference, on a shared 1 cm grid. Alignment RMSE is measured from the same aligned clouds. "
+     "\"symmetric Chamfer (cm)\" is the mean of the two one-sided means in the columns beside it "
+     "(reconstruction to reference, and reference back), unsquared, on the same 1 cm grid and the "
+     "same gap-excluded points - accuracy and completeness ARE those two halves. Note that papers "
+     "on learned reconstruction (VGGT, MASt3R) commonly report a SQUARED Chamfer, which is not "
+     "comparable with this column; and where a reference is incomplete, a raw symmetric distance "
+     "reflects the unscanned regions more than the reconstruction, which is what the thresholds "
+     "are for."),
     ("Main significance", "summary_all_objects_accuracy_f1_EN.xlsx", "significance",
      "Pairwise F1@3cm differences between methods on the same object, block bootstrap. Unpaired: "
      "the four reconstructions of an object share no frames. A CI spanning 0 means the two "
@@ -64,6 +74,39 @@ SOURCES = [
      "accuracy side); \"ref\" puts them on the LiDAR, so no pair = reference the reconstruction "
      "never covered (the completeness side). Outside = the reconstruction's surface sits further "
      "from the object's centre than the reference's."),
+    ("Voxel IoU", "voxel_iou_summary.xlsx", "summary",
+     "The same 6 objects x 4 methods once more, measured as occupied-voxel overlap instead of "
+     "point-to-point distance. IoU of occupied SURFACE voxels at 5 cm - both clouds are surface "
+     "samples and nothing is filled in, so this is not a volumetric IoU. A voxel counts as "
+     "occupied at one point, which is what makes the metric independent of how many points a "
+     "method delivered: the raw/matched ratios here span 1.9x to 129x. Read voxel precision and "
+     "recall beside IoU - IoU alone cannot say whether a method invented volume or missed the "
+     "object, and on several rows the two are very far apart. This is a METHODOLOGY result, not "
+     "a chapter 5 one: IoU ranks the methods essentially as F1@3cm does (Spearman rho 0.951 over "
+     "these 24 rows), and every reordering it does produce fails the checks two sheets on."),
+    ("Voxel IoU sweep", "voxel_iou_summary.xlsx", "sweep",
+     "IoU at 2, 3, 5 and 10 cm for every row. 5 cm is the primary size, and it is clamped from "
+     "both sides rather than chosen: at least ~4 cm so that a surface voxel holds several "
+     "reference points (worst median spacing is 2.00 cm, on the bench) and so that a 2 cm "
+     "alignment error cannot shift occupancy by a whole voxel (worst inlier RMSE 21.7 mm); at "
+     "most 5 cm so the lamppost, 15.5 cm across, still spans three voxels. The two ends are "
+     "reported to show what happens there, not as results - 2 cm sits below both lower bounds "
+     "and drops recall for every method at once, which is an artefact of how the reference was "
+     "sampled; at 10 cm the lamppost and the sign's pole stop resolving and IoU measures "
+     "bounding volume rather than shape. The per-row note column repeats this."),
+    ("Voxel IoU checks", "voxel_iou_summary.xlsx", "ranking",
+     "Whether IoU says anything F1 did not - the sheet that decides the verdict above. Per "
+     "object: the method order by IoU@5cm against the order by F1@3cm, then whether that order "
+     "survives the voxel size (3/5/10 cm) and the grid origin. The origin matters because "
+     "voxelisation is not shift-invariant, so every row was re-measured on 16 grids - 7 "
+     "half-voxel corner shifts plus 8 random sub-voxel offsets. A reordering counts only if the "
+     "pair it involves keeps the sign of its difference on all 16, and, for the sweep, only if "
+     "it is not already told by dF1@10-3. None does. The resolution limit is worth reading on "
+     "its own: on thin objects the grid origin alone moves IoU further than the methods are "
+     "apart (9.67 pp on information_sign, 14.22 pp on bollard, against 2-6 pp gaps), and the "
+     "order holds on all 16 grids only for the lamppost and the bus_stop_sign - the two objects "
+     "with complete references. The last rows carry the Spearman rho over all 24 rows and the "
+     "verdict in full."),
     ("Compute cost", "performance_study_summary.xlsx", "performance_vs_N",
      "Wall-clock time and peak RAM/VRAM vs frame count, all runs on one NVIDIA L40S. "
      "Note the methods work at different resolutions - COLMAP 3200 px, hloc 1024 px, "
