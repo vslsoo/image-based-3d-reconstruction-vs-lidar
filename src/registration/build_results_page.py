@@ -481,7 +481,9 @@ function buildTable() {
         ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d|<br>med (cm)</th>'
           + (diag
              ? '<th class="m3c2" title="core points whose |M3C2| exceeds their own LoD95 — a difference larger than '
-               + 'the local roughness of both clouds plus the alignment error of that row">&gt; LoD95 (%)</th>'
+               + '1.96 × (local roughness of both clouds + the alignment error of that row). The 95% factor '
+               + 'covers the alignment error too, so with the alignment RMSE in the column to the left this '
+               + 'threshold cannot drop below about 2.3–4.3 cm however smooth the surface is.">&gt; LoD95 (%)</th>'
              : '')
           + '<th class="m3c2" title="core points with no reference point inside their search cylinder at all — '
           + 'reconstruction surface that is not where the reference surface is. Always shown beside the median: '

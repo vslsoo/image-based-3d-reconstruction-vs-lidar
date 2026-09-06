@@ -70,28 +70,43 @@ plt.rcParams.update({
 def load_rows() -> list[dict]:
     """One dict per object x method, straight out of the EN workbook.
 
-    The object columns are merged cells, so the object identity carries down
-    until the next non-empty object_id - the same shape the workbook has on
-    screen.
+    Columns are looked up by header name, not by position: the workbook has already
+    grown three times (CIs, the two one-sided means, symmetric Chamfer) and every new
+    column is appended, so positional indices silently start reading the wrong field.
+
+    The object columns are merged cells, so the object identity carries down until the
+    next non-empty object_id - the same shape the workbook has on screen.
     """
-    ws = openpyxl.load_workbook(SRC_XLSX, data_only=True)[
-        openpyxl.load_workbook(SRC_XLSX).sheetnames[0]]
-    # by name, not by position: columns get added to this workbook (the CIs, the symmetric
-    # Chamfer) and a hard-coded index silently starts reading a different column when they do
-    hdr = [c.value for c in ws[1]]
-    dbscan_i = hdr.index("DBSCAN mode")
-    rows, obj_id, obj_name, dbscan = [], None, None, None
-    for r in list(ws.iter_rows(values_only=True))[1:]:
-        if r[0]:
-            obj_id, obj_name, dbscan = r[0], r[1], r[dbscan_i]
-        if not r[6]:
+    ws = openpyxl.load_workbook(SRC_XLSX, data_only=True)["summary"]
+    rows_raw = list(ws.iter_rows(values_only=True))
+    col = {name: i for i, name in enumerate(rows_raw[0]) if name}
+
+    def cell(r, name):
+        return r[col[name]] if name in col else None
+
+    rows, obj_id, obj_name = [], None, None
+    for r in rows_raw[1:]:
+        if r[col["object_id"]]:
+            obj_id, obj_name = r[col["object_id"]], r[col["shape"]]
+        if not cell(r, "method"):
             continue
         rows.append({
             "object_id": obj_id, "object": OBJECT_LABEL.get(obj_id, obj_name),
-            "dbscan": dbscan,
-            "method": r[6], "acc_median_cm": r[7], "comp_median_cm": r[8],
-            "acc3": r[11], "comp3": r[12], "f1_3": r[13],
-            "f1_10": r[19], "df1": r[20],
+            "method": cell(r, "method"),
+            "acc_median_cm": cell(r, "accuracy median (cm)"),
+            "comp_median_cm": cell(r, "completeness median (cm)"),
+            "acc3": cell(r, "accuracy@3cm (%)"),
+            "comp3": cell(r, "completeness@3cm (%)"),
+            "f1_3": cell(r, "F1@3cm (%)"),
+            "f1_10": cell(r, "F1@10cm (%)"),
+            "df1": cell(r, "ΔF1@10-3cm (pp)"),
+            "f1_ci_lo": cell(r, "F1@3cm CI low"),
+            "f1_ci_hi": cell(r, "F1@3cm CI high"),
+            "acc_ci_lo": cell(r, "accuracy@3cm CI low"),
+            "acc_ci_hi": cell(r, "accuracy@3cm CI high"),
+            "comp_ci_lo": cell(r, "completeness@3cm CI low"),
+            "comp_ci_hi": cell(r, "completeness@3cm CI high"),
+            "chamfer_cm": cell(r, "symmetric Chamfer (cm)"),
         })
     return rows
 

@@ -8,10 +8,14 @@ are plain nearest-neighbor distances - "closest point in any direction."
 M3C2 instead measures the distance along each core point's own local surface
 normal (so slope/curvature-consistent, not skewed by whatever's nearest in an
 arbitrary direction), and reports a Level of Detection per point
-(LoD95% = 1.96 * (sqrt(spread1^2/n1 + spread2^2/n2)) + registration_error) -
+(LoD95% = 1.96 * (sqrt(spread1^2/n1 + spread2^2/n2) + registration_error)) -
 the offset below which a difference isn't distinguishable from local cloud
 roughness plus a given registration error, rather than treating every offset
 as equally meaningful regardless of how noisy the clouds are there.
+Note where that closing bracket sits: the 1.96 applies to the registration
+error too, not only to the spread term. So the threshold has a floor of
+1.96 * registration_error that no amount of local smoothness gets below - at
+the 1.16-2.17 cm alignment errors measured for these clouds, ~2.3-4.3 cm.
 
 Core points (--corepoints): running M3C2 at every point of a multi-million-
 point photogrammetry cloud is both unnecessary and slow (each core point
@@ -269,8 +273,9 @@ def compute_m3c2_report(
         )
         if n_lod:
             print(
-                f"Significant at 95% LoD (|distance| > LoD95, i.e. beyond cloud roughness + "
-                f"{registration_error * 100:.2f}cm registration error): {n_sig} / {n_lod} points with a "
+                f"Significant at 95% LoD (|distance| > LoD95, i.e. beyond "
+                f"1.96 x (cloud roughness + {registration_error * 100:.2f}cm registration error), "
+                f"a floor of {1.96 * registration_error * 100:.2f}cm): {n_sig} / {n_lod} points with a "
                 f"defined LoD ({100 * n_sig / n_lod:.2f}%)"
             )
         else:

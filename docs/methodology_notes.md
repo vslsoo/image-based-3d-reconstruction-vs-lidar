@@ -419,9 +419,13 @@ site and the thesis read is `docs/tables/m3c2_final_six.json`. The earlier
 six - they are a different set of clouds and should not be mixed in.
 
 **`registration_error` is per row, not a constant.** It feeds the Level of
-Detection (LoD95 = 1.96 * sqrt(spread1^2/n1 + spread2^2/n2) +
-registration_error), i.e. it sets how large a difference has to be before
-M3C2 calls it real, so a flat 1 cm - what every earlier run assumed - was
+Detection (LoD95 = 1.96 * (sqrt(spread1^2/n1 + spread2^2/n2) +
+registration_error)), i.e. it sets how large a difference has to be before
+M3C2 calls it real. The 1.96 multiplies the registration error as well as the
+spread term, so LoD95 has a floor of 1.96 * registration_error - 2.3-4.3 cm
+across these rows - that no amount of local surface smoothness gets below;
+"beyond LoD95" means an offset larger than roughly 2-4 cm, not 1-2 cm. So a
+flat 1 cm - what every earlier run assumed - was so a flat 1 cm - what every earlier run assumed - was
 optimistic for all 24 of these. Each row now gets its own measured
 alignment error from
 `docs/tables/registration_rmse_from_aligned_clouds.json`

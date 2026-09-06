@@ -4,8 +4,14 @@ its OWN registration error instead of one assumed constant for all of them.
 Why this script exists at all: compute_m3c2.py takes --registration-error as a single
 number (default 1 cm), which is what every earlier, non-final M3C2 run used. That
 number is not a detail - it goes straight into the Level of Detection
-(LoD95 = 1.96 * sqrt(spread1^2/n1 + spread2^2/n2) + registration_error), i.e. it sets
-how large a difference has to be before this comparison calls it real. The alignment
+(LoD95 = 1.96 * (sqrt(spread1^2/n1 + spread2^2/n2) + registration_error)), i.e. it sets
+how large a difference has to be before this comparison calls it real. Note the bracket:
+the 1.96 covers the registration error too, so the threshold has a hard floor of
+1.96 * registration_error. Verified numerically rather than read off py4dgeo's Python
+fallback, since this script uses the compiled path: recomputing LoD95 from the stored
+per-point spreads reproduces it to 3e-17 with the bracket here and misses by 0.96 *
+registration_error without it, and the lowest LoD95 on bench/mast3r_ga is 3.84 cm
+against the 3.83 cm floor its 1.96 cm alignment error implies. The alignment
 these clouds actually have was measured per object x method and runs 1.16-2.17 cm, so
 a flat 10 mm was optimistic for most of the 24 and generous for none of them.
 
@@ -356,8 +362,11 @@ Generated: {summary['generated']}
   predate the final six.
 - **`registration_error` is per row**, from `docs/tables/registration_rmse_from_aligned_clouds.json`
   (`rows[exp_id].rmse_inlier_mm`, 1.16-2.17 cm), not one assumed constant. It goes into
-  LoD95 = 1.96 * sqrt(spread1²/n1 + spread2²/n2) + registration_error, i.e. it sets how large a
-  difference has to be before M3C2 calls it real.
+  LoD95 = 1.96 * (sqrt(spread1²/n1 + spread2²/n2) + registration_error), i.e. it sets how large a
+  difference has to be before M3C2 calls it real. The 1.96 applies to the registration error too,
+  so LoD95 has a floor of 1.96 × registration_error - 2.3-4.3 cm across these rows - which no
+  amount of local surface smoothness gets below. "Beyond LoD95" therefore means "offset larger
+  than roughly 2-4 cm", not "larger than roughly 1-2 cm".
 - **Parameters**, identical for all 24: D = {p['normal_scale_D_m'] * 100:.0f} cm,
   d = {p['projection_scale_d_m'] * 100:.0f} cm, core points thinned to
   {p['corepoint_voxel_m'] * 100:.0f} cm, max_distance = {p['max_distance_m'] * 100:.0f} cm,
