@@ -420,9 +420,11 @@ const M3C2_NOISE    = [0.588, 0.596, 0.573];   // |d| <= that point's own LoD95
 const M3C2_NOPAIR   = [0.216, 0.231, 0.204];   // nothing to compare against in the cylinder
 const M3C2_FULL_CM  = 10;                      // |d| at which the ramp reaches full saturation
 
-// Grey is the whole point of the LoD: below it, the offset is not distinguishable from the
-// roughness of the two clouds plus this row's alignment error, so it must not read as a
-// small-but-real difference. Above it the ramp starts pale (just past the threshold) and
+// Grey is the whole point of the LoD: below it, the offset is not distinguishable from
+// 1.96 x (roughness of the two clouds + this row's alignment error), so it must not read
+// as a small-but-real difference. The 95% factor covers the alignment error too, which is
+// why so much of a panel can be grey: the threshold has a floor of 1.96 x that error,
+// 2.3-4.3 cm on these rows, before any surface roughness is added. Above it the ramp starts pale (just past the threshold) and
 // deepens with the offset - a white midpoint would be invisible on a white canvas.
 function m3c2Color(distCm, lodCm) {
   if (!Number.isFinite(distCm)) return M3C2_NOPAIR;
