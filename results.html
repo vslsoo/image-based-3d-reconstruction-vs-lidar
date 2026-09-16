@@ -176,7 +176,8 @@
       starts — but as a <b>check on the ranking F1 already gives</b>. The question is therefore asked one
       pair of methods at a time: on this object, does the density-free metric put these two in the same
       order, and can either metric separate them at all? Each dot is one such pair, 6 objects × 6 pairs.
-      Further right, the wider F1 puts the two methods apart; above the line, IoU agrees with it.
+      The further right a dot sits, the wider the gap F1 puts between the two methods; a dot above
+      zero is one the two measures order in the same way.
     </div>
     <div class="panel" style="max-width:760px;">
       <svg id="iou-chart" viewBox="0 0 700 430" style="width:100%; height:auto;"></svg>
@@ -470,5 +471,13 @@ if (DATA.has_m3c2) {
 buildTable();
 renderIouChart();
 </script>
+<div class="site-credit" style="max-width:960px;margin:28px auto 22px;padding:10px 16px 0;border-top:1px solid var(--panel-border,#d7d4c8);color:var(--text-faint,#8b9084);font-size:11.5px;line-height:1.6;">
+  Vasilisa Savinova &middot; MSc Geospatial Sciences, UCL Department of Civil, Environmental and
+  Geomatic Engineering &middot; supervisor Prof. Jan Boehm &middot; research advisor
+  Sheikh Fakhar Khalid (Sensat) &middot; the lidar reference was provided by Sensat and is not
+  redistributed &middot; code and per-object results:
+  <a href="https://github.com/vslsoo/image-based-3d-reconstruction-vs-lidar"
+     style="color:var(--accent,#17805f);">github.com/vslsoo/image-based-3d-reconstruction-vs-lidar</a>
+</div>
 </body>
 </html>
