@@ -79,7 +79,7 @@
     <span class="group"><span class="lbl">Results</span><a href="results.html">all objects × methods</a></span>
     <span class="group"><span class="lbl">Studies</span><a href="capture_comparison.html">capture strategy</a> <a href="frame_count_study.html">frame count</a> <a href="performance_study.html">compute cost</a></span>
     <span class="row-break"></span>
-    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html">lamppost</a> <a href="bus_stop_sign.html">bus-stop sign</a></span>
+    <span class="group"><span class="lbl">Objects</span><a href="bus_stop.html">bus shelter</a> <a href="information_sign.html">information sign</a> <a href="bench.html">bench</a> <a href="bollard.html">bollard</a> <a href="flashlight.html">lamp post</a> <a href="bus_stop_sign.html">bus stop sign</a></span>
     <span class="group"><span class="lbl">Tool</span><a href="tuner.html">gap tuner</a></span>
   </nav>
 
@@ -119,7 +119,7 @@
         <a class="main-link" href="frame_count_study.html" target="_blank" rel="noopener">
           <div class="name">How many photos are enough?</div>
           <div class="desc">
-            COLMAP keeps buying points — +11 on the sign, +39 on the bollard. MASt3R-GA is already at its ceiling with the fewest frames on the bollard, and on the sign gains only up to N=75 before giving 2–3 points back. More photos is not automatically better.
+            COLMAP keeps buying points — +11 on the sign, +47 on the bollard. MASt3R-GA is already at its ceiling with the fewest frames on the bollard, and on the sign gains only up to N=75 before giving 2–3 points back. More photos is not automatically better.
           </div>
           <div class="meta">2 objects · N = 15…100 · up to 3 method variants</div>
         </a>
@@ -141,7 +141,7 @@
     <div class="subtitle arrow">
       Not representative — chosen to span two axes of expected failure: <b>surface</b> (matte → glazed) and
       <b>geometry</b> (size, elongation, self-similarity, self-occlusion). Shot hand-held on an iPhone 13 Pro,
-      full circle, overcast. Sizes from the best reconstruction.
+      full circle, overcast. Sizes as in the dissertation, H × L × W.
     </div>
     <div class="grid">
       <div class="card">
@@ -153,7 +153,7 @@
           <div class="desc">
             Largest, most self-occluding, glazed throughout — the hardest of the six: <b>no method passes 60% F1@3cm</b>.
           </div>
-          <div class="meta">4.3 × 2.0 × 2.8 m · 96 photos · reference incomplete (far side unscanned)</div>
+          <div class="meta">2.7 × 4.45 × 2.1 m · 96 photos · reference incomplete (far side unscanned)</div>
         </a>
       </div>
       <div class="card">
@@ -165,7 +165,7 @@
           <div class="desc">
             A glossy cover mirroring the street, over two near-identical faces. All four methods still land within ~3 cm.
           </div>
-          <div class="meta">2.6 m tall · 75 photos · reference incomplete (upper ⅔, one side)</div>
+          <div class="meta">2.5 × 0.6 × 0.2 m · 75 photos · reference incomplete (upper ⅔, one side)</div>
         </a>
       </div>
       <div class="card">
@@ -177,7 +177,7 @@
           <div class="desc">
             The longest and lowest, matte weathered timber — <b>a control object</b>, no failure predicted.
           </div>
-          <div class="meta">4.1 × 2.2 × 0.8 m · 94 photos · reference incomplete (backrest, legs)</div>
+          <div class="meta">0.75 × 4.1 × 1.15 m · 94 photos · reference incomplete (backrest, legs)</div>
         </a>
       </div>
       <div class="card">
@@ -189,31 +189,31 @@
           <div class="desc">
             The smallest and simplest; semi-gloss facets shift with viewpoint. Scores <b>best of all six: 94% F1@3cm</b>.
           </div>
-          <div class="meta">26 × 26 cm × 1.0 m · 69 photos · reference incomplete (~90° sector)</div>
+          <div class="meta">1.0 × 0.3 × 0.3 m · 69 photos · reference incomplete (~90° sector)</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="flashlight.html" target="_blank" rel="noopener">
           <div class="head">
             <img class="thumb" src="img/flashlight.png" alt="" width="96" height="96">
-            <div class="name">Lamppost</div>
+            <div class="name">Lamp post</div>
           </div>
           <div class="desc">
             The tallest and thinnest, dark and near-textureless. Where <b>VGGT breaks down: 22% F1 vs COLMAP's 89%</b>.
           </div>
-          <div class="meta">5.8 m tall · 105 photos · complete reference</div>
+          <div class="meta">6.05 × 0.55 × 0.25 m · 105 photos · complete reference</div>
         </a>
       </div>
       <div class="card">
         <a class="main-link" href="bus_stop_sign.html" target="_blank" rel="noopener">
           <div class="head">
             <img class="thumb" src="img/bus_stop_sign.png" alt="" width="96" height="96">
-            <div class="name">Bus-stop sign</div>
+            <div class="name">Bus stop sign</div>
           </div>
           <div class="desc">
             A semi-gloss flag on a slender pole — tests whether a symmetric pole gets duplicated by spurious matches.
           </div>
-          <div class="meta">3.5 m tall · 79 photos · complete reference</div>
+          <div class="meta">3.6 × 0.65 × 0.55 m · 79 photos · complete reference</div>
         </a>
       </div>
     </div>
@@ -243,8 +243,8 @@
 
 <div class="site-credit" style="max-width:960px;margin:28px auto 22px;padding:10px 16px 0;border-top:1px solid var(--panel-border,#d7d4c8);color:var(--text-faint,#8b9084);font-size:11.5px;line-height:1.6;">
   Vasilisa Savinova &middot; MSc Geospatial Sciences, UCL Department of Civil, Environmental and
-  Geomatic Engineering &middot; supervisor Prof. Jan Boehm &middot; research advisor
-  Sheikh Fakhar Khalid (Sensat) &middot; the lidar reference was provided by Sensat and is not
+  Geomatic Engineering &middot; supervisor Prof. Jan Boehm &middot; industrial partner
+  Sensat (Sheikh Fakhar Khalid) &middot; the lidar reference was provided by Sensat and is not
   redistributed &middot; code and per-object results:
   <a href="https://github.com/vslsoo/image-based-3d-reconstruction-vs-lidar"
      style="color:var(--accent,#17805f);">github.com/vslsoo/image-based-3d-reconstruction-vs-lidar</a>
