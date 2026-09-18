@@ -169,7 +169,7 @@ __CHECKBOX_NOTE__      </div>
     </div>
   </section>
 
-  <footer>__OBJ_ID__ · outputs/density_matched/__OBJ_ID__/ · raw WebGL, no external libraries</footer>
+  <footer>__OBJ_DISPLAY__ · raw WebGL, no external libraries</footer>
 </div>
 
 """

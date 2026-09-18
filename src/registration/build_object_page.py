@@ -228,7 +228,7 @@ MERGED_OBJECTS = {
         "callout": (
             '    <div class="callout" style="margin-top:12px; font-size:13px; line-height:1.5; background:var(--code-bg); '
             'border:1px solid var(--panel-border); border-left:3px solid #f43f5e; border-radius:8px; padding:10px 14px; color:var(--text-dim);">\n'
-            '      <b>VGGT fails on this lamppost.</b> flashlight_004 is a thin, tall lamppost (~6 m). MASt3R-GA,\n'
+            '      <b>VGGT fails on this lamppost.</b> The lamp post is thin and tall (~6 m). MASt3R-GA,\n'
             '      COLMAP and hloc + COLMAP reconstructed it cleanly (accuracy median ~1-3.5 cm), while <b>VGGT produced a\n'
             '      blurred noise cloud</b> (median ~11 cm). Its points are far from\n'
             '      the surface — this is <b>real reconstruction noise</b>, not a reference gap, so DBSCAN gap-exclusion on VGGT can\n'

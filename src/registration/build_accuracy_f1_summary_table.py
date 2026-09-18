@@ -111,7 +111,7 @@ REF_NOTE_RU = {
     "bus_stop_sign": "полный эталон",
 }
 REF_NOTE_EN = {
-    "bus_stop": "incomplete reference: the bus stop's far side (away from the road) wasn't scanned; part of the reference is a merge of 2 scans that don't align perfectly in places",
+    "bus_stop": "incomplete reference: the bus shelter's far side (away from the road) wasn't scanned; part of the reference is a merge of 2 scans that don't align perfectly in places",
     "information_sign": "incomplete reference: only the upper ~2/3 of the pole height and one side were scanned — comparison is only valid in that region (not a scale/rotation error)",
     "bench": "incomplete reference: the bench's backrest (rear side) and legs are missing",
     "bollard": "incomplete reference: only one side was scanned (~90° sector missing) — the missing side is handled via gap detection (DBSCAN)",
