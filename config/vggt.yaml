@@ -13,20 +13,25 @@ model:
   # (no optimization loop like MASt3R's global alignment), so it's usable on
   # CPU too, just slower and without the bfloat16/float16 autocast speedup
   # that's only applied on CUDA.
-  image_mode: pad
+  image_mode: crop
   # crop | pad - passed to vggt.utils.load_fn.load_and_preprocess_images.
   # "crop" (upstream default) sets width to 518px and center-crops height;
   # "pad" preserves all pixels (letterboxed to a 518x518 square) at the cost
   # of some wasted/empty area - see that function's docstring for details.
   #
-  # Why "pad" here rather than the upstream default: these objects are shot in
-  # portrait (3024x4032). "crop" resizes to 518x686 and then center-crops the
-  # height to 518 - i.e. it throws away ~25% of the frame, and on a bollard /
-  # lamppost / sign that is exactly the top and bottom of the object, the parts
-  # the reconstruction is being scored on. "pad" instead makes the long side
-  # 518 (392x518 for this aspect ratio) and letterboxes to a square, so the
-  # whole frame reaches the model; the object ends up at a slightly lower
-  # linear resolution, but nothing is cut off.
+  # Every reported VGGT reconstruction used "crop", the upstream default, so
+  # that no method was tuned in its own favour. The cost is real and is stated
+  # in the dissertation: these objects are shot in portrait (3024x4032), so
+  # "crop" resizes to 518x686 and center-crops the height to 518, throwing away
+  # ~25% of the frame - on a bollard / lamppost / sign, the top and bottom of
+  # the object itself.
+  #
+  # "pad" was tried as the alternative: it makes the long side 518 (392x518
+  # here) and letterboxes to a square, so the whole frame reaches the model at
+  # a slightly lower linear resolution. On the lamppost and the bollard
+  # (exp_171, exp_172) it gave a visibly worse result - the padding spends part
+  # of the fixed 518 px on empty border - so it was not adopted. Set this to
+  # "pad", or pass --image-mode pad, only to reproduce those two runs.
 
 export:
   use_point_map: true

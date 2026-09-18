@@ -590,9 +590,13 @@ def analyse(rows: list[dict]) -> dict:
     noise_b = [o for o in unstable if o not in robust_b and o not in echoes_f1]
     criterion_a = bool(robust_a)
     criterion_b = bool(robust_b)
-    deserves = criterion_a or criterion_b
+    # Whether IoU orders the methods differently from F1 by more than the grid noise.
+    # This decides what IoU can be claimed to be - a second source of conclusions, or a
+    # check on the primary measure - not whether it gets reported. It is reported either
+    # way, as the density-free cross-check the thesis puts it forward as.
+    adds_ordering = criterion_a or criterion_b
 
-    if deserves:
+    if adds_ordering:
         parts = []
         if criterion_a:
             parts.append(f"IoU reorders the methods on {', '.join(robust_a)} relative to F1@3cm, "
@@ -600,21 +604,20 @@ def analyse(rows: list[dict]) -> dict:
         if criterion_b:
             parts.append(f"the voxel sweep reorders them on {', '.join(robust_b)} between 3, 5 and "
                          f"10 cm, by more than the grid-origin noise")
-        headline = "Belongs in chapter 5: " + "; ".join(parts) + "."
+        headline = "IoU orders the methods differently from F1: " + "; ".join(parts) + "."
     else:
         n_obj = len(per_object)
         n_same = sum(1 for o in per_object if o["order_agrees"])
-        tail = ("Mention it in the methodology as an alternative that was considered, and leave "
-                "it out of the results.")
+        tail = ("So IoU confirms the F1 ordering rather than competing with it: a density-free "
+                "check on the primary measure, not a second source of conclusions.")
         if disagreeing or unstable:
             # "It agreed with F1 everywhere" would be false here - it disagreed, the
             # disagreements just did not survive. Say which, or the verdict overstates itself.
-            headline = (f"Does not belong in chapter 5: IoU matches the F1@3cm ordering exactly on "
-                        f"{n_same} of {n_obj} objects, and every reordering it produces on the "
-                        f"other {n_obj - n_same} fails on inspection - see below. No new "
-                        f"conclusion. {tail}")
+            headline = (f"IoU adds no ordering of its own: it matches the F1@3cm ordering exactly "
+                        f"on {n_same} of {n_obj} objects, and every reordering it produces on the "
+                        f"other {n_obj - n_same} fails on inspection - see below. {tail}")
         else:
-            headline = (f"Does not belong in chapter 5: IoU reproduces the F1@3cm ordering on "
+            headline = (f"IoU adds no ordering of its own: it reproduces the F1@3cm ordering on "
                         f"{'both' if n_obj == 2 else f'all {n_obj}'} "
                         f"object{'' if n_obj == 1 else 's'} and the sweep is flat. {tail}")
     if echoes_f1:
@@ -640,7 +643,7 @@ def analyse(rows: list[dict]) -> dict:
             "b_objects_restating_delta_f1": echoes_f1,
             "grid_origin_reorders_methods": bool(grid_unstable),
             "grid_origin_unstable_objects": grid_unstable,
-            "deserves_chapter_5": deserves,
+            "iou_adds_ordering_f1_does_not": adds_ordering,
         },
         "headline": headline,
         "spearman_rho_iou_vs_f1_3cm_all_rows": overall_rho,

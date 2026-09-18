@@ -130,9 +130,30 @@ of known size: a **9.5cm x 9.5cm square**. These are the results being used
 going forward for the diploma (earlier experiments, exp_001-033, don't have
 this marker in-frame).
 
+> **How the reported results were actually scaled.** The rest of this section
+> describes the position as of exp_034, when `register_point_clouds.py` still
+> fitted scale against the LiDAR reference. That is *not* what the twenty-four
+> final reconstructions did. For those, scale never touches the reference:
+>
+> 1. the 9.5 cm square is measured by hand in the raw, uncropped cloud, which
+>    fixes what one unit of that cloud is worth in metres;
+> 2. from that, the object's own size is read off and recorded as a target
+>    length (bollard 1.0 m, bench 4.1 m, lamppost 6.0 m, shelter 2.5 m, the two
+>    signs 0.5 m);
+> 3. `scale_to_target_length.py` scales the cloud isotropically so the chosen
+>    PCA-axis extent (1st-99th percentile) matches that length, writing
+>    `outputs/scale_corrected/<object>/<exp>_scaled.json`;
+> 4. `register_point_clouds.py` then runs **rigid**, 6-DoF - every final
+>    `report.json` carries `"scaling_allowed": false`.
+>
+> So the marker is the origin of metric scale and the LiDAR reference is not
+> involved in setting it. Note that `--rigid` is opt-in: the script's default
+> path is still the 7-DoF similarity described below.
+
 Why this matters: COLMAP and hloc+COLMAP (classical/local-feature SfM)
-recover geometry only up to an unknown scale - `register_point_clouds.py`
-currently estimates that scale by fitting a similarity transform against the
+recover geometry only up to an unknown scale - at that point
+`register_point_clouds.py` estimated that scale by fitting a similarity
+transform against the
 LiDAR reference (see its docstring and `extract_scale()`/the
 `--scale-sanity-factor` fallback check), which is itself an imperfect,
 data-dependent estimate. MASt3R-GA's checkpoint
