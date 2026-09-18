@@ -706,4 +706,4 @@ renderEvenCheck();
 renderVggt();
 </script>"""
 
-HTML_TAIL = "\n</body>\n</html>\n"
+HTML_TAIL = "\n__SITE_CREDIT__\n</body>\n</html>\n"

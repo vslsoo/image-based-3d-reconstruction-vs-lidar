@@ -161,29 +161,30 @@ def nn_spacing_all(points: np.ndarray) -> np.ndarray:
     return d[:, 1]
 
 
-def reg_rates_from_experiments_yaml() -> dict[str, float]:
-    """Registration rate per exp_id, parsed from config/experiments.yaml's "Registered
-    images: N/M" log line.
+def image_stats_from_experiments_yaml() -> dict[str, dict]:
+    """Input image count and registration rate per exp_id, parsed from
+    config/experiments.yaml's "Registered images: N/M" log line (M in, N registered).
 
-    Fallback for reg_rates_from_metrics(): docs/tables/experiment_metrics.jsonl lost its
+    Fallback for image_stats_from_metrics(): docs/tables/experiment_metrics.jsonl lost its
     rows for exp_081-092 (overwritten 2026-08-31; only the performance-study experiments
     were recoverable), so for these twelve the jsonl reports nothing. experiments.yaml is
-    intact and carries the same figure, so the column need not stay empty.
+    intact and carries the same figures, so the columns need not stay empty.
     """
     import re as _re
     path = PROJECT_ROOT / "config" / "experiments.yaml"
     if not path.exists():
         return {}
-    out: dict[str, float] = {}
+    out: dict[str, dict] = {}
     for m in _re.finditer(r"^  (exp_\d+):\n(.*?)(?=^  exp_|\Z)", path.read_text(), _re.S | _re.M):
         got = _re.search(r"Registered images: (\d+)/(\d+)", m.group(2))
         if got and int(got.group(2)):
-            out[m.group(1)] = int(got.group(1)) / int(got.group(2))   # fraction, like the jsonl
+            n_reg, n_in = int(got.group(1)), int(got.group(2))
+            out[m.group(1)] = {"n_images": n_in, "reg_rate": n_reg / n_in}  # fraction, like the jsonl
     return out
 
 
-def reg_rates_from_metrics() -> dict[str, float]:
-    out: dict[str, float] = {}
+def image_stats_from_metrics() -> dict[str, dict]:
+    out: dict[str, dict] = {}
     if not METRICS_JSONL.exists():
         return out
     for line in METRICS_JSONL.read_text().splitlines():
@@ -195,9 +196,13 @@ def reg_rates_from_metrics() -> dict[str, float]:
         except json.JSONDecodeError:
             continue
         eid = r.get("exp_id")
-        rate = r.get("registration_rate")
-        if eid and rate is not None:
-            out[eid] = rate
+        if not eid:
+            continue
+        rate, n_in = r.get("registration_rate"), r.get("num_images_input")
+        if rate is None and n_in and r.get("num_images_registered"):
+            rate = r["num_images_registered"] / n_in
+        if rate is not None or n_in is not None:
+            out[eid] = {"n_images": n_in, "reg_rate": rate}
     return out
 
 
@@ -249,7 +254,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
         headers += [f"accuracy@{k} (%)", f"completeness@{k} (%)", f"F1@{k} (%)"]
     headers += ["ΔF1@10-3cm (pp)", "F1@3cm 95% CI lo", "F1@3cm 95% CI hi",
                 "accuracy median (cm)", "completeness median (cm)", "inlier RMSE@3cm (cm)",
-                "reg-rate (%)", "points raw", "points density-matched", "excluded as gap",
+                "images in", "reg-rate (%)", "points raw", "points density-matched", "excluded as gap",
                 "DBSCAN (ft/eps/mp)"]
 
     wb = Workbook(); ws = wb.active; ws.title = "capture_comparison"
@@ -269,6 +274,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
                  r["accuracy_median_cm"], r["completeness_median_cm"],
                  # mm, matching every other table on the site (it was the one column in cm)
                  (round(r["inlier_rmse_3cm"], 2) if r.get("inlier_rmse_3cm") is not None else None),
+                 r.get("n_images"),
                  (round(r["reg_rate"] * 100, 1) if r.get("reg_rate") is not None else None), r["raw_points"], r["matched_points"], r.get("n_excluded"),
                  f"{d['ft']:g}/{d['eps']:g}/{d['mp']:g}"]
         ws.append(vals)
@@ -288,7 +294,7 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
         for c in range(1, len(headers) + 1):
             ws.cell(row=idxs[0] + 2, column=c).border = top
 
-    widths = [21, 24, 12, 9] + [14, 16, 11] * len(thresh) + [15, 15, 15, 15, 17, 17, 11, 12, 16, 14, 16]
+    widths = [21, 24, 12, 9] + [14, 16, 11] * len(thresh) + [15, 15, 15, 15, 17, 17, 10, 11, 12, 16, 14, 16]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
     ws.freeze_panes = "E2"; ws.row_dimensions[1].height = 34
@@ -329,9 +335,9 @@ def write_summary_xlsx(summary: list[dict], sensitivity: dict, path: Path) -> No
 
 def main() -> None:
     _load_open3d()
-    reg_rates = reg_rates_from_metrics()
-    for _e, _v in reg_rates_from_experiments_yaml().items():
-        reg_rates.setdefault(_e, _v)   # jsonl wins where present; yaml fills the gaps
+    img_stats = image_stats_from_metrics()
+    for _e, _v in image_stats_from_experiments_yaml().items():
+        img_stats.setdefault(_e, _v)   # jsonl wins where present; yaml fills the gaps
 
     # per-object reference: load once, spacing + histogram + embedded target positions
     objects_data: list[dict] = []
@@ -464,7 +470,12 @@ def main() -> None:
             "label": f"{METHOD_LABEL[method]} · T{approach}",
             "raw_points": raw_points,
             "matched_points": n_matched,
-            "reg_rate": reg_rates.get(exp_id),
+            "reg_rate": (img_stats.get(exp_id) or {}).get("reg_rate"),
+            # Images handed to the reconstruction. The whole ablation rests on this being
+            # IDENTICAL across the three approaches of an object - only the route around it
+            # changes - so the figure is carried into the page and shown per row, not just
+            # asserted in the prose. (reg_rate is an outcome of the run; this is the input.)
+            "n_images": (img_stats.get(exp_id) or {}).get("n_images"),
             "accuracy_median_cm": round(acc_median, 3),
             "completeness_median_cm": round(comp_median, 3),
             "below_pos": b64f(mpts[below_sel]),
@@ -494,6 +505,17 @@ def main() -> None:
             },
         }
         objects_by_id[obj_id]["panels"].append(key)
+
+    # One image count per object, so the page can say "N images in every approach" once in
+    # the header instead of only per row. If the three approaches ever stop matching, this
+    # stays None and the page drops the claim rather than printing a number that is a lie.
+    for obj in objects_data:
+        counts = {panels[k]["n_images"] for k in obj["panels"]}
+        obj["n_images"] = counts.pop() if len(counts) == 1 else None
+        if obj["n_images"] is None:
+            print(f"  !! {obj['id']}: image counts differ across approaches "
+                  f"({sorted(panels[k]['n_images'] for k in obj['panels'])}) - "
+                  f"the capture ablation is no longer controlled for frame count", flush=True)
 
     # ----- capture-approach sensitivity: how much does the approach move F1, per
     # (object, method), relative to the bootstrap noise? spread = max-min F1 across the
@@ -604,7 +626,7 @@ def main() -> None:
     summary = [
         {
             "object": p["object"], "method": p["method"], "approach": p["approach"],
-            "exp_id": p["exp_id"], "reg_rate": p["reg_rate"],
+            "exp_id": p["exp_id"], "n_images": p["n_images"], "reg_rate": p["reg_rate"],
             "raw_points": p["raw_points"], "matched_points": p["matched_points"],
             "accuracy_median_cm": p["accuracy_median_cm"],
             "completeness_median_cm": p["completeness_median_cm"],
@@ -633,7 +655,8 @@ def build_html(data: dict) -> str:
 
 def wrap_html(payload: str) -> str:
     head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("capture_comparison"))
-    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    return (head + f'\n<script type="application/json" id="page-data">{payload}</script>\n'
+            + MAIN_JS + HTML_TAIL).replace("__SITE_CREDIT__", SITE_CREDIT)
 
 
 def relayout() -> None:
@@ -668,7 +691,7 @@ def relayout() -> None:
 # HTML_HEAD / MAIN_JS / HTML_TAIL are defined in the template module below to keep this
 # file readable; they are imported at module load.
 from _capture_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
-from _site_nav import NAV_CSS, nav_html  # noqa: E402
+from _site_nav import NAV_CSS, SITE_CREDIT, nav_html  # noqa: E402
 
 
 if __name__ == "__main__":

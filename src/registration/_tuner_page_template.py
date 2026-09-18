@@ -525,6 +525,7 @@ applyObjectConfig();
 loadMethod();
 </script>
 
+__SITE_CREDIT__
 </body>
 </html>
 

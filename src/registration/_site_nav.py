@@ -31,6 +31,15 @@ OBJECTS = [
     ("bus_stop_sign", "bus_stop_sign.html", "bus-stop sign"),
 ]
 
+SITE_CREDIT = """<div class="site-credit" style="max-width:960px;margin:28px auto 22px;padding:10px 16px 0;border-top:1px solid var(--panel-border,#d7d4c8);color:var(--text-faint,#8b9084);font-size:11.5px;line-height:1.6;">
+  Vasilisa Savinova &middot; MSc Geospatial Sciences, UCL Department of Civil, Environmental and
+  Geomatic Engineering &middot; supervisor Prof. Jan Boehm &middot; industrial partner
+  Sensat (Sheikh Fakhar Khalid) &middot; the lidar reference was provided by Sensat and is not
+  redistributed &middot; code and per-object results:
+  <a href="https://github.com/vslsoo/image-based-3d-reconstruction-vs-lidar"
+     style="color:var(--accent,#17805f);">github.com/vslsoo/image-based-3d-reconstruction-vs-lidar</a>
+</div>"""
+
 NAV_CSS = """
   /* site navigation - see src/registration/_site_nav.py */
   .sitenav { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:9px 0 11px;

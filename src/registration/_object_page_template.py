@@ -934,6 +934,7 @@ syncDbscanUiState(); // reflect the default (checkbox starts checked = DBSCAN of
 fullRecomputeFromTuner();
 </script>
 
+__SITE_CREDIT__
 </body>
 </html>
 

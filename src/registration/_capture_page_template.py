@@ -146,8 +146,9 @@ __NAV_CSS__
       </p>
       <p>
         <b>T1</b> = close-range + distant &middot; <b>T2</b> = close-range only &middot;
-        <b>T3</b> = distant only — same number of images in each.
+        <b>T3</b> = distant only.
       </p>
+      <p id="controlled-note"><!-- filled from the payload, so the counts cannot drift from the runs --></p>
       <p>
         <b>Two objects, opposite extremes</b> on both axes the project varies: the bollard small, compact
         and convex under semi-gloss paint — the easy end; the information sign taller, a flat slab with two
@@ -689,6 +690,7 @@ for (const obj of DATA.objects) {
     <div class="obj-head">
       <h2>${obj.title}</h2>
       <span class="chip">${obj.shape}</span>
+      <span class="chip" title="Images handed to the reconstruction - the same set size in T1, T2 and T3, so the only thing that differs between the three columns is the route around the object">${obj.n_images ? obj.n_images + ' images in every approach' : 'image count unverified'}</span>
       <span class="chip">gap detection: ft${obj.dbscan.ft}/eps${obj.dbscan.eps}/mp${obj.dbscan.mp}</span>
     </div>
     <div class="ref-note">${obj.ref_note}</div>
@@ -852,7 +854,8 @@ function buildTable() {
   let h='<table class="summary"><thead><tr>'
     + '<th class="txt">Object</th><th class="txt">Approach</th><th class="txt">Method</th>'
     + '<th id="th-f1">F1</th><th>95% CI</th><th id="th-acc">Acc</th><th id="th-comp">Comp</th><th>Acc median (cm)</th><th>Comp median (cm)</th>'
-    + '<th>reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE (cm)</th><th>excl≈</th></tr></thead><tbody>';
+    + '<th title="Images handed to the reconstruction — identical across the three approaches of an object">images in</th>'
+    + '<th title="Share of those images the run actually registered — an outcome of the run, not a difference in its input">reg-rate</th><th>#pts (raw→matched)</th><th>inlier RMSE (cm)</th><th>excl≈</th></tr></thead><tbody>';
   for (const obj of DATA.objects) {
     const methods=[...new Set(obj.panels.map(k=>panelState[k].d.method))];
     for (const method of methods) {
@@ -864,7 +867,7 @@ function buildTable() {
           + `<td class="f1cell" data-col="f1">–</td><td class="mono ci-cell" data-col="ci">–</td>`
           + `<td data-col="acc">–</td><td data-col="comp">–</td>`
           + `<td>${d.accuracy_median_cm.toFixed(2)}</td><td>${d.completeness_median_cm.toFixed(2)}</td>`
-          + `<td>${fmtReg(d.reg_rate)}</td><td class="mono">${d.raw_points.toLocaleString('en-US')}→${d.matched_points.toLocaleString('en-US')}</td>`
+          + `<td class="mono">${d.n_images ?? '—'}</td><td>${fmtReg(d.reg_rate)}</td><td class="mono">${d.raw_points.toLocaleString('en-US')}→${d.matched_points.toLocaleString('en-US')}</td>`
           + `<td data-col="rmse">–</td><td data-col="excl">–</td></tr>`;
       }
     }
@@ -1158,7 +1161,39 @@ function renderDiffHists() {
   for (const sv of DATA.sensitivity) grid.appendChild(renderSigPanel(sv));
 }
 
+// ---------- the controlled variable ----------
+// Written from the payload rather than typed into the copy: the counts come from the runs
+// themselves, so the sentence cannot outlive the experiment it describes. Frame count is the
+// one variable that moves F1 more than anything on this page (frame_count_study.html), so if
+// it were not held fixed the three columns would not be a capture-strategy comparison at all.
+function renderControlledNote() {
+  const el = document.getElementById('controlled-note');
+  if (!el) return;
+  const per = DATA.objects.map(o => o.n_images ? `<b>${o.n_images}</b> for ${o.title}` : null);
+  if (per.some(x => x === null)) { el.remove(); return; }   // unverified: say nothing rather than something false
+  const counts = [...new Set(DATA.objects.map(o => o.n_images))];
+  const detail = counts.length === 1 ? `<b>${counts[0]}</b>` : per.join(', ');
+  // Runs that failed to register everything they were given. That is an outcome of the
+  // reconstruction, not a difference in its input, and the two are easy to confuse.
+  const dropped = Object.values(DATA.panels)
+    .filter(d => d.reg_rate != null && d.n_images && d.reg_rate < 0.999)
+    .map(d => `${DATA.method_label[d.method]} T${d.approach} on ${d.object} registered `
+              + `${Math.round(d.reg_rate * d.n_images)} of its ${d.n_images}`);
+  el.innerHTML = `<b>Only the route changes.</b> All three approaches are given the `
+    + `<b>same number of images</b> (${detail}), shot on the same camera in one session and `
+    + `reconstructed with identical settings. Frame count moves the score more than anything `
+    + `else this project varies (<a href="frame_count_study.html">frame_count_study.html</a>), `
+    + `so holding it fixed is what makes the three columns comparable at all`
+    + (counts.length === 1 ? `.`
+        : ` — the counts differ between the two objects, and no comparison is ever drawn across them.`)
+    + (dropped.length
+        ? ` The <i>reg-rate</i> column is the outcome, not the input: ${dropped.join('; ')}, `
+          + `every other run used all of them.`
+        : ` Every run registered all of them — see the <i>reg-rate</i> column.`);
+}
+
 // ---------- init ----------
+renderControlledNote();
 buildTable();
 renderStats();
 for (const obj of DATA.objects) recomputeObject(obj.id);
@@ -1170,6 +1205,7 @@ mq.addEventListener && mq.addEventListener('change', ()=>{ updateChart(); render
 
 
 HTML_TAIL = r"""
+__SITE_CREDIT__
 </body>
 </html>
 """

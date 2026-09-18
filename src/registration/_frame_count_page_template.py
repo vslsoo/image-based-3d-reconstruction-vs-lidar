@@ -1163,7 +1163,7 @@ function buildSigNarrative() {
   return `<span class="k">Where you can stop</span>` + rowsHtml
     + `<div style="border-top:1px solid var(--panel-border); padding-top:6px; margin-top:6px;">`
     + `<b>The photos are for COLMAP.</b> It starts low and keeps buying points — +11 on the sign, `
-    + `+39 on the bollard, and there it is still gaining at 60. MASt3R-GA is near its ceiling from the `
+    + `+47 on the bollard, and there it is still gaining at 60. MASt3R-GA is near its ceiling from the `
     + `smallest count tested and then <b>loses 2–3 points</b> at N=100 on low-overlap pairs.</div>`;
 }
 
@@ -1332,6 +1332,7 @@ mq.addEventListener && mq.addEventListener('change', ()=>{ updateCurves(); rende
 
 
 HTML_TAIL = r"""
+__SITE_CREDIT__
 </body>
 </html>
 """

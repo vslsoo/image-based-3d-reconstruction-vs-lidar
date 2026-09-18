@@ -30,7 +30,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _site_nav import NAV_CSS, nav_html  # noqa: E402
+from _site_nav import NAV_CSS, SITE_CREDIT, nav_html  # noqa: E402
 from build_object_page import METHOD_ORDER  # noqa: E402  (the one place method order is decided)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +38,8 @@ SRC_XLSX = PROJECT_ROOT / "docs" / "tables" / "summary_all_objects_accuracy_f1_E
 M3C2_JSON = PROJECT_ROOT / "docs" / "tables" / "m3c2_final_six.json"
 IOU_XLSX = PROJECT_ROOT / "docs" / "tables" / "voxel_iou_summary.xlsx"
 IOU_JSON = PROJECT_ROOT / "docs" / "tables" / "voxel_iou_summary.json"
+# the `significance` block: 95% block-bootstrap CI on the F1@3cm gap of every method pair
+F1_JSON = PROJECT_ROOT / "docs" / "tables" / "summary_all_objects_accuracy_f1.json"
 OUT_HTML = PROJECT_ROOT / "site" / "results.html"
 
 THRESHOLDS = ["3cm", "5cm", "10cm"]
@@ -73,111 +75,119 @@ def read_rows() -> list[dict]:
     return rows
 
 
-def read_iou() -> tuple[dict, dict, dict]:
-    """(per-row IoU@5cm, per-object stability, per-object sweep) from voxel_iou_summary.xlsx.
+def read_iou() -> dict:
+    """(object_id, method) -> IoU@5cm, from the `summary` sheet of voxel_iou_summary.xlsx.
 
-    IoU is reported here but kept out of the default view, and never without its stability
-    flag: on the four objects whose reference is incomplete the ranking it produces does not
-    survive a grid shift (see the `ranking` sheet - orders disagree with F1 at rho 0.4-0.8 and
-    the smallest gap between two methods falls to 0.03-0.2 pp while one method moves up to
-    14 pp across offsets). Missing file = the columns and the chart are simply left out.
+    The value only; what may be concluded from it is decided pair by pair in
+    read_iou_pairs(). Missing file = the column and the chart are simply left out.
     """
     if not IOU_XLSX.exists():
         print(f"  ! {IOU_XLSX.name} not found - building the page without IoU")
-        return {}, {}, {}
-    wb = load_workbook(IOU_XLSX)
+        return {}
+    ws = load_workbook(IOU_XLSX)["summary"]
+    hdr = [c.value for c in ws[1]]
+    per_row, cur = {}, None
+    for raw in ws.iter_rows(min_row=2, values_only=True):
+        d = dict(zip(hdr, raw))
+        if d.get("object_id"):
+            cur = d["object_id"]
+        if cur and d.get("method"):
+            per_row[(cur, d["method"])] = d["IoU@5cm (%)"]
+    return per_row
 
-    def rows(sheet):
-        ws = wb[sheet]
-        hdr = [c.value for c in ws[1]]
-        out, cur = [], None
-        for raw in ws.iter_rows(min_row=2, values_only=True):
-            d = dict(zip(hdr, raw))
-            if d.get("object_id"):
-                cur = d["object_id"]
-            if cur is None:
-                continue
-            d["object_id"] = cur
-            out.append(d)
-        return out
 
-    per_row = {(r["object_id"], r["method"]): r["IoU@5cm (%)"] for r in rows("summary") if r.get("method")}
+def read_iou_pairs() -> list[dict]:
+    """One record per pair of methods on one object: how far apart F1@3cm puts the two, how
+    far apart IoU@5cm puts them, and whether either metric can separate them at all.
 
-    stability = {}
-    for r in rows("ranking"):
-        # the sheet ends with free-text footer rows; they inherit the last object_id through
-        # the carry-forward above and would otherwise overwrite that object's real verdict
-        if r["object_id"] in stability or not r.get("IoU@5cm order (best first)"):
-            continue
-        stable = str(r.get("IoU order stable on every grid", "")).lower() == "yes" and \
-                 str(r.get("orders agree", "")).lower() == "yes"
-        stability[r["object_id"]] = {
-            "stable": stable,
-            "reference": r.get("reference"),
-            "note": (f'reference {r.get("reference")}; IoU vs F1 order '
-                     f'{"agrees" if str(r.get("orders agree","")).lower() == "yes" else "disagrees"} '
-                     f'(Spearman {r.get("Spearman rho")}); smallest gap between methods on any grid '
-                     f'{r.get("smallest gap on any grid (pp)")} pp; largest per-method spread across grids '
-                     f'{r.get("largest per-method grid spread (pp)")} pp'),
-        }
+    This is the comparison the section exists to make, and the pair - not the object - is the
+    unit that can carry it. IoU's job here is not to produce a second ranking: it is to check
+    the F1 ranking with a metric that point density cannot flatter, since a voxel is occupied
+    by one point and by ten thousand alike. An ordering cannot answer that, because an
+    ordering throws away how far apart the methods were - a 0.3 pp swap between two tied
+    methods comes out looking exactly like a real reversal.
 
-    # For the chart: the smallest gap between two adjacent methods, on each of the 16 grid
-    # origins. This is the quantity the IoU verdict actually rests on, and the only honest way
-    # to draw it. Two obvious alternatives both mislead. Averaging the methods (what this chart
-    # showed at first) plots IoU against voxel size, which only says that bigger voxels overlap
-    # more - it averages away the dimension the finding lives in. Drawing the four methods with
-    # per-method grid-shift whiskers misleads the other way: on the lamppost the COLMAP-hloc gap
-    # is 5.0 pp while each method's own spread across grids is 7.2, so the whiskers overlap and
-    # the order looks unresolvable - but a grid shift moves every method together, so the order
-    # holds on all 16 grids and the gap never falls below 3.91. Only the per-grid GAP shows that.
-    per_grid_gaps: dict[str, dict] = {}
-    if IOU_JSON.exists():
-        by_obj: dict[str, dict[str, list]] = {}
-        for r in json.loads(IOU_JSON.read_text()).get("rows", []):
-            vals = (r.get("shift_study") or {}).get("iou_all_pct")
-            if vals:
-                by_obj.setdefault(r["object_id"], {})[r["method"]] = vals
-        for obj_id, methods in by_obj.items():
-            n = min(len(v) for v in methods.values())
-            gaps = []
-            for g in range(n):
-                vals = sorted(m[g] for m in methods.values())
-                gaps.append(round(min(b - a for a, b in zip(vals, vals[1:])), 3))
-            per_grid_gaps[obj_id] = {
-                "gaps": gaps,                     # index 0 is the true grid origin
-                "nominal": gaps[0] if gaps else None,
-                "min": min(gaps) if gaps else None,
-                "n_grids": n,
-                "n_methods": len(methods),
-            }
-    else:
-        print(f"  ! {IOU_JSON.name} not found - the per-grid gap chart is left out")
+    Each pair therefore gets both gaps together with the uncertainty already computed for each
+    elsewhere in the project:
+      - dF1@3cm with its 95% spatial block-bootstrap CI (the `significance` block of
+        summary_all_objects_accuracy_f1.json). CI crosses zero -> F1 does not separate the pair.
+      - dIoU@5cm recomputed on each of the 16 grid origins of the shift study. The gap, not
+        the value, is the quantity that survives a shift: an origin shift moves every method
+        on an object in the same direction, so each method's own spread overstates the doubt
+        (on the lamppost every method moves up to 7.2 pp while the COLMAP-hloc gap never falls
+        below 3.9) whereas the gap does not. Sign not constant over the 16 -> IoU does not
+        separate the pair.
 
-    # kept for the note under the chart: the grid-shift spread of a single method
+    Every pair is oriented so dF1 >= 0: the method F1 prefers is named first, so a positive
+    dIoU means IoU agrees, and the chart's y = 0 line is the entire verdict.
+    """
+    if not (IOU_JSON.exists() and F1_JSON.exists()):
+        missing = [p.name for p in (IOU_JSON, F1_JSON) if not p.exists()]
+        print(f"  ! {', '.join(missing)} not found - building the page without the IoU chart")
+        return []
 
-    spread = [r.get("grid shift: spread (pp)") for r in rows("sensitivity")]
-    spread_by_obj: dict[str, list[float]] = {}
-    for r in rows("sensitivity"):
-        v = r.get("grid shift: spread (pp)")
-        if v is not None:
-            spread_by_obj.setdefault(r["object_id"], []).append(float(v))
-    acc: dict[str, dict[float, list[float]]] = {}
-    for r in rows("sweep"):
-        if r.get("voxel (cm)") is None or r.get("IoU (%)") is None:
-            continue
-        acc.setdefault(r["object_id"], {}).setdefault(float(r["voxel (cm)"]), []).append(float(r["IoU (%)"]))
-    sweep = {}
-    for obj_id, by_voxel in acc.items():
-        sp = spread_by_obj.get(obj_id, [])
-        sweep[obj_id] = {
-            "points": [{"voxel_cm": v, "iou_mean": round(sum(xs) / len(xs), 2), "n_methods": len(xs)}
-                       for v, xs in sorted(by_voxel.items())],
-            "grid_spread_pp": round(max(sp), 2) if sp else None,
-            "complete_reference": str(stability.get(obj_id, {}).get("reference", "")).startswith("complete"),
-            "order_stable": bool(stability.get(obj_id, {}).get("stable")),
-            **(per_grid_gaps.get(obj_id, {})),
-        }
-    return per_row, stability, sweep
+    iou_rows: dict[str, dict[str, dict]] = {}
+    for r in json.loads(IOU_JSON.read_text()).get("rows", []):
+        if (r.get("shift_study") or {}).get("iou_all_pct"):
+            iou_rows.setdefault(r["object_id"], {})[r["method"]] = r
+    sig = {(s["object_id"], s["method_a"], s["method_b"]): s
+           for s in json.loads(F1_JSON.read_text()).get("significance", [])}
+
+    out = []
+    for obj_id, methods in iou_rows.items():
+        for i, a in enumerate(sorted(methods)):
+            for b in sorted(methods)[i + 1:]:
+                s = sig.get((obj_id, a, b)) or sig.get((obj_id, b, a))
+                if s is None:
+                    continue
+                # the significance block stores one direction per pair; flip it onto (a, b)
+                flip = s["method_a"] != a
+                d_f1 = -s["delta"] if flip else s["delta"]
+                lo, hi = (-s["ci_hi"], -s["ci_lo"]) if flip else (s["ci_lo"], s["ci_hi"])
+                ga = methods[a]["shift_study"]["iou_all_pct"]
+                gb = methods[b]["shift_study"]["iou_all_pct"]
+                gaps = [x - y for x, y in zip(ga, gb)]
+                d_iou = methods[a]["iou_pct"] - methods[b]["iou_pct"]
+                d_f1_5 = methods[a]["f1_5cm_pct"] - methods[b]["f1_5cm_pct"]
+                better, worse = a, b
+                if d_f1 < 0:      # orient on F1, so the chart's upper half means "IoU agrees"
+                    d_f1, lo, hi = -d_f1, -hi, -lo
+                    gaps = [-g for g in gaps]
+                    d_iou, d_f1_5, better, worse = -d_iou, -d_f1_5, b, a
+                out.append({
+                    "object": OBJECT_PAGE.get(obj_id, ("", obj_id))[1],
+                    "better": METHOD_LABEL.get(better, better),
+                    "worse": METHOD_LABEL.get(worse, worse),
+                    "df1": round(d_f1, 2), "f1_lo": round(lo, 2), "f1_hi": round(hi, 2),
+                    "diou": round(d_iou, 2),
+                    "iou_lo": round(min(gaps), 2), "iou_hi": round(max(gaps), 2),
+                    "n_grids": len(gaps),
+                    # "tie" = this metric cannot say which of the two is better
+                    "f1_tie": bool(s["includes_zero"]),
+                    "iou_tie": not (all(g > 0 for g in gaps) or all(g < 0 for g in gaps)),
+                    # F1's own ordering of this pair at the next threshold up: the yardstick the
+                    # note uses, since IoU has to be judged against how steady F1 itself is
+                    "f1_5cm_flips": d_f1_5 < 0,
+                })
+    order = {name: i for i, (_, name) in enumerate(OBJECT_PAGE.values())}
+    out.sort(key=lambda p: (order.get(p["object"], len(order)), -p["df1"]))
+    return out
+
+
+def iou_object_summary(pairs: list[dict]) -> dict[str, dict]:
+    """Per object: of its 6 method pairs, how many IoU confirms, and how many it contradicts.
+
+    "Confirms" is deliberately strict - both metrics have to separate the pair before their
+    agreement counts as anything. The rest are ties in one metric or the other, and a tie is
+    not a disagreement; keeping the two apart is the whole point of the section.
+    """
+    summary: dict[str, dict] = {}
+    for p in pairs:
+        d = summary.setdefault(p["object"], {"total": 0, "confirmed": 0, "contradicted": 0})
+        d["total"] += 1
+        if not p["f1_tie"] and not p["iou_tie"]:
+            d["confirmed" if p["diou"] > 0 else "contradicted"] += 1
+    return summary
 
 
 def read_m3c2() -> tuple[dict, dict]:
@@ -195,7 +205,9 @@ def read_m3c2() -> tuple[dict, dict]:
 
 def page_data(rows: list[dict]) -> dict:
     m3c2, m3c2_params = read_m3c2()
-    iou_row, iou_stability, iou_sweep = read_iou()
+    iou_row = read_iou()
+    iou_pairs = read_iou_pairs()
+    iou_by_object = iou_object_summary(iou_pairs)
     objects: dict[str, dict] = {}
     for r in rows:
         obj = objects.setdefault(r["object_id"], {
@@ -206,9 +218,8 @@ def page_data(rows: list[dict]) -> dict:
             "size_cm": [r["length (cm)"], r["width (cm)"], r["height (cm)"]],
             "dbscan_mode": r["DBSCAN mode"],
             "ref_note": r["reference note"],
-            "iou_order_stable": iou_stability.get(r["object_id"], {}).get("stable"),
-            "iou_note": iou_stability.get(r["object_id"], {}).get("note"),
-            "iou_reference": iou_stability.get(r["object_id"], {}).get("reference"),
+            "iou_pairs": iou_by_object.get(
+                OBJECT_PAGE.get(r["object_id"], ("", r["object_id"]))[1]),
             "methods": [],
         })
         m = m3c2.get((r["object_id"], r["method"]), {})
@@ -249,7 +260,7 @@ def page_data(rows: list[dict]) -> dict:
         obj["methods"].sort(key=lambda m: order.get(m["method"], len(order)))
     return {"objects": list(objects.values()), "thresholds": THRESHOLDS,
             "has_m3c2": bool(m3c2), "m3c2_params": m3c2_params,
-            "has_iou": bool(iou_row), "iou_sweep": iou_sweep}
+            "has_iou": bool(iou_row), "iou_pairs": iou_pairs}
 
 
 HTML = """<!doctype html>
@@ -399,18 +410,20 @@ __NAV_CSS__
 
   <hr class="sep" id="iou-sep" hidden>
   <section id="iou-section" hidden>
-    <h2>Voxel IoU, and where it can be read</h2>
+    <h2>Voxel IoU: a second opinion on the F1 ranking</h2>
     <div class="subtitle" style="max-width:96ch">
-      IoU asks a different question from F1 — how much of the occupied volume the two clouds share, rather
-      than how far apart their surfaces are — but it depends on a voxel size and on where the grid happens
-      to start, and nothing in the data chooses either. The question that decides whether it can be used
-      as a ranking is therefore: <b>how far apart are two neighbouring methods, compared with how much a
-      grid shift moves them?</b> Each row below is one object, each dot one of 16 grid origins, and the
-      value is the smallest gap between two adjacent methods on that grid.
+      F1 is point-wise, so point density can flatter it; IoU cannot be flattered that way, because a voxel
+      counts as occupied whether one point or ten thousand landed in it. That makes IoU useful here not as
+      a second ranking — it has no natural scale, and it depends on a voxel size and on where the grid
+      starts — but as a <b>check on the ranking F1 already gives</b>. The question is therefore asked one
+      pair of methods at a time: on this object, does the density-free metric put these two in the same
+      order, and can either metric separate them at all? Each dot is one such pair, 6 objects × 6 pairs.
+      The further right a dot sits, the wider the gap F1 puts between the two methods; a dot above
+      zero is one the two measures order in the same way.
     </div>
     <div class="panel" style="max-width:760px;">
-      <svg id="iou-chart" viewBox="0 0 700 280" style="width:100%; height:auto;"></svg>
-      <div id="iou-legend" style="font-size:11px; color:var(--text-dim); margin-top:6px;"></div>
+      <svg id="iou-chart" viewBox="0 0 700 430" style="width:100%; height:auto;"></svg>
+      <div id="iou-legend" style="font-size:11px; color:var(--text-dim); margin-top:8px;"></div>
     </div>
     <div class="note" id="iou-note" style="max-width:96ch;"></div>
   </section>
@@ -438,17 +451,23 @@ function m3c2Cells(m, diag) {
           + ' of ' + m.m3c2_corepoints.toLocaleString('en-US') + ' core points' : ''}">${fmt(unpaired)}</td>`;
 }
 
-// IoU with the one thing that has to be read with it: whether the ranking it gives is stable.
-// On the four objects whose reference is incomplete it is not - orders disagree with F1
-// (Spearman 0.4-0.8) and the gap between methods drops to 0.03-0.2 pp on some grid offsets,
-// while a single method moves up to 14 pp across offsets. A bare number would be read as a
-// ranking it cannot support.
+// IoU is reported per method, but what can be read out of one such number is a pair-level fact,
+// so the flag under it counts pairs: of this object's six method pairs, how many both metrics
+// separate and order the same way. The rest are ties - in F1, in IoU, or in both - and a tie is
+// not a disagreement. A bare number would be read as a ranking that, on the objects whose
+// reference is incomplete, it cannot support on its own.
 function iouCell(obj, m) {
   const iou = m.iou_5cm;
   if (iou == null) return '<td class="colsep">—</td>';
-  const stable = obj.iou_order_stable;
-  return `<td class="colsep" title="${obj.iou_note || ''}">${fmt(iou)}`
-    + `<span class="iou-flag ${stable ? 'ok' : 'weak'}">${stable ? 'order stable' : 'order not resolvable'}</span></td>`;
+  const p = obj.iou_pairs;
+  if (!p) return `<td class="colsep">${fmt(iou)}</td>`;
+  const ties = p.total - p.confirmed - p.contradicted;
+  const title = `${p.confirmed} of this object's ${p.total} method pairs are separated by both metrics and `
+    + `ordered the same way by each`
+    + (p.contradicted ? `; ${p.contradicted} are separated by both and ordered differently` : '')
+    + (ties ? `; the remaining ${ties} are a tie in F1, in IoU, or in both` : '');
+  return `<td class="colsep" title="${title}">${fmt(iou)}`
+    + `<span class="iou-flag ${p.contradicted ? 'weak' : 'ok'}">${p.confirmed}/${p.total} pairs confirm F1</span></td>`;
 }
 
 // Sixteen columns did not fit a laptop screen, and "no pair" - the most diagnostic of them -
@@ -473,9 +492,10 @@ function buildTable() {
     + (diag
         ? '<th class="colsep">Acc med (cm)</th><th>Comp med (cm)</th>'
           + '<th>align RMSE (cm)</th>'
-          + '<th class="colsep" title="voxel IoU at 5 cm against the reference. Read the stability note '
-          + 'beside it: on the four objects with an incomplete reference the ranking it gives is not '
-          + 'reproducible across grid offsets.">IoU@5cm (%)</th>'
+          + '<th class="colsep" title="voxel IoU at 5 cm against the reference - a check on the F1 '
+          + 'ranking by a metric point density cannot flatter, not a ranking of its own. The line under '
+          + 'each value counts how many of the six method pairs on this object IoU separates and orders '
+          + 'the same way F1 does; the section below the table plots all 36.">IoU@5cm (%)</th>'
         : '')
     + (DATA.has_m3c2
         ? '<th class="m3c2 colsep" title="median |M3C2| over the core points that found a counterpart">M3C2 |d|<br>med (cm)</th>'
@@ -542,69 +562,124 @@ function buildTable() {
 //
 // The two charts this replaced would both have misled. IoU averaged over the methods only
 // shows that bigger voxels overlap more, and averages away the ranking entirely. Four
-// per-method lines with grid-shift whiskers mislead the other way: on the lamppost each
-// method moves 7.2 pp across grids while the COLMAP-hloc gap is 5.0, so the whiskers overlap
-// and the order looks unresolvable - but the shift moves every method together, and the order
-// in fact holds on all 16 grids. The gap between methods is what survives that common shift,
-// so it is the thing to plot.
-const IOU_OK = '--best', IOU_WEAK = '--red';
-
+// One dot per PAIR of methods, not per object. An ordering throws away how far apart the two
+// methods were, and that distance is the whole question here: a 0.3 pp swap between two tied
+// methods would otherwise read exactly like a real reversal. Every pair is oriented so the method
+// F1 prefers lies in the positive x direction, which puts the verdict on a single line - above
+// y = 0 IoU agrees with F1, below it does not. Both uncertainties are drawn rather than asserted:
+// the horizontal bar is F1's 95% block-bootstrap CI, the vertical one the range of the same IoU
+// gap over the 16 grid origins. The gap is the right quantity for the vertical bar and a method's
+// own spread is not - a grid shift moves every method on an object in the same direction, so on
+// the lamppost each method travels up to 7.2 pp across origins while the COLMAP-hloc gap never
+// falls below 3.9. A bar that crosses zero means that metric cannot separate the pair; a dot is
+// filled only when neither bar does.
 function renderIouChart() {
-  const sweep = DATA.iou_sweep || {};
-  const objects = DATA.objects.filter(o => (sweep[o.id] || {}).gaps && sweep[o.id].gaps.length);
+  const pairs = DATA.iou_pairs || [];
   const sec = document.getElementById('iou-section'), sep = document.getElementById('iou-sep');
-  if (!objects.length) return;
+  if (!pairs.length) return;
   sec.hidden = false; sep.hidden = false;
 
-  const rowH = 34, padL = 118, padR = 74, padT = 22;
-  const W = 700, H = padT + objects.length * rowH + 46, plotW = W - padL - padR;
-  const all = objects.flatMap(o => sweep[o.id].gaps);
-  const lo = Math.min(...all) * 0.6, hi = Math.max(...all) * 1.5;
-  const X = v => padL + (Math.log(Math.max(v, lo)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * plotW;
-  const tick = cssvar('--text-faint'), dim = cssvar('--text-dim');
+  const W = 700, H = 430, padL = 66, padR = 16, padT = 14, padB = 56;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const xv = pairs.flatMap(p => [p.df1, p.f1_lo, p.f1_hi]);
+  const yv = pairs.flatMap(p => [p.diou, p.iou_lo, p.iou_hi]);
+  const x0 = Math.min(0, ...xv) - 2, x1 = Math.max(...xv) + 3;
+  const y0 = Math.min(...yv) - 3, y1 = Math.max(...yv) + 4;
+  const X = v => (padL + (v - x0) / (x1 - x0) * plotW).toFixed(1);
+  const Y = v => (padT + plotH - (v - y0) / (y1 - y0) * plotH).toFixed(1);
+  const ink = cssvar('--text-dim'), faint = cssvar('--text-faint'), surf = cssvar('--panel');
+  const ok = cssvar('--best');
+  const ticks = (lo, hi) => { const t = []; for (let v = Math.ceil(lo / 10) * 10; v <= hi; v += 10) t.push(v); return t; };
+  const sign = v => (v > 0 ? '+' : '') + v;
 
   let s = '';
-  for (const t of [0.05, 0.1, 0.5, 1, 5, 10]) {
-    if (t < lo || t > hi) continue;
-    s += `<line x1="${X(t).toFixed(1)}" y1="${padT - 8}" x2="${X(t).toFixed(1)}" y2="${padT + objects.length * rowH - 8}" stroke="${tick}" stroke-opacity="0.16"/>`;
-    s += `<text x="${X(t).toFixed(1)}" y="${padT + objects.length * rowH + 8}" font-size="9.5" fill="${tick}" text-anchor="middle">${t}</text>`;
+  for (const t of ticks(x0, x1)) {
+    s += `<line x1="${X(t)}" y1="${padT}" x2="${X(t)}" y2="${padT + plotH}" stroke="${faint}" stroke-opacity="0.14"/>`;
+    s += `<text x="${X(t)}" y="${padT + plotH + 16}" font-size="9.5" fill="${faint}" text-anchor="middle">${t}</text>`;
   }
-  s += `<text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 8}" font-size="10" fill="${dim}" text-anchor="middle">smallest gap between two adjacent methods (percentage points, log scale)</text>`;
+  for (const t of ticks(y0, y1)) {
+    if (t === 0) continue;
+    s += `<line x1="${padL}" y1="${Y(t)}" x2="${padL + plotW}" y2="${Y(t)}" stroke="${faint}" stroke-opacity="0.14"/>`;
+    s += `<text x="${padL - 8}" y="${(+Y(t) + 3.5).toFixed(1)}" font-size="9.5" fill="${faint}" text-anchor="end">${sign(t)}</text>`;
+  }
+  // y = 0 carries the verdict, so it is drawn as a mark and not as one more gridline
+  s += `<line x1="${padL}" y1="${Y(0)}" x2="${padL + plotW}" y2="${Y(0)}" stroke="${ink}" stroke-width="1.2" stroke-opacity="0.5"/>`;
+  s += `<text x="${padL - 8}" y="${(+Y(0) + 3.5).toFixed(1)}" font-size="9.5" fill="${ink}" text-anchor="end">0</text>`;
+  s += `<text x="${padL + plotW}" y="${(+Y(0) - 7).toFixed(1)}" font-size="10" fill="${ok}" text-anchor="end">IoU agrees with F1 ↑</text>`;
+  s += `<text x="${padL + plotW}" y="${(+Y(0) + 16).toFixed(1)}" font-size="10" fill="${ink}" text-anchor="end">↓ IoU puts them the other way round</text>`;
 
-  objects.forEach((o, i) => {
-    const d = sweep[o.id];
-    const y = padT + i * rowH + 6;
-    const col = cssvar(d.order_stable ? IOU_OK : IOU_WEAK);
-    s += `<text x="${padL - 10}" y="${y + 3.5}" font-size="10.5" fill="${dim}" text-anchor="end">${o.name}</text>`;
-    s += `<line x1="${X(Math.min(...d.gaps)).toFixed(1)}" y1="${y}" x2="${X(Math.max(...d.gaps)).toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="1.2" stroke-opacity="0.35"/>`;
-    d.gaps.forEach((g, k) => {
-      // a touch of vertical jitter so 16 dots do not stack into one
-      const jy = y + ((k % 5) - 2) * 1.9;
-      s += `<circle cx="${X(g).toFixed(1)}" cy="${jy.toFixed(1)}" r="2.5" fill="${col}" fill-opacity="0.5">`
-        + `<title>${o.name} · grid ${k + 1} of ${d.n_grids}: smallest gap ${g.toFixed(2)} pp</title></circle>`;
-    });
-    const worst = Math.min(...d.gaps);
-    s += `<circle cx="${X(worst).toFixed(1)}" cy="${y}" r="3.6" fill="none" stroke="${col}" stroke-width="1.6"/>`;
-    s += `<text x="${(padL + plotW + 8).toFixed(1)}" y="${y + 3.5}" font-size="9.5" fill="${col}" font-weight="${d.order_stable ? 650 : 400}">min ${worst.toFixed(2)}</text>`;
-  });
+  // bars first, dots over them, so a dot is never cut by its neighbour's whisker
+  for (const p of pairs) {
+    const both = !p.f1_tie && !p.iou_tie;
+    const col = both ? ok : faint;
+    s += `<line x1="${X(p.f1_lo)}" y1="${Y(p.diou)}" x2="${X(p.f1_hi)}" y2="${Y(p.diou)}" stroke="${col}" stroke-width="1" stroke-opacity="0.4"/>`;
+    s += `<line x1="${X(p.df1)}" y1="${Y(p.iou_lo)}" x2="${X(p.df1)}" y2="${Y(p.iou_hi)}" stroke="${col}" stroke-width="1" stroke-opacity="0.4"/>`;
+  }
+  for (const p of pairs) {
+    const both = !p.f1_tie && !p.iou_tie;
+    const col = both ? ok : faint;
+    const tip = `${p.object} — ${p.better} vs ${p.worse}\n`
+      + `F1@3cm: ${p.better} ahead by ${p.df1} pp (95% CI ${p.f1_lo} to ${p.f1_hi})`
+      + `${p.f1_tie ? ' — F1 cannot separate them' : ''}\n`
+      + `IoU@5cm: ${sign(p.diou)} pp (${p.iou_lo} to ${p.iou_hi} across ${p.n_grids} grid origins)`
+      + `${p.iou_tie ? ' — IoU cannot separate them' : ''}`;
+    s += `<circle cx="${X(p.df1)}" cy="${Y(p.diou)}" r="4.5" fill="${both ? col : surf}" `
+      + `stroke="${both ? surf : col}" stroke-width="${both ? 2 : 1.4}"><title>${tip}</title></circle>`;
+  }
+
+  // one direct label, on the pair that most deserves a second look: the widest F1 gap that IoU
+  // does not reproduce. Labelling all five below the line would only crowd them together.
+  const below = pairs.filter(p => p.diou < 0);
+  if (below.length) {
+    const worst = below.reduce((a, b) => (a.df1 >= b.df1 ? a : b));
+    const lx = +X(worst.df1), ly = +Y(worst.diou);
+    // a leader, because the label sits inside the crowd of ties and would otherwise look like
+    // it belonged to whichever dot it happens to be nearest
+    s += `<path d="M ${(lx + 5).toFixed(1)} ${(ly + 2).toFixed(1)} L ${(lx + 10).toFixed(1)} ${(ly + 11).toFixed(1)} `
+      + `h 4" fill="none" stroke="${faint}" stroke-width="1"/>`;
+    s += `<text x="${(lx + 17).toFixed(1)}" y="${(ly + 14.5).toFixed(1)}" font-size="9.5" fill="${ink}">`
+      + `${worst.object}: ${worst.better} vs ${worst.worse}</text>`;
+  }
+
+  s += `<text x="${padL + plotW / 2}" y="${H - 10}" font-size="10.5" fill="${ink}" text-anchor="middle">`
+    + `how far apart F1@3cm puts the two methods (percentage points)</text>`;
+  s += `<text transform="translate(15,${padT + plotH / 2}) rotate(-90)" font-size="10.5" fill="${ink}" text-anchor="middle">`
+    + `the same pair, by IoU@5cm (pp)</text>`;
   document.getElementById('iou-chart').innerHTML = s;
 
-  const stable = objects.filter(o => sweep[o.id].order_stable);
-  const shaky = objects.filter(o => !sweep[o.id].order_stable);
-  const fmtList = arr => arr.map(o => `${o.name} (${Math.min(...sweep[o.id].gaps).toFixed(2)})`).join(', ');
+  const both = pairs.filter(p => !p.f1_tie && !p.iou_tie);
+  const contra = both.filter(p => p.diou < 0);
+  // the two tie sets overlap, so they are reported as overlapping and not summed
+  const f1Ties = pairs.filter(p => p.f1_tie).length, iouTies = pairs.filter(p => p.iou_tie).length;
+  const bothTies = pairs.filter(p => p.f1_tie && p.iou_tie).length;
+  const thrFlips = pairs.filter(p => p.f1_5cm_flips).length;
+  const dot = (fill, stroke, sw) => `<svg width="11" height="11" style="vertical-align:-1px">`
+    + `<circle cx="5.5" cy="5.5" r="4" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/></svg>`;
   document.getElementById('iou-legend').innerHTML =
-    `each dot is one of the ${objects[0] ? sweep[objects[0].id].n_grids : 16} grid origins · ring = the worst of them · `
-    + `<span style="color:${cssvar(IOU_OK)}">green</span> = the IoU order holds on every grid, `
-    + `<span style="color:${cssvar(IOU_WEAK)}">red</span> = it does not`;
+    `${dot(cssvar('--best'), cssvar('--panel'), 1.5)} both metrics separate the pair (${both.length} of ${pairs.length}) &nbsp;·&nbsp; `
+    + `${dot(cssvar('--panel'), cssvar('--text-faint'), 1.4)} a tie in F1, in IoU, or in both (${pairs.length - both.length})`
+    + `<br>bars: 95% CI on the F1 gap (horizontal) · the same IoU gap across ${pairs[0].n_grids} grid origins (vertical)`;
+
+  const worstBelow = below.length ? below.reduce((a, b) => (a.df1 >= b.df1 ? a : b)) : null;
   document.getElementById('iou-note').innerHTML =
-    `<b>The two groups separate by an order of magnitude.</b> On ${fmtList(stable)} — the objects whose reference `
-    + `is complete — two methods are never closer than about a point, the IoU order matches the F1 order exactly `
-    + `(Spearman 1) and it survives every grid origin, so IoU can be read as a ranking there. On ${fmtList(shaky)} `
-    + `the smallest gap collapses to hundredths of a point on some grids: the ranking those objects produce is an `
-    + `artefact of where the grid happens to start, and their references are incomplete as well, so the unscanned `
-    + `volume counts against every method. That is why the column sits under <i>diagnostics</i> with a per-object `
-    + `flag rather than beside F1. A caveat that applies everywhere: IoU has no natural scale — each object's IoU `
-    + `roughly doubles from a 2 cm voxel to a 10 cm one, so the number means nothing without its voxel size.`;
+    `<b>${contra.length ? contra.length + ' of the ' + both.length + ' resolvable pairs come out the other way round.'
+                        : 'Nothing contradicts.'}</b> `
+    + `Of the ${pairs.length} method pairs, ${both.length} are separated by both metrics${contra.length ? '' : ', and every one of those is ordered the same way by F1 and by IoU'}: `
+    + `a metric that point density cannot flatter reproduces the F1 ranking wherever it has the resolution to speak. `
+    + `The other ${pairs.length - both.length} are pairs at least one metric calls a tie: IoU cannot separate ${iouTies} of `
+    + `them — its gap changes sign from one grid origin to the next — F1 cannot separate ${f1Ties}, its interval crossing `
+    + `zero, and ${bothTies} defeat both. A tie is not a disagreement. `
+    + (worstBelow ? `${below.length} dots sit below the line and every one of them is such a tie; the one worth naming is the `
+        + `<b>${worstBelow.object}</b>, where F1@3cm puts ${worstBelow.better} ${worstBelow.df1} pp above ${worstBelow.worse} `
+        + `while IoU calls the pair even (${sign(worstBelow.diou)} pp, and the sign does not hold across the `
+        + `${worstBelow.n_grids} origins) — read that one as a caution rather than as a confirmation. ` : '')
+    + `For scale, F1's own ordering is not perfectly steady either: moving the threshold from 3 cm to 5 cm turns `
+    + `${thrFlips} of these same ${pairs.length} pairs around, ${thrFlips >= below.length ? 'as many as' : 'fewer than'} `
+    + `the ${below.length} on which IoU differs from it. `
+    + `Two caveats hold throughout. IoU has no natural scale — each object's IoU roughly doubles from a 2 cm voxel to a `
+    + `10 cm one, so the number means nothing without its voxel size. And on the four objects whose reference is `
+    + `incomplete, the unscanned volume counts against every method, which is why the column sits under `
+    + `<i>diagnostics</i> and reports how many pairs it confirms rather than a ranking of its own.`;
 }
 
 function cssvar(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -636,6 +711,7 @@ if (DATA.has_m3c2) {
 buildTable();
 renderIouChart();
 </script>
+__SITE_CREDIT__
 </body>
 </html>
 """
@@ -646,7 +722,8 @@ def main() -> None:
     data = page_data(rows)
     html = (HTML.replace("__NAV_CSS__", NAV_CSS)
                 .replace("__SITE_NAV__", nav_html("results"))
-                .replace("__PAYLOAD__", json.dumps(data).replace("</", "<\\/")))
+                .replace("__PAYLOAD__", json.dumps(data).replace("</", "<\\/"))
+                .replace("__SITE_CREDIT__", SITE_CREDIT))
     OUT_HTML.write_text(html, encoding="utf-8")
     n = sum(len(o["methods"]) for o in data["objects"])
     print(f"Wrote {OUT_HTML.relative_to(PROJECT_ROOT)} "

@@ -71,3 +71,6 @@ site/
 !docs/figures/
 !docs/figures/*.pdf
 !docs/figures/*.png
+
+# dissertation drafts - never publish
+docs/thesis/

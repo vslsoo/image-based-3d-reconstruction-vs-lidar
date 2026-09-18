@@ -41,7 +41,7 @@ def _load_open3d() -> None:
 
 
 from _tuner_page_template import TUNER_HEAD, TUNER_TAIL
-from _site_nav import NAV_CSS, nav_html
+from _site_nav import NAV_CSS, SITE_CREDIT, nav_html
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUT_HTML = PROJECT_ROOT / "site" / "tuner.html"
@@ -67,6 +67,10 @@ CANDIDATE_CAP = 20000
 LIDAR_REF_CAP = 20000
 # Same order as build_object_page.METHOD_ORDER - correspondence first.
 METHOD_ORDER = ["colmap", "hloc_colmap", "mast3r_ga", "vggt"]
+
+# the labels a reader sees on each method tab
+METHOD_LABEL = {"colmap": "COLMAP", "hloc_colmap": "hloc + COLMAP",
+                "mast3r_ga": "MASt3R-GA", "vggt": "VGGT"}
 
 rng = np.random.default_rng(42)
 
@@ -162,7 +166,8 @@ def load_reference(path) -> o3d.geometry.PointCloud:
 
 def wrap_html(payload: str) -> str:
     head = TUNER_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("tuner"))
-    return head + f'\n<script type="application/json" id="tuner-data">{payload}</script>\n' + TUNER_TAIL
+    return (head + f'\n<script type="application/json" id="tuner-data">{payload}</script>\n'
+            + TUNER_TAIL).replace("__SITE_CREDIT__", SITE_CREDIT)
 
 
 def relayout() -> None:
@@ -224,7 +229,7 @@ def main() -> None:
             cand_sel = cand_idx[subsample(len(cand_idx), CANDIDATE_CAP)]
 
             entry["methods"][method_id] = {
-                "label": f"{exp_id} {method_id}",
+                "label": METHOD_LABEL[method_id],
                 "n_total": n_total,
                 "embed_floor_cm": EMBED_FLOOR_CM,
                 "n_candidates_true": n_candidates_true,

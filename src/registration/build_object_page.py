@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 
 from _object_page_template import HEAD_TOP2, BODY_TEMPLATE, MAIN_JS_AND_TAIL
-from _site_nav import NAV_CSS, nav_html
+from _site_nav import NAV_CSS, SITE_CREDIT, nav_html
 
 # open3d is imported lazily - see --relayout, which re-renders a page from the payload it
 # already carries and never touches a point cloud. The import alone costs ~2 min in this venv.
@@ -74,6 +74,10 @@ M3C2_EMBED_CAP = 20000
 # it results.html), so it is the one place that order is decided.
 METHOD_ORDER = ["colmap", "hloc_colmap", "mast3r_ga", "vggt"]
 
+# the labels a reader sees on each panel - same map as build_results_page.METHOD_LABEL
+METHOD_LABEL = {"colmap": "COLMAP", "hloc_colmap": "hloc + COLMAP",
+                "mast3r_ga": "MASt3R-GA", "vggt": "VGGT"}
+
 # Standard DBSCAN tuner slider config (ft/eps/mp), used by every page unless overridden via a
 # "dbscan" key in its MERGED_OBJECTS entry (e.g. information_sign needs a much wider
 # far_threshold range because its reference has a systematic 25-30cm+ coverage gradient).
@@ -95,6 +99,7 @@ rng = np.random.default_rng(42)
 
 MERGED_OBJECTS = {
     "bus_stop": {
+        "display_name": "Bus shelter",
         "ref": "data/lidar/bus_stop_001/bus_stop_001_no_floor_centered_2.ply",
         "captures": [
             {
@@ -114,6 +119,7 @@ MERGED_OBJECTS = {
         "dbscan": {"ft_default": 10, "eps_default": 3, "mp_default": 5},
     },
     "information_sign": {
+        "display_name": "Information sign",
         # Reference is incomplete (only the upper ~2/3 of the pole and one side were scanned)
         # - hence the much wider far_threshold range (real gaps run 25-30cm+ near the bottom).
         "ref": "data/lidar/information_sign_002/information_sign_002_no_floor_centered.ply",
@@ -152,6 +158,7 @@ MERGED_OBJECTS = {
         },
     },
     "bench": {
+        "display_name": "Bench",
         "ref": "data/lidar/bench_003/bench_003_no_floor_centered.ply",
         "captures": [
             {
@@ -174,6 +181,7 @@ MERGED_OBJECTS = {
         "dbscan": {"ft_default": 5, "eps_default": 3, "mp_default": 2},
     },
     "bollard": {
+        "display_name": "Bollard",
         "ref": "data/lidar/bollard_003/bollard_003_no_floor_centered.ply",
         "captures": [
             {
@@ -220,18 +228,19 @@ MERGED_OBJECTS = {
         "callout": (
             '    <div class="callout" style="margin-top:12px; font-size:13px; line-height:1.5; background:var(--code-bg); '
             'border:1px solid var(--panel-border); border-left:3px solid #f43f5e; border-radius:8px; padding:10px 14px; color:var(--text-dim);">\n'
-            '      <b>vggt fails on this lamppost.</b> flashlight_004 is a thin, tall lamppost (~6 m). mast3r_ga,\n'
-            '      colmap and hloc_colmap reconstructed it cleanly (accuracy median ~1-3.5 cm), while <b>vggt produced a\n'
+            '      <b>VGGT fails on this lamppost.</b> flashlight_004 is a thin, tall lamppost (~6 m). MASt3R-GA,\n'
+            '      COLMAP and hloc + COLMAP reconstructed it cleanly (accuracy median ~1-3.5 cm), while <b>VGGT produced a\n'
             '      blurred noise cloud</b> (median ~11 cm). Its points are far from\n'
-            '      the surface — this is <b>real reconstruction noise</b>, not a reference gap, so DBSCAN gap-exclusion on vggt can\n'
-            '      spuriously “improve” F1; comparing methods via vggt on this object is not valid.\n'
+            '      the surface — this is <b>real reconstruction noise</b>, not a reference gap, so DBSCAN gap-exclusion on VGGT can\n'
+            '      spuriously “improve” F1; comparing methods via VGGT on this object is not valid.\n'
             '    </div>'
         ),
         "checkbox_checked": True,
-        "checkbox_note": "this lamppost has no gaps, so this is the <b>honest</b> mode (and it does not let vggt spuriously “improve” by cutting away its noise).",
-        "display_name": "lamppost",
+        "checkbox_note": "this lamppost has no gaps, so this is the <b>honest</b> mode (and it does not let VGGT spuriously “improve” by cutting away its noise).",
+        "display_name": "Lamppost",
     },
     "bus_stop_sign": {
+        "display_name": "Bus-stop sign",
         "ref": "data/lidar/bus_stop_sign_001/bus_stop_sign_001_no_floor_centered.ply",
         "captures": [
             {
@@ -247,13 +256,13 @@ MERGED_OBJECTS = {
         "callout": (
             '    <div class="callout" style="margin-top:12px; font-size:13px; line-height:1.5; background:var(--code-bg); '
             'border:1px solid var(--panel-border); border-left:3px solid #f43f5e; border-radius:8px; padding:10px 14px; color:var(--text-dim);">\n'
-            '      bus_stop_sign is a sign on a pole (~3.7 m). Reference coverage is almost full (no gaps), so any far points from a given\n'
+            '      Bus-stop sign is a sign on a pole (3.6 m). Reference coverage is almost full (no gaps), so any far points from a given\n'
             '      method are real noise, not a gap: for honest metrics without “improving” a noisy method by cutting away its noise,\n'
             '      enable <b>“Ignore DBSCAN”</b> in the tuner above (on by default here).\n'
             '    </div>'
         ),
         "checkbox_checked": True,
-        "checkbox_note": "bus_stop_sign has no gaps, so this is the <b>honest</b> mode.",
+        "checkbox_note": "bus-stop sign has no gaps, so this is the <b>honest</b> mode.",
         # tuned per docs/tables/bus_stop_sign_001_mini_report_ft5_eps2_mp3.xlsx
         "dbscan": {"ft_default": 5, "eps_default": 2, "mp_default": 3},
     },
@@ -352,7 +361,7 @@ def build(page_id: str) -> None:
                   f"candidates={n_cand_true} acc_med={acc_med:.2f}cm comp_med={comp_med:.2f}cm", flush=True)
 
             part1[panel_key] = {
-                "label": f"{exp_id} {method_id}",
+                "label": METHOD_LABEL[method_id],
                 "group": group_label,
                 "n_source_total": n_matched,
                 "n_below_floor_true": n_below_true,
@@ -489,6 +498,8 @@ def write_page(page_id: str, cfg: dict, part1: dict, panel_keys: list[str]) -> N
         + m3c2_block(page_id, panel_keys)
         + main_js
     )
+
+    html = html.replace("__SITE_CREDIT__", SITE_CREDIT)
 
     out_path = SITE_DIR / f"{page_id}.html"
     out_path.write_text(html, encoding="utf-8")

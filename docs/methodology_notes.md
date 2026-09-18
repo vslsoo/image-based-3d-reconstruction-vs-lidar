@@ -425,7 +425,7 @@ M3C2 calls it real. The 1.96 multiplies the registration error as well as the
 spread term, so LoD95 has a floor of 1.96 * registration_error - 2.3-4.3 cm
 across these rows - that no amount of local surface smoothness gets below;
 "beyond LoD95" means an offset larger than roughly 2-4 cm, not 1-2 cm. So a
-flat 1 cm - what every earlier run assumed - was so a flat 1 cm - what every earlier run assumed - was
+flat 1 cm - what every earlier run assumed - was
 optimistic for all 24 of these. Each row now gets its own measured
 alignment error from
 `docs/tables/registration_rmse_from_aligned_clouds.json`

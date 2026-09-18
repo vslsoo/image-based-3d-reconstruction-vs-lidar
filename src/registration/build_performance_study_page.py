@@ -442,11 +442,12 @@ def sanitize(obj):
 def build_html(data: dict) -> str:
     payload = json.dumps(sanitize(data)).replace("</", "<\\/")
     head = HTML_HEAD.replace("__NAV_CSS__", NAV_CSS).replace("__SITE_NAV__", nav_html("performance_study"))
-    return head + f'\n<script type="application/json" id="page-data">{payload}</script>\n' + MAIN_JS + HTML_TAIL
+    return (head + f'\n<script type="application/json" id="page-data">{payload}</script>\n'
+            + MAIN_JS + HTML_TAIL).replace("__SITE_CREDIT__", SITE_CREDIT)
 
 
 from _performance_study_page_template import HTML_HEAD, MAIN_JS, HTML_TAIL  # noqa: E402
-from _site_nav import NAV_CSS, nav_html  # noqa: E402
+from _site_nav import NAV_CSS, SITE_CREDIT, nav_html  # noqa: E402
 
 
 if __name__ == "__main__":
