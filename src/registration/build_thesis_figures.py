@@ -11,12 +11,12 @@ Outputs (docs/figures/, docs/tables/):
   fig_4_1_two_directions.*      schematic: the two nearest-neighbour directions
   fig_4_2_m3c2.*                schematic: the M3C2 cylinder and its projection
   fig_4_3_voxel_iou.*           schematic: voxel IoU under a shift of the grid
-  fig_5_1_f1_by_object.pdf/.png F1@3cm, 24 points, objects sorted by their best
-  fig_5_2_acc_vs_comp.pdf/.png  accuracy against completeness with the y=x line
-  fig_5_3_capture_routes.*      pairwise differences between capture routes
-  fig_5_4_frame_count.*         F1 against the number of photographs
-  fig_5_5_cost.*                time, peak RAM and peak VRAM against N
-  fig_5_6_iou_pairs.*           voxel IoU against F1 for the 36 method pairs
+  fig_5_7_f1_by_object.pdf/.png F1@3cm, 24 points, objects sorted by their best
+  fig_5_8_acc_vs_comp.pdf/.png  accuracy against completeness with the y=x line
+  fig_5_9_capture_routes.*      pairwise differences between capture routes
+  fig_5_10_frame_count.*         F1 against the number of photographs
+  fig_5_11_cost.*                time, peak RAM and peak VRAM against N
+  fig_5_12_iou_pairs.*           voxel IoU against F1 for the 36 method pairs
 
 Method colours are the site's own (--s-blue / --s-orange / --s-aqua /
 --s-yellow in _performance_study_page_template.py) so print and dashboard read
@@ -158,7 +158,7 @@ def table_5_1(rows: list[dict]) -> None:
 
 
 # Bounding-box volume in cubic metres, as Table 6.1 gives it. The y axis of
-# fig_5_1 is ordered by it so the figure reads in the same order as the object
+# fig_5_7 is ordered by it so the figure reads in the same order as the object
 # row in the presentation, and so that the answer to RQ1 - size sets the group,
 # not a smooth trend - can be read off the axis rather than taken on trust.
 OBJECT_VOLUME_M3 = {"bollard": 0.09, "information sign": 0.30, "lamp post": 0.83,
@@ -167,7 +167,7 @@ OBJECT_HEIGHT_M = {"bollard": 1.00, "information sign": 2.50, "lamp post": 6.05,
                    "bus stop sign": 3.60, "bench": 0.75, "bus shelter": 2.70}
 
 
-def fig_5_1(rows: list[dict], groups: bool = False) -> None:
+def fig_5_7(rows: list[dict], groups: bool = False) -> None:
     """F1@3cm for all 24 runs, objects on the y axis, ordered by their volume.
 
     A dot per method rather than grouped bars: 24 bars read as a picket fence,
@@ -212,10 +212,10 @@ def fig_5_1(rows: list[dict], groups: bool = False) -> None:
     ax.set_axisbelow(True)
     ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=4,
               frameon=False, handletextpad=0.3, columnspacing=1.4)
-    save(fig, "fig_5_1_f1_by_object" + ("_groups" if groups else ""))
+    save(fig, "fig_5_7_f1_by_object" + ("_groups" if groups else ""))
 
 
-def fig_5_2(rows: list[dict]) -> None:
+def fig_5_8(rows: list[dict]) -> None:
     """Accuracy against completeness, one point per run, with the y=x line.
 
     The single figure the failure-mode section rests on: below the diagonal a
@@ -259,7 +259,7 @@ def fig_5_2(rows: list[dict]) -> None:
     ax.grid(color="#e6e3d9", lw=0.7)
     ax.set_axisbelow(True)
     ax.legend(loc="lower left", frameon=False, handletextpad=0.3)
-    save(fig, "fig_5_2_acc_vs_comp")
+    save(fig, "fig_5_8_acc_vs_comp")
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +286,7 @@ def _sheet(path, name):
                 .iter_rows(values_only=True))
 
 
-def fig_5_3_capture() -> None:
+def fig_5_9_capture() -> None:
     """Every pairwise difference between capture routes, with its interval.
 
     Table 5.6 gives three F1 values per row and a count of how many differences
@@ -348,10 +348,10 @@ def fig_5_3_capture() -> None:
     fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 1.0),
                ncol=2, frameon=False, handletextpad=0.3, columnspacing=1.6)
     fig.tight_layout()
-    save(fig, "fig_5_3_capture_routes")
+    save(fig, "fig_5_9_capture_routes")
 
 
-def fig_5_4_frames() -> None:
+def fig_5_10_frames() -> None:
     """F1 against the number of photographs, one panel per object.
 
     The bands are the same 95 % intervals the significance sheet tests, drawn
@@ -396,7 +396,7 @@ def fig_5_4_frames() -> None:
                   fontsize=7.5)
     axes[0].set_ylabel("F1 at 3 cm (%)")
     axes[0].set_ylim(30, 100)
-    save(fig, "fig_5_4_frame_count")
+    save(fig, "fig_5_10_frame_count")
 
 
 def _perf_series(obj_title):
@@ -414,7 +414,7 @@ def _perf_series(obj_title):
     return out
 
 
-def fig_5_5_cost() -> None:
+def fig_5_11_cost() -> None:
     """Cost against the number of photographs: time, peak RAM, peak VRAM.
 
     Time is on a log axis because the four pipelines sit three orders of
@@ -459,7 +459,7 @@ def fig_5_5_cost() -> None:
     fig.legend(h, l, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4,
                frameon=False, handletextpad=0.3, columnspacing=1.6)
     fig.tight_layout()
-    save(fig, "fig_5_5_cost")
+    save(fig, "fig_5_11_cost")
 
 
 def cost_table() -> None:
@@ -721,7 +721,7 @@ def fig_4_3() -> None:
     save(fig, "fig_4_3_voxel_iou")
 
 
-def fig_5_6_iou_pairs() -> None:
+def fig_5_12_iou_pairs() -> None:
     """Voxel IoU against F1 for all 36 method pairs, one point each.
 
     Section 5.8 compares the two measures one pair of methods at a time, because
@@ -779,8 +779,8 @@ def fig_5_6_iou_pairs() -> None:
     ax.legend(handles=handles, loc="lower right", frameon=False,
               handletextpad=0.3)
     fig.tight_layout()
-    save(fig, "fig_5_6_iou_pairs")
-    print(f"  Figure 5.6 check: {n_both} pairs separated by both, "
+    save(fig, "fig_5_12_iou_pairs")
+    print(f"  Figure 5.12 check: {n_both} pairs separated by both, "
           f"{n_agree} of them ordered the same way")
 
 
@@ -820,13 +820,13 @@ def main() -> None:
     fig_4_2()
     fig_4_3()
     table_5_1(rows)
-    fig_5_1(rows)
-    fig_5_1(rows, groups=True)   # slide-only variant
-    fig_5_2(rows)
-    fig_5_3_capture()
-    fig_5_4_frames()
-    fig_5_5_cost()
-    fig_5_6_iou_pairs()
+    fig_5_7(rows)
+    fig_5_7(rows, groups=True)   # slide-only variant
+    fig_5_8(rows)
+    fig_5_9_capture()
+    fig_5_10_frames()
+    fig_5_11_cost()
+    fig_5_12_iou_pairs()
     print("Table 5.8 check:")
     cost_table()
 

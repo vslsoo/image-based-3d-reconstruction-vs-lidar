@@ -1,4 +1,4 @@
-"""Appendix C figures: every final reconstruction over its lidar reference.
+"""Figures 5.1-5.6: every final reconstruction over its lidar reference.
 
 One figure per object, one panel per method. The reconstruction is the
 registered cloud that the final metrics were computed on (the `source` of
@@ -34,14 +34,17 @@ MAX_FIG_H = 8.9        # inches; the page allows 9.7 before the caption
 MAX_PTS = 150_000
 SEED = 123
 
-# thesis order and names; metrics key = page key in the summary json
+# Thesis order, names and figure numbers; the first field is the page key in the
+# summary json, which still carries two working names the dissertation does not
+# use - "flashlight" is the lamp post and "bus_stop" is the bus shelter. The last
+# field is the name the file gets, so the figures on disk read as the thesis does.
 OBJECTS = [
-    ("bollard",          "Bollard",          "C.1"),
-    ("flashlight",       "Lamp post",        "C.2"),
-    ("information_sign", "Information sign", "C.3"),
-    ("bench",            "Bench",            "C.4"),
-    ("bus_stop_sign",    "Bus stop sign",    "C.5"),
-    ("bus_stop",         "Bus shelter",      "C.6"),
+    ("bollard",          "Bollard",          "5.1", "bollard"),
+    ("flashlight",       "Lamp post",        "5.2", "lamp_post"),
+    ("information_sign", "Information sign", "5.3", "information_sign"),
+    ("bench",            "Bench",            "5.4", "bench"),
+    ("bus_stop_sign",    "Bus stop sign",    "5.5", "bus_stop_sign"),
+    ("bus_stop",         "Bus shelter",      "5.6", "bus_shelter"),
 ]
 METHODS = [("colmap", "COLMAP"), ("hloc_colmap", "hloc + COLMAP"),
            ("mast3r_ga", "MASt3R-GA"), ("vggt", "VGGT")]
@@ -124,7 +127,7 @@ def subsample(p, n, rng):
     return p[rng.choice(len(p), n, replace=False)]
 
 
-def render(obj_key, obj_name, fig_no, metrics):
+def render(obj_key, obj_name, fig_no, file_slug, metrics):
     rng = np.random.default_rng(SEED)
     mismatches = []
     cfg = MERGED_OBJECTS[obj_key]
@@ -288,7 +291,7 @@ def render(obj_key, obj_name, fig_no, metrics):
     fig.legend(handles=handles, loc="outside lower center", ncol=1, fontsize=8.5, frameon=False,
                handletextpad=0.4, columnspacing=1.2)
     fig.suptitle(f"{obj_name} — the four final reconstructions against the lidar reference", fontsize=10)
-    base = os.path.join(OUT, f"fig_{fig_no.replace('.', '_')}_{obj_key}_clouds")
+    base = os.path.join(OUT, f"fig_{fig_no.replace('.', '_')}_{file_slug}_clouds")
     fig.savefig(base + ".png", dpi=220)
     fig.savefig(base + ".pdf")
     plt.close(fig)
@@ -298,12 +301,12 @@ def render(obj_key, obj_name, fig_no, metrics):
 def main(argv):
     summary = json.load(open(os.path.join(ROOT, "docs", "tables", "summary_all_objects_accuracy_f1.json")))
     want = set(argv) or {o[0] for o in OBJECTS}
-    for key, name, no in OBJECTS:
+    for key, name, no, slug in OBJECTS:
         if key not in want:
             continue
         page = summary["pages"][key]["panels"]
         metrics = {k.split("__", 1)[1]: v for k, v in page.items()}
-        render(key, name, no, metrics)
+        render(key, name, no, slug, metrics)
 
 
 if __name__ == "__main__":
